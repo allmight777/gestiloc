@@ -879,4 +879,85 @@ export const conditionReportService = {
 
 };
 
+// ================= CONTRACT SERVICE =================
+
+export interface RentalContractData {
+  landlord: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    id_type: string;
+    id_number: string;
+  };
+  tenant: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    id_type: string;
+    id_number: string;
+  };
+  property: {
+    address: string;
+    floor?: string;
+    type: string;
+    area: string;
+    rooms: string;
+    has_parking: boolean;
+    equipment?: string[];
+  };
+  contract: {
+    start_date: string;
+    end_date: string;
+    rent_amount: number;
+    deposit_amount: number;
+    included_charges?: string[];
+    payment_frequency?: 'monthly' | 'quarterly';
+    payment_method?: 'cash' | 'bank_transfer' | 'mobile_money';
+    notice_period?: number;
+    duration?: string;
+  };
+}
+
+export const contractService = {
+  /**
+   * Génère un contrat de location au format PDF
+   * @param data Les données du contrat
+   * @returns Un objet Blob contenant le PDF
+   */
+  async generateRentalContract(data: RentalContractData): Promise<Blob> {
+    try {
+      const response = await api.post(
+        '/pdf/generate-rental-contract',
+        data,
+        {
+          responseType: 'blob', // Important pour les fichiers binaires
+        }
+      );
+      
+      return new Blob([response.data], { type: 'application/pdf' });
+    } catch (error) {
+      console.error('Erreur lors de la génération du contrat:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Télécharge un fichier Blob (PDF) dans le navigateur
+   * @param blob Le Blob à télécharger
+   * @param filename Le nom du fichier
+   */
+  downloadBlob(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+};
+
 export default api;

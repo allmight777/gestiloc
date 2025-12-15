@@ -48,6 +48,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/quittance/{id}', [PdfController::class, 'generateQuittance']);
         Route::get('/avis-echeance/{id}', [PdfController::class, 'generateAvisEcheance']);
         Route::get('/contrat-bail/{uuid}', [PdfController::class, 'generateLeaseContract']);
+        
+        // Génération du contrat de location
+        Route::post('/generate-rental-contract', [\App\Http\Controllers\Api\Contract\RentalContractController::class, 'generatePdf']);
         Route::get('/recap-bailleur', [PdfController::class, 'generateLandlordSummary']);
     });
 

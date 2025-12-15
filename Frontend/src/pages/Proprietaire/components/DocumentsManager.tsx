@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, FileText, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { leaseService } from '@/services/api';
+import { DownloadContractButton } from '@/components/shared/DownloadContractButton';
 
 interface Document {
   id: string;
@@ -8,6 +11,33 @@ interface Document {
   uploadDate: string;
   size: string;
   status: 'actif' | 'archive';
+  leaseData?: any; // Données supplémentaires du bail
+}
+
+interface LeaseContract {
+  id: number;
+  uuid: string;
+  property_id: number;
+  tenant_id: number;
+  start_date: string;
+  end_date: string | null;
+  rent_amount: string;
+  deposit: string | null;
+  type: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  property?: {
+    address: string;
+    city: string;
+    postal_code: string;
+  };
+  tenant?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 interface DocumentsManagerProps {
@@ -15,202 +45,107 @@ interface DocumentsManagerProps {
 }
 
 export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) => {
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: '1',
-      name: 'Bail de location',
-      type: 'PDF',
-      uploadDate: '15/09/2024',
-      size: '2.4 MB',
-      status: 'actif'
-    },
-    {
-      id: '2',
-      name: 'Quittance de loyer',
-      type: 'PDF',
-      uploadDate: '28/11/2025',
-      size: '156 KB',
-      status: 'actif'
-    }
-  ]);
-
-  const [showNewDocForm, setShowNewDocForm] = useState(false);
-  const [formData, setFormData] = useState({
-    documentType: 'nouveau',
-    fileType: '',
-    fichier: null as File | null
-  });
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddDocument = () => {
-    setShowNewDocForm(true);
-  };
-
-  const handleDeleteDocument = (id: string) => {
-    setDocuments(documents.filter(d => d.id !== id));
-    notify('Document supprimé', 'success');
-  };
-
-  const handleSaveDocument = () => {
-    if (!formData.fileType || !formData.fichier) {
-      notify('Veuillez remplir tous les champs', 'error');
-      return;
-    }
-
-    const newDoc: Document = {
-      id: Date.now().toString(),
-      name: formData.fichier.name,
-      type: formData.fileType,
-      uploadDate: new Date().toLocaleDateString('fr-FR'),
-      size: `${(formData.fichier.size / 1024).toFixed(1)} KB`,
-      status: 'actif'
+    // Charger les baux depuis l'API
+    const fetchLeases = async () => {
+      try {
+        setIsLoading(true);
+        const leases = await leaseService.listLeases();
+        
+        // Transformer les baux en documents
+        const leaseDocuments = leases.map((lease: LeaseContract) => ({
+          id: `lease-${lease.id}`,
+          name: `Contrat de location - ${lease.property?.address || 'Sans adresse'}`,
+          type: 'PDF',
+          uploadDate: new Date(lease.created_at).toLocaleDateString('fr-FR'),
+          size: 'PDF',
+          status: 'actif' as const,
+          leaseData: lease // Conserver les données du bail pour le téléchargement
+        }));
+        
+        setDocuments(leaseDocuments);
+      } catch (err) {
+        console.error('Erreur lors du chargement des baux:', err);
+        setError('Impossible de charger les contrats de location');
+        notify('Erreur lors du chargement des contrats', 'error');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setDocuments([...documents, newDoc]);
-    setShowNewDocForm(false);
-    setFormData({ documentType: 'nouveau', fileType: '', fichier: null });
-    notify('Document ajouté avec succès', 'success');
+    fetchLeases();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, fichier: e.target.files[0] });
-    }
+  // Préparer les données pour le téléchargement
+  const getContractData = (lease: any) => {
+    return {
+      landlord: {
+        name: 'Nom du propriétaire', // À remplacer par les données réelles
+        address: 'Adresse du propriétaire',
+        phone: '0123456789',
+        email: 'proprietaire@example.com',
+        id_type: 'Carte d\'identité',
+        id_number: '123456789'
+      },
+      tenant: {
+        name: `${lease.tenant?.first_name || ''} ${lease.tenant?.last_name || ''}`.trim() || 'Locataire inconnu',
+        address: 'Adresse du locataire',
+        phone: lease.tenant?.phone || '',
+        email: lease.tenant?.email || '',
+        id_type: 'Carte d\'identité',
+        id_number: '987654321'
+      },
+      property: {
+        address: lease.property?.address || 'Adresse non spécifiée',
+        floor: '1er étage',
+        type: 'Appartement',
+        area: '75',
+        rooms: '3',
+        has_parking: true,
+        equipment: [
+          'Cuisine équipée',
+          'Lave-vaisselle',
+          'Télévision',
+          'Meublé'
+        ]
+      },
+      contract: {
+        start_date: new Date(lease.start_date).toISOString().split('T')[0],
+        end_date: lease.end_date ? new Date(lease.end_date).toISOString().split('T')[0] : null,
+        rent_amount: parseFloat(lease.rent_amount) || 0,
+        deposit_amount: lease.deposit ? parseFloat(lease.deposit) : 0,
+        included_charges: ['Eau', 'Charges d\'immeuble'],
+        payment_frequency: 'monthly',
+        payment_method: 'bank_transfer',
+        notice_period: 1,
+        duration: '12 mois'
+      }
+    };
   };
 
-  if (showNewDocForm) {
+  if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowNewDocForm(false)}
-            className="text-slate-600 hover:text-slate-900"
-          >
-            ← Retour
-          </button>
-          <h1 className="text-2xl font-bold text-slate-900">Ajouter un document</h1>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
-        <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-slate-700">
-            Vous pouvez ajouter plusieurs documents. Ces documents seront sauvegardés dans la rubrique Documents.
-          </p>
-        </div>
-
-        {/* Modal Nouveau Document */}
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="w-full max-w-md rounded-lg shadow-xl bg-white border border-gray-200 flex flex-col max-h-[80vh]">
-            {/* Header */}
-            <div className="px-5 py-3 border-b border-gray-200 bg-white flex items-center justify-between flex-shrink-0">
-              <h3 className="text-sm font-semibold text-gray-900">Nouveau document</h3>
-              <button
-                onClick={() => setShowNewDocForm(false)}
-                className="text-gray-400 hover:text-gray-600 text-lg font-light"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-xs" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2563eb #e0e7ff' }}>
-              <style>{`
-                div::-webkit-scrollbar { width: 10px; }
-                div::-webkit-scrollbar-track { background: #e0e7ff; border-radius: 5px; }
-                div::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 5px; }
-                div::-webkit-scrollbar-thumb:hover { background: #1d4ed8; }
-              `}</style>
-
-              {/* Document Section - Buttons */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Document <span className="text-red-500">*</span></label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFormData({ ...formData, documentType: 'nouveau' })}
-                    className={`flex-1 border rounded-md px-3 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
-                      formData.documentType === 'nouveau'
-                        ? 'border-primary bg-blue-50 text-primary'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    📄 Nouveau
-                  </button>
-                  <button
-                    onClick={() => setFormData({ ...formData, documentType: 'existant' })}
-                    className={`flex-1 border rounded-md px-3 py-1.5 text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
-                      formData.documentType === 'existant'
-                        ? 'border-primary bg-blue-50 text-primary'
-                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    📋 Déjà existant
-                  </button>
-                </div>
-              </div>
-
-              {/* Fichier Section */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Fichier <span className="text-red-500">*</span></label>
-                {formData.documentType === 'nouveau' ? (
-                  <div className="border border-dashed border-gray-300 rounded-md p-3 bg-gray-50 text-center">
-                    <input
-                      type="file"
-                      title="Sélectionner un fichier"
-                      onChange={handleFileChange}
-                      className="w-full text-xs"
-                    />
-                    <p className="text-xs text-gray-600 mt-1.5">
-                      Formats acceptés: Word, Excel, PDF, Images (GIF, JPG, PNG). Taille maximale: 15 Mo
-                    </p>
-                    {formData.fichier && (
-                      <p className="text-xs text-green-600 mt-2">✓ {formData.fichier.name}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <select
-                      title="Choisir un fichier"
-                      value={formData.fileType}
-                      onChange={(e) => setFormData({ ...formData, fileType: e.target.value })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">Choisir</option>
-                      <option value="bail">Bail de location</option>
-                      <option value="quittance">Quittance de loyer</option>
-                      <option value="justificatif">Justificatif</option>
-                      <option value="autre">Autre</option>
-                    </select>
-                    <p className="text-xs text-gray-600">
-                      Choisissez parmi les fichiers déjà existants dans la rubrique Mes Documents.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Description Section */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">Description</label>
-                <textarea
-                  placeholder="Description du document"
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                />
-              </div>
-            </div>
-
-            {/* Footer - Buttons */}
-            <div className="px-5 py-3 border-t border-gray-200 bg-white flex items-center justify-end gap-2 flex-shrink-0">
-              <button
-                onClick={() => setShowNewDocForm(false)}
-                className="text-gray-700 hover:text-gray-900 text-xs font-medium px-4 py-1.5"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveDocument}
-                className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-4 py-1.5 rounded"
-              >
-                Sauvegarder
-              </button>
-            </div>
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
       </div>
@@ -218,8 +153,57 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-slate-900">Contrats de location</h1>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <FileText className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun contrat trouvé</h3>
+          <p className="mt-1 text-sm text-gray-500">Commencez par créer un nouveau bail de location.</p>
+        </div>
+      ) : (
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <ul className="divide-y divide-gray-200">
+            {documents.map((doc) => (
+              <li key={doc.id}>
+                <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+                  <div className="flex items-center">
+                    <FileText className="flex-shrink-0 h-10 w-10 text-primary" aria-hidden="true" />
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {doc.type} • Ajouté le {doc.uploadDate}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ml-4 flex-shrink-0 flex space-x-2">
+                    {doc.leaseData && (
+                      <div className="flex items-center">
+                        <DownloadContractButton 
+                          contractData={getContractData(doc.leaseData)}
+                          buttonText="Télécharger"
+                          variant="outline"
+                          size="sm"
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleAddDocument()}
+                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Supprimer</span>
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Documents</h1>
@@ -233,48 +217,9 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
           Ajouter un document
         </button>
       </div>
-
-      {/* Info Box */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-slate-700">
-          Vous pouvez ajouter plusieurs documents. Ces documents seront sauvegardés dans la rubrique Documents.
-        </p>
-      </div>
-
-      {/* Documents List */}
-      {documents.length > 0 ? (
-        <div className="space-y-3">
-          {documents.map((doc) => (
-            <div key={doc.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                    <FileText size={20} />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">{doc.name}</p>
-                    <p className="text-xs text-slate-600">{doc.uploadDate} • {doc.size}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeleteDocument(doc.id)}
-                  className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Supprimer"
-                >
-                  <Trash2 size={16} className="text-red-500" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="p-12 text-center border border-slate-200 rounded-lg bg-white">
-          <div className="mb-4">
-            <FileText size={48} className="mx-auto text-slate-300" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun document pour le moment</h3>
-          <p className="text-slate-600 mb-6">
-            Commencez par ajouter votre premier document en cliquant sur le bouton ci-dessus.
+    )}
+  </div>
+);
           </p>
           <button
             onClick={handleAddDocument}

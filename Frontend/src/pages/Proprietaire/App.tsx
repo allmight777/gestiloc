@@ -26,6 +26,7 @@ import {
 } from './components/SectionPages';
 import { Tab, ToastMessage } from './types';
 import { authService } from '@/services/api';
+import { DocumentsManager } from './components/DocumentsManager';
 
 const ProprietaireApp: React.FC = () => {
   const navigate = useNavigate();
@@ -265,6 +266,19 @@ const ProprietaireApp: React.FC = () => {
             <Documents notify={notify} />
           </Layout>
         } />
+
+        <Route path="documents/baux/*" element={
+          <Layout
+            activeTab="documents/baux"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+          >
+            <DocumentsManager notify={notify} />
+          </Layout>
+        } />
+
         <Route path="parametres" element={
           <Layout
             activeTab="parametres"
