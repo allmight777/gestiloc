@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\RentReceipt;
 use App\Models\Invoice;
 use App\Models\Lease;
 use App\Models\Property;
@@ -55,6 +56,36 @@ class PdfController extends Controller
             ], 500);
         }
     }
+
+    public function generateIndependentRentReceipt($id)
+{
+    $user = auth()->user();
+
+    Log::info('[PdfController@generateIndependentRentReceipt] incoming', [
+        'auth_id' => $user?->id,
+        'receipt_id' => $id,
+    ]);
+
+    $receipt = RentReceipt::with(['property', 'tenant', 'landlord', 'lease'])->findOrFail($id);
+
+    if (!$user || !$user->hasRole('landlord') || (int)$receipt->landlord_id !== (int)$user->id) {
+        Log::warning('[PdfController@generateIndependentRentReceipt] forbidden', [
+            'auth_id' => $user?->id,
+            'receipt_landlord_id' => $receipt->landlord_id,
+        ]);
+        return response()->json(['message' => 'Forbidden'], 403);
+    }
+
+    // ⚠️ Adapte selon ton moteur PDF actuel (Dompdf / Snappy).
+    // Exemple Dompdf (barryvdh/laravel-dompdf):
+    $pdf = \PDF::loadView('pdf.rent_receipt_independent', [
+        'receipt' => $receipt
+    ]);
+
+    $filename = "quittance-{$receipt->year}-" . str_pad($receipt->month, 2, '0', STR_PAD_LEFT) . "-{$receipt->reference}.pdf";
+
+    return $pdf->download($filename);
+}
 
     /**
      * Génère un avis d'échéance pour une facture impayée

@@ -120,6 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({
         { id: "liste-locations", label: "Locations en cours", icon: FileText, path: "/proprietaire/liste-locations" },
         { id: "ajouter-locataire", label: "Ajouter un locataire", icon: UserPlus, path: "/proprietaire/ajouter-locataire" },
         { id: "locataires", label: "Liste des locataires", icon: Users, path: "/proprietaire/locataires" },
+        { id: "preavis", label: "Gestion des préavis", icon: FileText, path: "/proprietaire/preavis" },
         { id: "etat-des-lieux", label: "États des lieux", icon: FileCheck, path: "/proprietaire/etats-des-lieux" },
       ],
     },

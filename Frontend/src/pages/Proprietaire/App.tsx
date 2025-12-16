@@ -27,6 +27,9 @@ import {
 import { Tab, ToastMessage } from './types';
 import { authService } from '@/services/api';
 import { DocumentsManager } from './components/DocumentsManager';
+import { PreavisList } from './components/PreavisList';
+import QuittancesIndependantes from './components/QuittancesIndependants';
+
 
 const ProprietaireApp: React.FC = () => {
   const navigate = useNavigate();
@@ -196,6 +199,19 @@ const ProprietaireApp: React.FC = () => {
             <AjouterLocataire />
           </Layout>
         } />
+
+         <Route path="quittances" element={
+          <Layout
+            activeTab="quittances"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+          >
+            <QuittancesIndependantes />
+          </Layout>
+        } />
+
         
         <Route path="liste-locations" element={
           <Layout
@@ -206,6 +222,18 @@ const ProprietaireApp: React.FC = () => {
             onLogout={handleLogout}
           >
             <Lease notify={notify} />
+          </Layout>
+        } />
+
+        <Route path="preavis" element={
+          <Layout
+            activeTab="preavis"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+          >
+            <PreavisList notify={notify} />
           </Layout>
         } />
         

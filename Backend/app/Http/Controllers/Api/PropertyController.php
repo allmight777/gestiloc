@@ -44,6 +44,7 @@ class PropertyController extends Controller
 
         $data = $request->validated();
         $data['landlord_id'] = $landlord->id;
+        $data['user_id'] = $user->id; // Ajout de l'ID de l'utilisateur
 
         $property = Property::create($data);
 

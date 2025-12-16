@@ -599,7 +599,7 @@ export const tenantService = {
 
 export interface Lease {
   id: number;
-  uuid?: string;
+  uuid: string;
   property_id: number;
   tenant_id: number;
 
@@ -909,12 +909,12 @@ export interface RentalContractData {
   };
   contract: {
     start_date: string;
-    end_date: string;
+    end_date: string | null;
     rent_amount: number;
     deposit_amount: number;
     included_charges?: string[];
-    payment_frequency?: 'monthly' | 'quarterly';
-    payment_method?: 'cash' | 'bank_transfer' | 'mobile_money';
+    payment_frequency?: "monthly" | "quarterly";
+    payment_method?: "cash" | "bank_transfer" | "mobile_money";
     notice_period?: number;
     duration?: string;
   };
@@ -922,42 +922,184 @@ export interface RentalContractData {
 
 export const contractService = {
   /**
-   * Génère un contrat de location au format PDF
-   * @param data Les données du contrat
-   * @returns Un objet Blob contenant le PDF
+   * ✅ NOUVEAU (recommandé) :
+   * Télécharge le contrat généré côté backend à partir du UUID du bail
+   * Route: GET /api/pdf/contrat-bail/{uuid}
    */
-  async generateRentalContract(data: RentalContractData): Promise<Blob> {
+  async downloadLeaseContract(uuid: string): Promise<Blob> {
     try {
-      const response = await api.post(
-        '/pdf/generate-rental-contract',
-        data,
-        {
-          responseType: 'blob', // Important pour les fichiers binaires
-        }
-      );
-      
-      return new Blob([response.data], { type: 'application/pdf' });
+      const response = await api.get(`/pdf/contrat-bail/${uuid}`, {
+        responseType: "blob",
+      });
+
+      return new Blob([response.data], { type: "application/pdf" });
     } catch (error) {
-      console.error('Erreur lors de la génération du contrat:', error);
+      console.error("Erreur lors du téléchargement du contrat (UUID):", error);
       throw error;
     }
   },
-  
+
+  /**
+   * (optionnel) Compat : ton endpoint existant qui génère un contrat depuis un JSON
+   * Route: POST /api/pdf/generate-rental-contract
+   */
+  async generateRentalContract(data: RentalContractData): Promise<Blob> {
+    try {
+      const response = await api.post("/pdf/generate-rental-contract", data, {
+        responseType: "blob",
+      });
+
+      return new Blob([response.data], { type: "application/pdf" });
+    } catch (error) {
+      console.error("Erreur lors de la génération du contrat (JSON):", error);
+      throw error;
+    }
+  },
+
   /**
    * Télécharge un fichier Blob (PDF) dans le navigateur
-   * @param blob Le Blob à télécharger
-   * @param filename Le nom du fichier
    */
   downloadBlob(blob: Blob, filename: string) {
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = filename;
+
     document.body.appendChild(a);
     a.click();
+
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   },
 };
+
+// ================= NOTICES SERVICE =================
+
+export interface Notice {
+  id: number;
+  property_id: number;
+  landlord_id: number;
+  tenant_id: number;
+  type: "landlord" | "tenant";
+  reason: string;
+  notice_date: string;
+  end_date: string;
+  status: "pending" | "confirmed" | "cancelled";
+  notes?: string | null;
+  created_at: string;
+
+  property?: {
+    id: number;
+    address: string;
+  };
+
+  tenant?: {
+    id: number;
+    first_name?: string;
+    last_name?: string;
+    email: string;
+  };
+}
+
+export interface CreateNoticePayload {
+  property_id: number;
+  lease_id?: number; // ✅ recommandé
+  tenant_id?: number; // optionnel (si tu veux forcer)
+  type: "landlord" | "tenant";
+  reason: string;
+  notice_date: string;
+  end_date: string;
+  notes?: string;
+}
+
+export const noticeService = {
+  list: async (): Promise<Notice[]> => {
+    const response = await api.get<Notice[]>("/notices");
+    return response.data;
+  },
+
+  create: async (payload: CreateNoticePayload): Promise<Notice> => {
+    const response = await api.post<Notice>("/notices", payload);
+    return response.data;
+  },
+
+  update: async (
+    id: number,
+    payload: Partial<Pick<Notice, "status" | "notes">>
+  ): Promise<Notice> => {
+    const response = await api.put<Notice>(`/notices/${id}`, payload);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/notices/${id}`);
+  },
+};
+
+// ================= RENT RECEIPTS (QUITTANCES) SERVICE =================
+
+export type RentReceiptType = "independent" | "invoice";
+
+export interface RentReceipt {
+  id: number;
+  lease_id: number;
+  property_id: number;
+  landlord_id: number;
+  tenant_id: number;
+
+  type: RentReceiptType;
+  status: "issued" | "draft";
+
+  paid_month: string;   // YYYY-MM
+  issued_date: string;  // YYYY-MM-DD
+
+  amount_paid: number;
+  currency?: string | null;
+  notes?: string | null;
+
+  created_at: string;
+
+  lease?: any;
+  property?: { id: number; address: string; city?: string | null };
+  tenant?: { id: number; first_name?: string | null; last_name?: string | null; email?: string | null };
+}
+
+export interface CreateRentReceiptPayload {
+  lease_id: number;
+  paid_month: string;    // "2025-12"
+  issued_date?: string;  // optionnel
+  notes?: string | null;
+}
+
+export const rentReceiptService = {
+  // ✅ liste uniquement les quittances indépendantes
+  listIndependent: async (): Promise<RentReceipt[]> => {
+    await initializeCsrfToken();
+    const response = await api.get<RentReceipt[]>("/rent-receipts", {
+      params: { type: "independent" },
+    });
+    return response.data;
+  },
+
+  // ✅ création quittance indépendante
+  createIndependent: async (payload: CreateRentReceiptPayload): Promise<RentReceipt> => {
+    await initializeCsrfToken();
+    const response = await api.post<RentReceipt>("/rent-receipts", {
+      ...payload,
+      type: "independent",
+    });
+    return response.data;
+  },
+
+  // ✅ PDF
+  downloadPdf: async (id: number): Promise<Blob> => {
+    await initializeCsrfToken();
+    const response = await api.get(`/rent-receipts/${id}/pdf`, {
+      responseType: "blob",
+    });
+    return new Blob([response.data], { type: "application/pdf" });
+  },
+};
+
 
 export default api;

@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\Finance\InvoiceController;
 use App\Http\Controllers\Api\Finance\TransactionController;
 use App\Http\Controllers\Api\Finance\PdfController;
 use App\Http\Controllers\Api\PropertyConditionReportController;
+use App\Http\Controllers\Api\NoticeController;
+use App\Http\Controllers\Api\RentReceiptController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,6 +40,9 @@ Route::post('auth/tenant/complete-registration', [AuthController::class, 'comple
 // ---------- Routes protégées ----------
 Route::middleware(['auth:sanctum'])->group(function () {
 
+    Route::apiResource('notices', NoticeController::class)->except(['edit','create']);
+    Route::get('/quittance-independent/{id}', [\App\Http\Controllers\Api\Finance\PdfController::class, 'generateIndependentRentReceipt']);
+
     // ---------- Finance (Bailleurs & Locataires) ----------
     Route::get('/invoices', [InvoiceController::class, 'index']);
     Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
@@ -53,6 +58,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/generate-rental-contract', [\App\Http\Controllers\Api\Contract\RentalContractController::class, 'generatePdf']);
         Route::get('/recap-bailleur', [PdfController::class, 'generateLandlordSummary']);
     });
+
+    Route::middleware('role:landlord')->group(function () {
+    Route::get('/rent-receipts', [RentReceiptController::class, 'index']);
+    Route::post('/rent-receipts', [RentReceiptController::class, 'store']);
+    Route::put('/rent-receipts/{rentReceipt}', [RentReceiptController::class, 'update']);
+    Route::delete('/rent-receipts/{rentReceipt}', [RentReceiptController::class, 'destroy']);
+});
 
     // ---------- BAILLEUR uniquement ----------
     Route::middleware('role:landlord')->group(function () {
@@ -115,6 +127,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/condition-reports/entry', [PropertyConditionReportController::class, 'storeEntry']);
         Route::post('/condition-reports/exit', [PropertyConditionReportController::class, 'storeExit']);
     });
+
+    
 
     // ---------- Profil utilisateur (commun) ----------
     // Route::get('/profile', [ProfileController::class, 'show']);

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, FileText } from "lucide-react";
-import { leaseService } from "@/services/api";
-import { DownloadContractButton } from "@/components/shared/DownloadContractButton";
+import { Plus, Trash2, FileText, Download, Loader2 } from "lucide-react";
+import { leaseService, contractService } from "@/services/api";
 
 interface DocumentItem {
   id: string;
@@ -48,6 +47,9 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Loading par document (évite de bloquer toute la page)
+  const [downloadingIds, setDownloadingIds] = useState<Record<string, boolean>>({});
+
   const fetchLeasesAsDocuments = async () => {
     try {
       setError(null);
@@ -66,6 +68,7 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
       }));
 
       setDocuments(leaseDocuments);
+
       if (leaseDocuments.length > 0) {
         notify("Contrats chargés avec succès", "success");
       }
@@ -78,54 +81,36 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
     }
   };
 
-  // Charger au montage (tu peux enlever si tu veux charger uniquement au clic)
   useEffect(() => {
     fetchLeasesAsDocuments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Préparer les données pour le téléchargement
-  const getContractData = (lease: LeaseContract) => {
-    return {
-      landlord: {
-        name: "Nom du propriétaire", // TODO: remplacer par les données réelles
-        address: "Adresse du propriétaire",
-        phone: "0123456789",
-        email: "proprietaire@example.com",
-        id_type: "Carte d'identité",
-        id_number: "123456789",
-      },
-      tenant: {
-        name:
-          `${lease.tenant?.first_name || ""} ${lease.tenant?.last_name || ""}`.trim() ||
-          "Locataire inconnu",
-        address: "Adresse du locataire",
-        phone: lease.tenant?.phone || "",
-        email: lease.tenant?.email || "",
-        id_type: "Carte d'identité",
-        id_number: "987654321",
-      },
-      property: {
-        address: lease.property?.address || "Adresse non spécifiée",
-        floor: "1er étage",
-        type: "Appartement",
-        area: "75",
-        rooms: "3",
-        has_parking: true,
-        equipment: ["Cuisine équipée", "Lave-vaisselle", "Télévision", "Meublé"],
-      },
-      contract: {
-        start_date: new Date(lease.start_date).toISOString().split("T")[0],
-        end_date: lease.end_date ? new Date(lease.end_date).toISOString().split("T")[0] : null,
-        rent_amount: Number.parseFloat(lease.rent_amount) || 0,
-        deposit_amount: lease.deposit ? Number.parseFloat(lease.deposit) : 0,
-        included_charges: ["Eau", "Charges d'immeuble"],
-        payment_frequency: "monthly",
-        payment_method: "bank_transfer",
-        notice_period: 1,
-        duration: "12 mois",
-      },
-    };
+  const handleDownloadContract = async (doc: DocumentItem) => {
+    const lease = doc.leaseData;
+
+    if (!lease?.uuid) {
+      notify("UUID du bail manquant, impossible de télécharger.", "error");
+      return;
+    }
+
+    try {
+      setDownloadingIds((prev) => ({ ...prev, [doc.id]: true }));
+
+      const blob = await contractService.downloadLeaseContract(lease.uuid);
+
+      const filename = `contrat-location-${lease.uuid}.pdf`;
+      contractService.downloadBlob(blob, filename);
+
+      notify("Contrat téléchargé avec succès", "success");
+    } catch (err: any) {
+      console.error("Erreur téléchargement contrat:", err);
+
+      // Si ton backend renvoie un message JSON, ici ça sera un blob, donc on reste simple
+      notify("Impossible de télécharger le contrat", "error");
+    } finally {
+      setDownloadingIds((prev) => ({ ...prev, [doc.id]: false }));
+    }
   };
 
   const handleDeleteDoc = (docId: string) => {
@@ -199,42 +184,62 @@ export const DocumentsManager: React.FC<DocumentsManagerProps> = ({ notify }) =>
       ) : (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
-            {documents.map((doc) => (
-              <li key={doc.id}>
-                <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <FileText className="flex-shrink-0 h-10 w-10 text-primary" aria-hidden="true" />
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{doc.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {doc.type} • Ajouté le {doc.uploadDate}
+            {documents.map((doc) => {
+              const isDownloading = !!downloadingIds[doc.id];
+
+              return (
+                <li key={doc.id}>
+                  <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+                    <div className="flex items-center">
+                      <FileText className="flex-shrink-0 h-10 w-10 text-primary" aria-hidden="true" />
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {doc.type} • Ajouté le {doc.uploadDate}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="ml-4 flex-shrink-0 flex items-center space-x-2">
-                    {doc.leaseData && (
-                      <DownloadContractButton
-                        contractData={getContractData(doc.leaseData)}
-                        buttonText="Télécharger"
-                        variant="outline"
-                        size="sm"
-                      />
-                    )}
+                    <div className="ml-4 flex-shrink-0 flex items-center space-x-2">
+                      {/* ✅ Download inline directement ici */}
+                      {doc.leaseData?.uuid && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadContract(doc)}
+                          disabled={isDownloading}
+                          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                            ${isDownloading ? "bg-gray-200 text-gray-600 cursor-not-allowed" : "bg-white border border-gray-200 hover:bg-gray-50 text-gray-900"}
+                          `}
+                          title="Télécharger le contrat"
+                        >
+                          {isDownloading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Téléchargement...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4" />
+                              Télécharger
+                            </>
+                          )}
+                        </button>
+                      )}
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteDoc(doc.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Supprimer</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDoc(doc.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Supprimer</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

@@ -15,7 +15,7 @@ class Property extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'uuid', 'landlord_id', 'type', 'name', 'description', 'reference_code',
+        'uuid', 'landlord_id', 'user_id', 'type', 'name', 'description', 'reference_code',
         'address', 'district', 'city', 'state', 'zip_code', 'latitude', 'longitude',
         'surface', 'room_count', 'bedroom_count', 'bathroom_count',
         'rent_amount', 'charges_amount', 'status', 'amenities', 'photos', 'meta'
@@ -45,6 +45,11 @@ class Property extends Model
     }
 
     // ========== RELATIONS ==========
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function landlord(): BelongsTo
     {
