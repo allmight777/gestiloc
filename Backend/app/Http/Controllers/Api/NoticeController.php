@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class NoticeController extends Controller
 {
@@ -23,12 +24,11 @@ class NoticeController extends Controller
             'roles' => method_exists($user, 'getRoleNames') ? $user->getRoleNames() : null,
         ]);
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        if (!$user) return response()->json(['message' => 'Unauthenticated.'], 401);
 
+        // ✅ Bailleur
         if (method_exists($user, 'hasRole') && $user->hasRole('landlord')) {
-            $notices = Notice::with(['property', 'tenant'])
+            $notices = Notice::with(['property', 'tenant.user', 'landlord'])
                 ->where('landlord_id', $user->id)
                 ->latest()
                 ->get();
@@ -36,15 +36,29 @@ class NoticeController extends Controller
             return response()->json($notices);
         }
 
-        // locataire (si tu veux plus tard)
-        $notices = Notice::with(['property', 'landlord'])
-            ->where('tenant_id', $user->id) // ⚠️ si tenant est une table séparée, à adapter (ex: tenant.user_id)
-            ->latest()
-            ->get();
+        // ✅ Locataire
+        if (method_exists($user, 'hasRole') && $user->hasRole('tenant')) {
+            $tenant = $user->tenant;
+            if (!$tenant) {
+                return response()->json(['message' => 'Tenant profile not found for this user.'], 422);
+            }
 
-        return response()->json($notices);
+            $notices = Notice::with(['property', 'tenant.user', 'landlord'])
+                ->where('tenant_id', $tenant->id)
+                ->latest()
+                ->get();
+
+            return response()->json($notices);
+        }
+
+        return response()->json(['message' => 'Forbidden'], 403);
     }
 
+    /**
+     * store gère 2 cas :
+     * - landlord => crée un préavis bailleur
+     * - tenant   => crée une demande de préavis locataire
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -56,166 +70,189 @@ class NoticeController extends Controller
             'payload' => $request->all(),
         ]);
 
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        if (!$user) return response()->json(['message' => 'Unauthenticated.'], 401);
 
-        $validator = Validator::make($request->all(), [
-            'property_id'  => 'required|exists:properties,id',
-            'lease_id'     => 'nullable|exists:leases,id',
+        // =========================
+        // CASE 1: TENANT CREATES
+        // =========================
+        if (method_exists($user, 'hasRole') && $user->hasRole('tenant')) {
+            $tenant = $user->tenant;
+            if (!$tenant) {
+                return response()->json(['message' => 'Tenant profile not found for this user.'], 422);
+            }
 
-            // ✅ tenant_id doit référencer tenants.id (et ta FK aussi)
-            'tenant_id'    => 'nullable|exists:tenants,id',
-
-            'type'         => 'required|in:landlord,tenant',
-            'reason'       => 'required|string|max:1000',
-            'notice_date'  => 'required|date',
-            'end_date'     => 'required|date|after:notice_date',
-            'notes'        => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('[NoticeController@store] validation failed', [
-                'errors' => $validator->errors()->toArray(),
+            $validator = Validator::make($request->all(), [
+                'lease_id'    => ['required', 'exists:leases,id'],
+                'reason'      => ['required', 'string', 'max:1000'],
+                'end_date'    => ['required', 'date', 'after:today'],
+                'notes'       => ['nullable', 'string', 'max:1000'],
+                'notice_date' => ['nullable', 'date'],
             ]);
 
-            return response()->json([
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation error',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
 
-        $property = Property::find($request->property_id);
+            // ✅ IMPORTANT: on charge landlord_id depuis le bail
+            $lease = Lease::with('property')->find($request->lease_id);
+            if (!$lease) return response()->json(['message' => 'Lease not found'], 404);
 
-        Log::info('[NoticeController@store] property lookup', [
-            'property_found' => (bool) $property,
-            'property_id' => $property?->id,
-            'property_landlord_id' => $property?->landlord_id,
-            'property_user_id' => $property?->user_id,
-        ]);
+            // ✅ sécurité: ce bail appartient bien à ce tenant (leases.tenant_id = tenants.id)
+            if ((int)$lease->tenant_id !== (int)$tenant->id) {
+                return response()->json(['message' => 'Forbidden (lease does not belong to tenant)'], 403);
+            }
 
-        if (!$property) {
-            return response()->json(['message' => 'Property not found'], 404);
-        }
+            $property = $lease->property ?: Property::find($lease->property_id);
+            if (!$property) return response()->json(['message' => 'Property not found'], 404);
 
-        // ✅ ownership tolérant (user_id OU landlord_id)
-        $ownerByUserId = isset($property->user_id) && ((int)$property->user_id === (int)$user->id);
-        $ownerByLandlordId = isset($property->landlord_id) && ((int)$property->landlord_id === (int)$user->id);
+            // ✅ landlord_id DOIT être un users.id => on utilise lease.landlord_id en priorité
+            $landlordId = $lease->landlord_id ?? null;
 
-        if (!is_null($property->user_id) && !is_null($property->landlord_id) && (int)$property->user_id !== (int)$property->landlord_id) {
-            Log::warning('[NoticeController@store] property owner fields mismatch', [
-                'property_id' => $property->id,
-                'property_user_id' => $property->user_id,
-                'property_landlord_id' => $property->landlord_id,
-                'auth_id' => $user->id,
-                'ownerByUserId' => $ownerByUserId,
-                'ownerByLandlordId' => $ownerByLandlordId,
-            ]);
-        }
+            // fallback (si ton schema n’a pas lease.landlord_id)
+            if (!$landlordId) {
+                if (!empty($property->user_id)) $landlordId = (int)$property->user_id;
+                // ⚠️ property->landlord_id seulement si c’est bien users.id
+                if (!$landlordId && !empty($property->landlord_id)) $landlordId = (int)$property->landlord_id;
+            }
 
-        Log::info('[NoticeController@store] ownership check', [
-            'auth_id' => $user->id,
-            'ownerByUserId' => $ownerByUserId,
-            'ownerByLandlordId' => $ownerByLandlordId,
-        ]);
+            if (!$landlordId) {
+                return response()->json([
+                    'message' => 'Impossible de déterminer le propriétaire (landlord_id) depuis le bail / bien.'
+                ], 422);
+            }
 
-        if (!$ownerByUserId && !$ownerByLandlordId) {
-            Log::warning('[NoticeController@store] forbidden - property not owned by auth user', [
-                'auth_id' => $user->id,
-                'property_id' => $property->id,
-                'property_landlord_id' => $property->landlord_id ?? null,
-                'property_user_id' => $property->user_id ?? null,
-            ]);
-
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        // ✅ On veut : sélectionner un bail/une location, et auto récupérer le tenant_id
-        $tenantId = $request->tenant_id;
-
-        if (!$tenantId) {
-            if ($request->filled('lease_id')) {
-                $lease = Lease::find($request->lease_id);
-
-                Log::info('[NoticeController@store] lease lookup', [
-                    'lease_found' => (bool) $lease,
-                    'lease_id' => $lease?->id,
-                    'lease_property_id' => $lease?->property_id,
-                    'lease_tenant_id' => $lease?->tenant_id,
+            try {
+                $notice = Notice::create([
+                    'property_id'  => (int)$property->id,
+                    'landlord_id'  => (int)$landlordId,    // ✅ FIX FK
+                    'tenant_id'    => (int)$tenant->id,
+                    'type'         => 'tenant',
+                    'reason'       => $request->reason,
+                    'notice_date'  => $request->notice_date ?: now()->toDateString(),
+                    'end_date'     => $request->end_date,
+                    'status'       => 'pending',
+                    'notes'        => $request->notes,
                 ]);
 
-                if (!$lease) return response()->json(['message' => 'Lease not found'], 404);
-
-                if ((int)$lease->property_id !== (int)$property->id) {
-                    return response()->json(['message' => 'Lease does not belong to this property'], 422);
-                }
-
-                $tenantId = $lease->tenant_id;
-            } else {
-                $lease = Lease::where('property_id', $property->id)
-                    ->where('status', 'active')
-                    ->latest()
-                    ->first();
-
-                Log::info('[NoticeController@store] active lease lookup', [
-                    'found' => (bool) $lease,
-                    'lease_id' => $lease?->id,
-                    'tenant_id' => $lease?->tenant_id,
+                return response()->json($notice->load(['property', 'tenant.user', 'landlord']), 201);
+            } catch (\Throwable $e) {
+                Log::error('[NoticeController@store tenant] DB error', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'resolved' => [
+                        'property_id' => $property->id,
+                        'tenant_id' => $tenant->id,
+                        'landlord_id' => $landlordId,
+                        'lease_id' => $lease->id,
+                    ],
                 ]);
 
-                if (!$lease) {
-                    return response()->json([
-                        'message' => 'Aucun bail actif trouvé pour ce bien. Fournis lease_id ou tenant_id.'
-                    ], 422);
-                }
-
-                $tenantId = $lease->tenant_id;
+                return response()->json([
+                    'message' => 'Erreur lors de la création du préavis',
+                    'error' => $e->getMessage(),
+                ], 500);
             }
         }
 
-        Log::info('[NoticeController@store] resolved tenant_id', [
-            'tenant_id' => $tenantId,
-        ]);
-
-        try {
-            $notice = Notice::create([
-                'property_id' => $property->id,
-                'landlord_id' => $user->id,
-                'tenant_id' => $tenantId,
-                'type' => $request->type,
-                'reason' => $request->reason,
-                'notice_date' => $request->notice_date,
-                'end_date' => $request->end_date,
-                'status' => 'pending',
-                'notes' => $request->notes,
+        // =========================
+        // CASE 2: LANDLORD CREATES
+        // =========================
+        if (method_exists($user, 'hasRole') && $user->hasRole('landlord')) {
+            $validator = Validator::make($request->all(), [
+                'property_id'  => 'required|exists:properties,id',
+                'lease_id'     => 'nullable|exists:leases,id',
+                'tenant_id'    => 'nullable|exists:tenants,id',
+                'reason'       => 'required|string|max:1000',
+                'notice_date'  => 'required|date',
+                'end_date'     => 'required|date|after:notice_date',
+                'notes'        => 'nullable|string|max:1000',
+                'type'         => ['nullable', Rule::in(['landlord', 'tenant'])],
             ]);
 
-            Log::info('[NoticeController@store] notice created', [
-                'notice_id' => $notice->id,
-                'property_id' => $notice->property_id,
-                'landlord_id' => $notice->landlord_id,
-                'tenant_id' => $notice->tenant_id,
-            ]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
 
-            return response()->json($notice->load('property', 'tenant'), 201);
-        } catch (\Throwable $e) {
-            Log::error('[NoticeController@store] DB error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'payload' => [
-                    'property_id' => $property->id,
-                    'landlord_id' => $user->id,
-                    'tenant_id' => $tenantId,
-                ],
-            ]);
+            $property = Property::find($request->property_id);
+            if (!$property) return response()->json(['message' => 'Property not found'], 404);
 
-            return response()->json([
-                'message' => 'Erreur lors de la création du préavis',
-                'error' => $e->getMessage(),
-            ], 500);
+            // ✅ ownership tolérant (user_id OU landlord_id)
+            $ownerByUserId = isset($property->user_id) && ((int)$property->user_id === (int)$user->id);
+            $ownerByLandlordId = isset($property->landlord_id) && ((int)$property->landlord_id === (int)$user->id);
+
+            if (!$ownerByUserId && !$ownerByLandlordId) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            $tenantId = $request->tenant_id;
+
+            if (!$tenantId) {
+                if ($request->filled('lease_id')) {
+                    $lease = Lease::find($request->lease_id);
+                    if (!$lease) return response()->json(['message' => 'Lease not found'], 404);
+
+                    if ((int)$lease->property_id !== (int)$property->id) {
+                        return response()->json(['message' => 'Lease does not belong to this property'], 422);
+                    }
+
+                    $tenantId = $lease->tenant_id;
+                } else {
+                    $lease = Lease::where('property_id', $property->id)
+                        ->where('status', 'active')
+                        ->latest()
+                        ->first();
+
+                    if (!$lease) {
+                        return response()->json([
+                            'message' => 'Aucun bail actif trouvé pour ce bien. Fournis lease_id ou tenant_id.'
+                        ], 422);
+                    }
+
+                    $tenantId = $lease->tenant_id;
+                }
+            }
+
+            try {
+                $notice = Notice::create([
+                    'property_id' => (int)$property->id,
+                    'landlord_id' => (int)$user->id,
+                    'tenant_id'   => (int)$tenantId,
+                    'type'        => 'landlord',
+                    'reason'      => $request->reason,
+                    'notice_date' => $request->notice_date,
+                    'end_date'    => $request->end_date,
+                    'status'      => 'pending',
+                    'notes'       => $request->notes,
+                ]);
+
+                return response()->json($notice->load(['property', 'tenant.user', 'landlord']), 201);
+            } catch (\Throwable $e) {
+                Log::error('[NoticeController@store landlord] DB error', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Erreur lors de la création du préavis',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
         }
+
+        return response()->json(['message' => 'Forbidden'], 403);
     }
 
+    /**
+     * update:
+     * - bailleur peut changer status + notes
+     * - locataire peut annuler son préavis (pending -> cancelled) + notes
+     */
     public function update(Request $request, Notice $notice)
     {
         $user = Auth::user();
@@ -228,20 +265,35 @@ class NoticeController extends Controller
 
         if (!$user) return response()->json(['message' => 'Unauthenticated.'], 401);
 
-        if ((int)$user->id !== (int)$notice->landlord_id) {
+        $isLandlord = method_exists($user, 'hasRole') && $user->hasRole('landlord');
+        $isTenant   = method_exists($user, 'hasRole') && $user->hasRole('tenant');
+
+        $tenantId = $user->tenant?->id;
+
+        $canLandlord = $isLandlord && ((int)$user->id === (int)$notice->landlord_id);
+        $canTenant   = $isTenant && $tenantId && ((int)$tenantId === (int)$notice->tenant_id);
+
+        if (!$canLandlord && !$canTenant) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $validator = Validator::make($request->all(), [
-            'status' => 'sometimes|required|in:pending,confirmed,cancelled',
-            'notes'  => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('[NoticeController@update] validation failed', [
-                'errors' => $validator->errors()->toArray(),
+        if ($canLandlord) {
+            $validator = Validator::make($request->all(), [
+                'status' => 'sometimes|required|in:pending,confirmed,cancelled',
+                'notes'  => 'nullable|string|max:1000',
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'status' => 'sometimes|required|in:cancelled',
+                'notes'  => 'nullable|string|max:1000',
             ]);
 
+            if ($request->filled('status') && $notice->status !== 'pending') {
+                return response()->json(['message' => 'Impossible de modifier un préavis non "pending".'], 422);
+            }
+        }
+
+        if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $validator->errors(),
@@ -250,7 +302,7 @@ class NoticeController extends Controller
 
         $notice->update($request->only(['status', 'notes']));
 
-        return response()->json($notice->load('property', 'tenant'));
+        return response()->json($notice->load(['property', 'tenant.user', 'landlord']));
     }
 
     public function destroy(Notice $notice)
@@ -264,7 +316,15 @@ class NoticeController extends Controller
 
         if (!$user) return response()->json(['message' => 'Unauthenticated.'], 401);
 
-        if ((int)$user->id !== (int)$notice->landlord_id) {
+        $isLandlord = method_exists($user, 'hasRole') && $user->hasRole('landlord');
+        $isTenant   = method_exists($user, 'hasRole') && $user->hasRole('tenant');
+
+        $tenantId = $user->tenant?->id;
+
+        $canLandlord = $isLandlord && ((int)$user->id === (int)$notice->landlord_id);
+        $canTenant   = $isTenant && $tenantId && ((int)$tenantId === (int)$notice->tenant_id);
+
+        if (!$canLandlord && !$canTenant) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 

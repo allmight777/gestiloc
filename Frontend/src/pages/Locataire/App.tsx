@@ -6,55 +6,86 @@ import { Payments } from './components/Payments';
 import { Messages } from './components/Messages';
 import { Interventions } from './components/Interventions';
 import { Documents } from './components/Documents';
-import { Property } from './components/Property';
+import Property from './components/Property'; // ✅ FIX ICI
 import { Lease } from './components/Lease';
 import { Profile } from './components/Profile';
 import { Tab, ToastMessage } from './types';
 import { Toaster } from '@/components/ui/toaster';
+import TenantPreavisPage from './components/TenantPreavisPage';
 
 // Wrapper pour gérer la navigation et les états partagés
+interface UserData {
+  id: number;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  roles: string[];
+  default_role: string | null;
+}
+
 const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  
+  const [user, setUser] = useState<UserData | null>(null);
+
   // Récupère l'onglet actif à partir de l'URL
   const getActiveTab = useCallback((): Tab => {
-    // Nettoyer le chemin en supprimant les slashes et en prenant le dernier segment non vide
     const segments = location.pathname.split('/').filter(segment => segment);
     const locataireIndex = segments.indexOf('locataire');
-    const lastSegment = locataireIndex >= 0 && locataireIndex < segments.length - 1 
-      ? segments[locataireIndex + 1] 
-      : 'home';
-    
-    // Vérifier si le segment correspond à un onglet valide
-    const validTabs: Tab[] = ['home', 'payments', 'messages', 'interventions', 'documents', 'lease', 'property', 'profile'];
-    return validTabs.includes(lastSegment as Tab) ? lastSegment as Tab : 'home';
+    const lastSegment =
+      locataireIndex >= 0 && locataireIndex < segments.length - 1
+        ? segments[locataireIndex + 1]
+        : 'home';
+
+    const validTabs: Tab[] = [
+      'home',
+      'payments',
+      'messages',
+      'interventions',
+      'documents',
+      'lease',
+      'property',
+      'profile',
+    ];
+
+    return validTabs.includes(lastSegment as Tab) ? (lastSegment as Tab) : 'home';
   }, [location.pathname]);
 
   const [activeTab, setActiveTab] = useState<Tab>(getActiveTab());
-  
-  // Met à jour l'onglet actif quand l'URL change
+
   useEffect(() => {
     const newActiveTab = getActiveTab();
-    if (newActiveTab !== activeTab) {
-      setActiveTab(newActiveTab);
-    }
+    if (newActiveTab !== activeTab) setActiveTab(newActiveTab);
   }, [getActiveTab, activeTab]);
-  
-  // Gestionnaire de navigation qui met à jour l'URL
-  const handleNavigation = useCallback((tab: Tab) => {
-    navigate(`/locataire/${tab}`);
-  }, [navigate]);
-  
+
+  const handleNavigation = useCallback(
+    (tab: Tab) => {
+      navigate(`/locataire/${tab}`);
+    },
+    [navigate]
+  );
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (!userData) return;
+
+    try {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+    } catch (error) {
+      console.error('Erreur lors de la lecture des données utilisateur:', error);
+    }
+  }, []);
+
   // Theme Management
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check local storage or system preference
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
@@ -87,22 +118,27 @@ const AppContent = () => {
   };
 
   const handleLogout = () => {
-    notify("Déconnexion en cours...", "info");
+    notify('Déconnexion en cours...', 'info');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null);
+
     setTimeout(() => {
-        navigate('/locataire/home');
-        notify("Vous êtes maintenant déconnecté (Simulation)", "success");
+      navigate('/login');
+      notify('Vous êtes maintenant déconnecté', 'success');
     }, 1000);
   };
 
   return (
-    <Layout 
-      activeTab={activeTab} 
-      onNavigate={handleNavigation} 
-      toasts={toasts} 
+    <Layout
+      activeTab={activeTab}
+      onNavigate={handleNavigation}
+      toasts={toasts}
       removeToast={removeToast}
       onLogout={handleLogout}
       isDarkMode={isDarkMode}
       toggleTheme={toggleTheme}
+      user={user}
     >
       <Routes>
         <Route index element={<Dashboard onNavigate={handleNavigation} notify={notify} />} />
@@ -113,15 +149,17 @@ const AppContent = () => {
         <Route path="documents" element={<Documents notify={notify} />} />
         <Route path="lease" element={<Lease notify={notify} />} />
         <Route path="property" element={<Property notify={notify} />} />
+        <Route path="notice" element={<TenantPreavisPage notify={notify} />} />
         <Route path="profile" element={<Profile notify={notify} onLogout={handleLogout} />} />
-        {/* Redirection pour les routes inconnues vers la page d'accueil */}
         <Route path="*" element={<Navigate to="home" replace />} />
       </Routes>
+
+      {/* Si tu utilises shadcn toaster, garde-le ici */}
+      <Toaster />
     </Layout>
   );
 };
 
-// Le composant AppContent gère déjà le routage interne
 const App: React.FC = () => {
   return <AppContent />;
 };

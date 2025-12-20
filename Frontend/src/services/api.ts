@@ -1091,14 +1091,15 @@ export const rentReceiptService = {
     return response.data;
   },
 
-  // ✅ PDF
-  downloadPdf: async (id: number): Promise<Blob> => {
-    await initializeCsrfToken();
-    const response = await api.get(`/rent-receipts/${id}/pdf`, {
-      responseType: "blob",
-    });
-    return new Blob([response.data], { type: "application/pdf" });
-  },
+  // ✅ PDF quittance indépendante
+downloadPdf: async (id: number): Promise<Blob> => {
+  await initializeCsrfToken();
+  const response = await api.get(`/quittance-independent/${id}`, {
+    responseType: "blob",
+  });
+  return new Blob([response.data], { type: "application/pdf" });
+},
+
 };
 
 

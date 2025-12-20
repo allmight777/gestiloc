@@ -7,33 +7,51 @@ use App\Http\Requests\StorePropertyRequest;
 use App\Models\Property;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends Controller
 {
-    // List properties (admin => all, landlord => own)
+    /**
+     * GET /api/properties
+     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
 
         if ($user->isAdmin()) {
-            $props = Property::paginate(20);
-        } elseif ($user->isLandlord()) {
-            $landlord = $user->landlord;
-            $props = $landlord ? $landlord->properties()->paginate(20) : collect([]);
-        } else {
-            return response()->json(['message' => 'Forbidden'], 403);
+            return response()->json(
+                Property::latest()->paginate(20)
+            );
         }
 
-        return response()->json($props);
+        if ($user->isLandlord()) {
+            $landlord = $user->landlord;
+
+            if (! $landlord) {
+                return response()->json([
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                ]);
+            }
+
+            return response()->json(
+                $landlord->properties()->latest()->paginate(20)
+            );
+        }
+
+        return response()->json(['message' => 'Forbidden'], 403);
     }
 
-    // Store a property (landlord only)
+    /**
+     * POST /api/properties
+     */
     public function store(StorePropertyRequest $request): JsonResponse
     {
         $user = $request->user();
 
-        if (!$user->isLandlord()) {
+        if (! $user->isLandlord()) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
@@ -43,63 +61,83 @@ class PropertyController extends Controller
         }
 
         $data = $request->validated();
+
+        // Sécurité serveur
         $data['landlord_id'] = $landlord->id;
-        $data['user_id'] = $user->id; // Ajout de l'ID de l'utilisateur
+        $data['user_id'] = $user->id;
 
         $property = Property::create($data);
 
         return response()->json($property, 201);
     }
 
-    // Show
+    /**
+     * GET /api/properties/{id}
+     */
     public function show(Request $request, $id): JsonResponse
     {
         $property = Property::findOrFail($id);
         $user = $request->user();
 
-        // Check ownership using isLandlord method
+        if ($user->isAdmin()) {
+            return response()->json($property);
+        }
+
         if ($user->isLandlord()) {
             if (! $user->landlord || $property->landlord_id !== $user->landlord->id) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
-        } elseif (!$user->isAdmin()) {
-            return response()->json(['message' => 'Forbidden'], 403);
+
+            return response()->json($property);
         }
 
-        return response()->json($property);
+        return response()->json(['message' => 'Forbidden'], 403);
     }
 
-    // Update
+    /**
+     * PUT /api/properties/{id}
+     */
     public function update(StorePropertyRequest $request, $id): JsonResponse
     {
         $property = Property::findOrFail($id);
         $user = $request->user();
 
-        if ($user->isLandlord()) {
+        if (! $user->isAdmin()) {
+            if (! $user->isLandlord()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
             if (! $user->landlord || $property->landlord_id !== $user->landlord->id) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
-        } elseif (!$user->isAdmin()) {
-            return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $property->update($request->validated());
+        $data = $request->validated();
 
-        return response()->json($property);
+        // 🔒 Protection anti-mass assignment
+        unset($data['landlord_id'], $data['user_id']);
+
+        $property->update($data);
+
+        return response()->json($property->fresh());
     }
 
-    // Destroy
+    /**
+     * DELETE /api/properties/{id}
+     */
     public function destroy(Request $request, $id): JsonResponse
     {
         $property = Property::findOrFail($id);
         $user = $request->user();
 
-        if ($user->isLandlord()) {
+        if (! $user->isAdmin()) {
+            if (! $user->isLandlord()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
             if (! $user->landlord || $property->landlord_id !== $user->landlord->id) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
-        } elseif (!$user->isAdmin()) {
-            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         $property->delete();

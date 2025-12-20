@@ -6,127 +6,127 @@ use App\Http\Controllers\Controller;
 use App\Models\RentReceipt;
 use App\Models\Invoice;
 use App\Models\Lease;
-use App\Models\Property;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PdfController extends Controller
 {
-    protected $pdfService;
+    protected PdfService $pdfService;
 
     public function __construct(PdfService $pdfService)
     {
         $this->pdfService = $pdfService;
     }
 
-    /**
-     * Génère une quittance PDF pour une facture payée
-     */
     public function generateQuittance($id)
     {
         try {
             $invoice = Invoice::with(['lease.property.landlord.user', 'lease.tenant.user', 'lease'])
                 ->findOrFail($id);
 
-            // Vérifier que la facture est payée
             if ($invoice->status !== 'paid') {
                 return response()->json([
                     'message' => 'Seules les factures payées peuvent générer une quittance'
                 ], 400);
             }
 
-            // Générer le PDF
             $tempPath = $this->pdfService->generateInvoicePdf($invoice, 'quittance');
-            
-            // Récupérer le contenu
+
             $pdfContent = Storage::get($tempPath);
-            
-            // Nettoyer le fichier temporaire
             Storage::delete($tempPath);
 
             return response($pdfContent)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', "attachment; filename=quittance_{$invoice->invoice_number}.pdf");
-                
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la génération de la quittance',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * ✅ Quittance indépendante (bailleur)
+     * Route: GET /api/quittance-independent/{id}
+     */
     public function generateIndependentRentReceipt($id)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    Log::info('[PdfController@generateIndependentRentReceipt] incoming', [
-        'auth_id' => $user?->id,
-        'receipt_id' => $id,
-    ]);
-
-    $receipt = RentReceipt::with(['property', 'tenant', 'landlord', 'lease'])->findOrFail($id);
-
-    if (!$user || !$user->hasRole('landlord') || (int)$receipt->landlord_id !== (int)$user->id) {
-        Log::warning('[PdfController@generateIndependentRentReceipt] forbidden', [
-            'auth_id' => $user?->id,
-            'receipt_landlord_id' => $receipt->landlord_id,
+        Log::info('[PdfController@generateIndependentRentReceipt] incoming', [
+            'auth_id'    => $user?->id,
+            'roles'      => $user?->roles?->pluck('name'),
+            'receipt_id' => $id,
         ]);
-        return response()->json(['message' => 'Forbidden'], 403);
+
+        $receipt = RentReceipt::with([
+            'property',
+            'tenant',   // User
+            'landlord', // User
+            'lease',
+            'lease.tenant',
+            'lease.tenant.user',
+            'lease.property',
+            'lease.property.landlord',
+            'lease.property.landlord.user',
+        ])->findOrFail($id);
+
+        // ✅ Vérif role uniquement
+        if (!$user || !$user->hasRole('landlord')) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // ✅ IMPORTANT : ici on compare users.id vs users.id
+        if ((int) $receipt->landlord_id !== (int) $user->id) {
+            Log::warning('[PdfController@generateIndependentRentReceipt] forbidden', [
+                'auth_id'            => $user->id,
+                'receipt_landlord_id'=> $receipt->landlord_id,
+                'expected_landlord_id'=> $user->id,
+            ]);
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // ✅ View : attention dossier "pdfs" (avec s)
+        $pdf = \PDF::loadView('pdfs.rent_receipt_independent', [
+            'receipt' => $receipt
+        ]);
+
+        $filename = "quittance-{$receipt->year}-" . str_pad($receipt->month, 2, '0', STR_PAD_LEFT) . "-{$receipt->reference}.pdf";
+
+        return $pdf->download($filename);
     }
 
-    // ⚠️ Adapte selon ton moteur PDF actuel (Dompdf / Snappy).
-    // Exemple Dompdf (barryvdh/laravel-dompdf):
-    $pdf = \PDF::loadView('pdf.rent_receipt_independent', [
-        'receipt' => $receipt
-    ]);
-
-    $filename = "quittance-{$receipt->year}-" . str_pad($receipt->month, 2, '0', STR_PAD_LEFT) . "-{$receipt->reference}.pdf";
-
-    return $pdf->download($filename);
-}
-
-    /**
-     * Génère un avis d'échéance pour une facture impayée
-     */
     public function generateAvisEcheance($id)
     {
         try {
             $invoice = Invoice::with(['lease.property.landlord.user', 'lease.tenant.user', 'lease'])
                 ->findOrFail($id);
 
-            // Vérifier que la facture n'est pas payée
             if ($invoice->status === 'paid') {
                 return response()->json([
                     'message' => 'Les factures payées ne peuvent pas générer d\'avis d\'échéance'
                 ], 400);
             }
 
-            // Générer le PDF
             $tempPath = $this->pdfService->generateInvoicePdf($invoice, 'avis_echeance');
-            
-            // Récupérer le contenu
+
             $pdfContent = Storage::get($tempPath);
-            
-            // Nettoyer le fichier temporaire
             Storage::delete($tempPath);
 
             return response($pdfContent)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', "attachment; filename=avis_echeance_{$invoice->invoice_number}.pdf");
-                
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la génération de l\'avis d\'échéance',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Génère un contrat de bail PDF
-     */
     public function generateLeaseContract($uuid)
     {
         try {
@@ -134,15 +134,14 @@ class PdfController extends Controller
                 ->where('uuid', $uuid)
                 ->firstOrFail();
 
-            // Vérifier que l'utilisateur a les droits sur ce bail
             $user = auth()->user();
             $hasAccess = false;
 
-            if ($user->isLandlord() && $user->landlord) {
-                $hasAccess = $lease->property->landlord_id === $user->landlord->id;
-            } elseif ($user->isTenant() && $user->tenant) {
-                $hasAccess = $lease->tenant_id === $user->tenant->id;
-            } elseif ($user->isAdmin()) {
+            if ($user && $user->isLandlord() && $user->landlord) {
+                $hasAccess = (int) $lease->property->landlord_id === (int) $user->landlord->id;
+            } elseif ($user && $user->isTenant() && $user->tenant) {
+                $hasAccess = (int) $lease->tenant_id === (int) $user->tenant->id;
+            } elseif ($user && $user->isAdmin()) {
                 $hasAccess = true;
             }
 
@@ -150,68 +149,54 @@ class PdfController extends Controller
                 return response()->json(['message' => 'Accès non autorisé'], 403);
             }
 
-            // Générer le PDF
             $tempPath = $this->pdfService->generateLeaseContractPdf($lease);
-            
-            // Récupérer le contenu
+
             $pdfContent = Storage::get($tempPath);
-            
-            // Nettoyer le fichier temporaire
             Storage::delete($tempPath);
 
             return response($pdfContent)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', "attachment; filename=contrat_bail_{$lease->lease_number}.pdf");
-                
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la génération du contrat',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Génère un document récapitulatif pour le bailleur
-     */
     public function generateLandlordSummary(Request $request)
     {
         try {
             $user = auth()->user();
-            
-            if (!$user->isLandlord() || !$user->landlord) {
+
+            if (!$user || !$user->isLandlord() || !$user->landlord) {
                 return response()->json(['message' => 'Accès réservé aux bailleurs'], 403);
             }
 
-            // Données pour le résumé
             $data = [
-                'monthly_revenue' => 0,
+                'monthly_revenue'  => 0,
                 'pending_invoices' => []
             ];
 
-            // Générer le PDF
             $tempPath = $this->pdfService->generateLandlordSummaryPdf($user->landlord, $data);
-            
-            // Récupérer le contenu
+
             $pdfContent = Storage::get($tempPath);
-            
-            // Nettoyer le fichier temporaire
             Storage::delete($tempPath);
 
             $filename = sprintf(
                 'recap_bailleur_%s_%s.pdf',
-                $user->landlord->last_name,
+                $user->landlord->last_name ?? 'bailleur',
                 now()->format('Y-m-d')
             );
 
             return response($pdfContent)
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', "attachment; filename={$filename}");
-                
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Erreur lors de la génération du récapitulatif',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }

@@ -144,4 +144,20 @@ class TenantController extends Controller
     ]);
 }
 
+// app/Http/Controllers/Api/TenantLeaseController.php
+public function myLeases(Request $request)
+{
+    $user = $request->user();
+    
+    if (!$user->isTenant()) {
+        return response()->json(['message' => 'Forbidden'], 403);
+    }
+
+    $leases = Lease::with(['property', 'property.landlord'])
+        ->where('tenant_id', $user->tenant->id)
+        ->get();
+
+    return response()->json($leases);
+}
+
 }

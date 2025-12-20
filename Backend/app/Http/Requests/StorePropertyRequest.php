@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePropertyRequest extends FormRequest
 {
@@ -14,11 +15,21 @@ class StorePropertyRequest extends FormRequest
 
     public function rules(): array
     {
+        /**
+         * IMPORTANT
+         * Compatible avec :
+         * - PUT /properties/{id}
+         * - PUT /properties/{property} (model binding)
+         */
+        $routeProperty = $this->route('property');
+        $propertyId = is_object($routeProperty) ? $routeProperty->id : $routeProperty;
+        $propertyId = $propertyId ?: $this->route('id');
+
         return [
-            // Type de bien (doit matcher ce que tu utilises côté front)
+            // Type de bien
             'type' => 'required|string|in:apartment,house,office,commercial,parking,other',
 
-            // Titre / nom du bien : on accepte title OU name
+            // Nom / Titre
             'title' => 'nullable|string|max:255|required_without:name',
             'name'  => 'nullable|string|max:255|required_without:title',
 
@@ -36,7 +47,7 @@ class StorePropertyRequest extends FormRequest
             'latitude'  => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
 
-            // Détails techniques
+            // Caractéristiques
             'surface'        => 'nullable|numeric|min:0|max:9999.99',
             'room_count'     => 'nullable|integer|min:0',
             'bedroom_count'  => 'nullable|integer|min:0',
@@ -46,40 +57,46 @@ class StorePropertyRequest extends FormRequest
             'rent_amount'    => 'nullable|numeric|min:0|max:999999.99',
             'charges_amount' => 'nullable|numeric|min:0|max:999999.99',
 
-            // Statut : bien aligné avec la migration
+            // Statut
             'status' => 'required|in:available,rented,maintenance,off_market',
 
-            // Référence interne
-            'reference_code' => 'nullable|string|regex:/^[A-Z0-9\-]+$/|max:50|unique:properties,reference_code',
+            /**
+             * ✅ FIX MAJEUR
+             * unique MAIS on ignore l’ID du bien en cours (UPDATE)
+             */
+            'reference_code' => [
+                'nullable',
+                'string',
+                'regex:/^[A-Z0-9\-]+$/',
+                'max:50',
+                Rule::unique('properties', 'reference_code')->ignore($propertyId),
+            ],
 
             // Amenities
             'amenities'   => 'nullable|array',
             'amenities.*' => 'string',
 
-            // Photos (ton front envoie un tableau d’URL, pas des fichiers ici)
+            // Photos (URLs)
             'photos'   => 'nullable|array',
-            'photos.*' => 'string', // ou 'url' si tu veux strict
+            'photos.*' => 'string',
 
-            // Meta (JSON libre)
+            // Meta
             'meta' => 'nullable|array',
         ];
     }
 
     protected function prepareForValidation(): void
-{
-    // On recopie le titre dans name si besoin
-    $this->merge([
-        'name' => $this->input('name') ?? $this->input('title'),
-    ]);
-
-    // Si charges_amount est vide ou null → on met 0
-    $charges = $this->input('charges_amount');
-
-    if ($charges === null || $charges === '') {
+    {
+        // Si title est fourni → on le copie dans name
         $this->merge([
-            'charges_amount' => 0,
+            'name' => $this->input('name') ?? $this->input('title'),
         ]);
-    }
-}
 
+        // charges_amount vide → 0
+        if ($this->input('charges_amount') === null || $this->input('charges_amount') === '') {
+            $this->merge([
+                'charges_amount' => 0,
+            ]);
+        }
+    }
 }

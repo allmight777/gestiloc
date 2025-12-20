@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Invoice;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -72,8 +73,13 @@ class Lease extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    // Si vous implémentez les factures plus tard
-    // public function invoices(): HasMany { return $this->hasMany(Invoice::class); }
+    /**
+     * Relation avec les factures du bail
+     */
+    public function invoices(): HasMany 
+    { 
+        return $this->hasMany(Invoice::class); 
+    }
 
     // Accesseur : Calcul du total mensuel (Loyer + Charges)
     public function getTotalRentAttribute()

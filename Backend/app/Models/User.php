@@ -48,13 +48,13 @@ class User extends Authenticatable
         return $this->hasRole('landlord');
     }
 
-    public function isAdmin(): bool
-    {
-        return $this->hasRole('admin');
-    }
-
     public function isTenant(): bool
     {
         return $this->hasRole('tenant');
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
     }
 }

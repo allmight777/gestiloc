@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ReactDOM from "react-dom";
 import { Plus, RefreshCw, Download, Eye, X, CheckCircle2 } from "lucide-react";
 import { leaseService, rentReceiptService, contractService } from "@/services/api";
 
@@ -22,6 +23,11 @@ type RentReceipt = {
   tenant?: { id: number; first_name?: string | null; last_name?: string | null; email?: string | null };
   lease?: any;
 };
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+  if (typeof document === "undefined") return null;
+  return ReactDOM.createPortal(children, document.body);
+}
 
 export function QuittancesIndependantes() {
   const [loading, setLoading] = useState(true);
@@ -66,6 +72,18 @@ export function QuittancesIndependantes() {
     return Number.isFinite(n) ? n : 0;
   }, [selectedLease]);
 
+  const resetCreate = () => {
+    setSelectedLeaseId("");
+    setPaidMonth(monthIso());
+    setNotes("");
+  };
+
+  const closePreview = () => {
+    setPreviewing(null);
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+  };
+
   const fetchAll = async () => {
     try {
       setError(null);
@@ -84,27 +102,6 @@ export function QuittancesIndependantes() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchAll();
-    // cleanup preview url
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const resetCreate = () => {
-    setSelectedLeaseId("");
-    setPaidMonth(monthIso());
-    setNotes("");
-  };
-
-  const closePreview = () => {
-    setPreviewing(null);
-    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    setPdfUrl(null);
   };
 
   const loadPdfPreview = async (receiptId: number) => {
@@ -150,7 +147,7 @@ export function QuittancesIndependantes() {
 
       // ouvre preview auto
       setPreviewing(created as any);
-      await loadPdfPreview(created.id);
+      await loadPdfPreview((created as any).id);
     } catch (e: any) {
       console.error(e);
       const msg =
@@ -179,6 +176,41 @@ export function QuittancesIndependantes() {
     }
   };
 
+  // Mount + cleanup url
+  useEffect(() => {
+    fetchAll();
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ Lock scroll + ESC close
+  useEffect(() => {
+    const opened = openCreate || !!previewing;
+    if (!opened) return;
+
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (openCreate) {
+          setOpenCreate(false);
+          resetCreate();
+        }
+        if (previewing) closePreview();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCreate, previewing]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -193,9 +225,7 @@ export function QuittancesIndependantes() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Quittances indépendantes</h1>
-          <p className="text-slate-600 mt-1">
-            Génère une quittance de paiement (indépendante) par location et par mois.
-          </p>
+          <p className="text-slate-600 mt-1">Génère une quittance de paiement (indépendante) par location et par mois.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -219,173 +249,169 @@ export function QuittancesIndependantes() {
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>}
 
       {/* Create Modal */}
       {openCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Nouvelle quittance</h2>
-                <p className="text-sm text-slate-600">Choisis une location et le mois payé.</p>
-              </div>
-              <button
-                onClick={() => {
-                  setOpenCreate(false);
-                  resetCreate();
-                }}
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-5 px-6 py-5">
-              {/* Lease Select */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Location (bail)</label>
-                <select
-                  value={selectedLeaseId}
-                  onChange={(e) => setSelectedLeaseId(e.target.value ? Number(e.target.value) : "")}
-                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Nouvelle quittance</h2>
+                  <p className="text-sm text-slate-600">Choisis une location et le mois payé.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setOpenCreate(false);
+                    resetCreate();
+                  }}
+                  className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
                 >
-                  <option value="">— Choisir une location —</option>
-                  {leases.map((l: any) => {
-                    const addr = l.property?.address || `Bien #${l.property_id}`;
-                    const t = l.tenant ? `${l.tenant.first_name || ""} ${l.tenant.last_name || ""}`.trim() : "";
-                    const label = `${addr}${t ? ` — ${t}` : ""}`;
-                    return (
-                      <option key={l.id} value={l.id}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-xs text-slate-500">Bien</div>
-                    <div className="text-sm font-medium text-slate-900">{propertyLabel}</div>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-xs text-slate-500">Locataire</div>
-                    <div className="text-sm font-medium text-slate-900">{tenantLabel}</div>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-xs text-slate-500">Loyer</div>
-                    <div className="text-sm font-medium text-slate-900">
-                      {rentAmount.toLocaleString("fr-FR")} FCFA
+              <div className="space-y-5 px-6 py-5">
+                {/* Lease Select */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Location (bail)</label>
+                  <select
+                    value={selectedLeaseId}
+                    onChange={(e) => setSelectedLeaseId(e.target.value ? Number(e.target.value) : "")}
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="">— Choisir une location —</option>
+                    {leases.map((l: any) => {
+                      const addr = l.property?.address || `Bien #${l.property_id}`;
+                      const t = l.tenant ? `${l.tenant.first_name || ""} ${l.tenant.last_name || ""}`.trim() : "";
+                      const label = `${addr}${t ? ` — ${t}` : ""}`;
+                      return (
+                        <option key={l.id} value={l.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="text-xs text-slate-500">Bien</div>
+                      <div className="text-sm font-medium text-slate-900">{propertyLabel}</div>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="text-xs text-slate-500">Locataire</div>
+                      <div className="text-sm font-medium text-slate-900">{tenantLabel}</div>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="text-xs text-slate-500">Loyer</div>
+                      <div className="text-sm font-medium text-slate-900">{rentAmount.toLocaleString("fr-FR")} FCFA</div>
                     </div>
                   </div>
                 </div>
+
+                {/* Paid Month */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Mois payé</label>
+                  <input
+                    type="month"
+                    value={paidMonth}
+                    onChange={(e) => setPaidMonth(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">
+                    La quittance sera émise avec <span className="font-medium text-slate-700">issued_date = aujourd’hui</span>.
+                  </p>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Notes (optionnel)</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="Ex : paiement cash, référence virement, info complémentaire…"
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
               </div>
 
-              {/* Paid Month */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Mois payé</label>
-                <input
-                  type="month"
-                  value={paidMonth}
-                  onChange={(e) => setPaidMonth(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
-                />
-                <p className="mt-2 text-xs text-slate-500">
-                  La quittance sera émise avec <span className="font-medium text-slate-700">issued_date = aujourd’hui</span>.
-                </p>
+              <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-6 py-4">
+                <button
+                  onClick={() => {
+                    setOpenCreate(false);
+                    resetCreate();
+                  }}
+                  disabled={busy}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={busy || !selectedLeaseId}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Créer & Prévisualiser
+                </button>
               </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Notes (optionnel)</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  placeholder="Ex : paiement cash, référence virement, info complémentaire…"
-                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-6 py-4">
-              <button
-                onClick={() => {
-                  setOpenCreate(false);
-                  resetCreate();
-                }}
-                disabled={busy}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={busy || !selectedLeaseId}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Créer & Prévisualiser
-              </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Preview Modal */}
       {previewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Quittance — {previewing.paid_month}</h2>
-                <p className="text-sm text-slate-600">Prévisualisation du PDF</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload(previewing)}
-                  disabled={busy}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  <Download className="h-4 w-4" />
-                  Télécharger PDF
-                </button>
-                <button
-                  onClick={closePreview}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
-                >
-                  Fermer
-                </button>
-              </div>
-            </div>
-
-            <div className="h-[75vh] bg-slate-50">
-              {pdfUrl ? (
-                <iframe title="Quittance PDF" src={pdfUrl} className="h-full w-full" />
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                    Chargement du PDF…
-                  </div>
+        <ModalPortal>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Quittance — {previewing.paid_month}</h2>
+                  <p className="text-sm text-slate-600">Prévisualisation du PDF</p>
                 </div>
-              )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(previewing)}
+                    disabled={busy}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4" />
+                    Télécharger PDF
+                  </button>
+                  <button
+                    onClick={closePreview}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
+                  >
+                    Fermer
+                  </button>
+                </div>
+              </div>
+
+              <div className="h-[78vh] bg-slate-50">
+                {pdfUrl ? (
+                  <iframe title="Quittance PDF" src={pdfUrl} className="h-full w-full" />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      Chargement du PDF…
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* List */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <p className="text-sm font-medium text-slate-900">
-              {receipts.length} quittance(s) indépendante(s)
-            </p>
+            <p className="text-sm font-medium text-slate-900">{receipts.length} quittance(s) indépendante(s)</p>
             <p className="text-xs text-slate-500">Suppression désactivée (comme demandé).</p>
           </div>
         </div>
@@ -403,14 +429,10 @@ export function QuittancesIndependantes() {
             {receipts.map((r) => (
               <div key={r.id} className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <div className="text-sm font-semibold text-slate-900">
-                    Quittance {r.paid_month} — Bail #{r.lease_id}
-                  </div>
+                  <div className="text-sm font-semibold text-slate-900">Quittance {r.paid_month} — Bail #{r.lease_id}</div>
                   <div className="text-xs text-slate-600">
                     Émise le {String(r.issued_date).slice(0, 10)} • Montant:{" "}
-                    <span className="font-medium text-slate-900">
-                      {(r.amount_paid ?? 0).toLocaleString("fr-FR")} FCFA
-                    </span>
+                    <span className="font-medium text-slate-900">{(r.amount_paid ?? 0).toLocaleString("fr-FR")} FCFA</span>
                   </div>
                   {r.notes ? (
                     <div className="text-sm text-slate-700 mt-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
@@ -420,9 +442,7 @@ export function QuittancesIndependantes() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                    {r.type}
-                  </span>
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{r.type}</span>
 
                   <button
                     onClick={async () => {

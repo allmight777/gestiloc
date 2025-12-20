@@ -14,22 +14,24 @@ class RentReceipt extends Model
         'property_id',
         'landlord_id',
         'tenant_id',
+
+        'type',        // ✅
+        'paid_month',  // ✅
+        'issued_date', // ✅
+        'amount_paid', // ✅
+
         'month',
         'year',
-        'paid_at',
-        'rent_amount',
-        'charges_amount',
         'reference',
         'status',
         'notes',
     ];
 
     protected $casts = [
-        'paid_at' => 'date',
-        'month' => 'integer',
-        'year' => 'integer',
-        'rent_amount' => 'decimal:2',
-        'charges_amount' => 'decimal:2',
+        'month'       => 'integer',
+        'year'        => 'integer',
+        'issued_date' => 'date',      // ✅
+        'amount_paid' => 'decimal:2', // ✅
     ];
 
     public function lease()    { return $this->belongsTo(\App\Models\Lease::class); }

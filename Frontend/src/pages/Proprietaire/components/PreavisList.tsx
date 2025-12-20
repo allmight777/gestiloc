@@ -1,65 +1,205 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, RefreshCw, Save, X, Pencil } from "lucide-react";
-import { leaseService, noticeService } from "@/services/api";
+import {
+  CheckCircle2,
+  Clock3,
+  Loader2,
+  Search,
+  Wrench,
+  XCircle,
+  Save,
+  CalendarDays,
+  User,
+  Home,
+  MessageSquareText,
+  FileText,
+  RefreshCw,
+  Plus,
+  X,
+} from "lucide-react";
 
-type NoticeStatus = "pending" | "confirmed" | "cancelled";
+import { leaseService } from "@/services/api";
+import { noticeService, Notice, NoticeStatus, NoticeType } from "@/services/noticeService";
+
 type LeaseLite = any;
-
-type Notice = {
-  id: number;
-  property_id: number;
-  landlord_id: number;
-  tenant_id: number;
-  type: "landlord" | "tenant";
-  reason: string;
-  notice_date: string;
-  end_date: string;
-  status: NoticeStatus;
-  notes?: string | null;
-  created_at: string;
-
-  property?: { id: number; address: string; city?: string | null };
-  tenant?: {
-    id: number;
-    first_name?: string | null;
-    last_name?: string | null;
-    email?: string | null;
-    phone?: string | null;
-  };
-};
 
 const isoToday = () => new Date().toISOString().slice(0, 10);
 
-const statusLabel = (s: NoticeStatus) => {
-  if (s === "pending") return "En attente";
-  if (s === "confirmed") return "Confirmé";
-  return "Annulé";
+const fmtDate = (d?: string | null) => {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
+  return dt.toLocaleDateString();
 };
 
-const statusBadgeClasses = (s: NoticeStatus) => {
-  if (s === "confirmed") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (s === "cancelled") return "bg-rose-50 text-rose-700 border-rose-200";
-  return "bg-amber-50 text-amber-700 border-amber-200";
+const statusLabel: Record<NoticeStatus, string> = {
+  pending: "En attente",
+  confirmed: "Confirmé",
+  cancelled: "Annulé",
 };
 
-export const PreavisList: React.FC = () => {
+function StatusBadge({ status }: { status: NoticeStatus }) {
+  const base = "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-extrabold border";
+  if (status === "pending")
+    return (
+      <span className={`${base} border-amber-200 bg-amber-50 text-amber-800`}>
+        <Clock3 size={14} /> En attente
+      </span>
+    );
+  if (status === "confirmed")
+    return (
+      <span className={`${base} border-emerald-200 bg-emerald-50 text-emerald-700`}>
+        <CheckCircle2 size={14} /> Confirmé
+      </span>
+    );
+  return (
+    <span className={`${base} border-rose-200 bg-rose-50 text-rose-700`}>
+      <XCircle size={14} /> Annulé
+    </span>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-extrabold text-gray-700">
+      {children}
+    </span>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <div className="text-xs font-extrabold tracking-wide text-gray-600 uppercase">{children}</div>;
+}
+
+function Select({
+  value,
+  onChange,
+  disabled,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="
+          w-full appearance-none rounded-2xl
+          bg-white text-gray-900
+          border border-blue-200
+          px-4 py-3 pr-10
+          text-sm font-extrabold
+          outline-none
+          focus:ring-4 focus:ring-blue-200/60 focus:border-blue-400
+          disabled:opacity-60 disabled:cursor-not-allowed
+          transition
+        "
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+
+      <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">▾</div>
+    </div>
+  );
+}
+
+function Input({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <input
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="
+        w-full rounded-2xl bg-white text-gray-900
+        border border-blue-200
+        px-4 py-3
+        text-sm font-semibold
+        placeholder:text-gray-400
+        outline-none
+        focus:ring-4 focus:ring-blue-200/60 focus:border-blue-400
+        disabled:opacity-60 disabled:cursor-not-allowed
+        transition
+      "
+    />
+  );
+}
+
+function TextArea({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <textarea
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="
+        w-full min-h-[110px] resize-none rounded-2xl bg-white text-gray-900
+        border border-blue-200
+        px-4 py-3
+        text-sm font-semibold
+        placeholder:text-gray-400
+        outline-none
+        focus:ring-4 focus:ring-blue-200/60 focus:border-blue-400
+        disabled:opacity-60 disabled:cursor-not-allowed
+        transition
+      "
+    />
+  );
+}
+
+export default function LandlordNoticesPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [items, setItems] = useState<Notice[]>([]);
+  const [leases, setLeases] = useState<LeaseLite[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const [leases, setLeases] = useState<LeaseLite[]>([]);
-  const [notices, setNotices] = useState<Notice[]>([]);
+  // Filters
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<NoticeStatus | "all">("all");
+  const [type, setType] = useState<"all" | "tenant" | "landlord">("all");
+
+  // Save state
+  const [savingId, setSavingId] = useState<number | null>(null);
 
   // Create modal
   const [openCreate, setOpenCreate] = useState(false);
   const [selectedLeaseId, setSelectedLeaseId] = useState<number | "">("");
-  const [releaseDate, setReleaseDate] = useState<string>(isoToday());
+  const [noticeType, setNoticeType] = useState<NoticeType>("landlord"); // ✅ bailleur crée
+  const [endDate, setEndDate] = useState<string>(isoToday());
+  const [reason, setReason] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
-  // Edit
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editStatus, setEditStatus] = useState<NoticeStatus>("pending");
-  const [editNotes, setEditNotes] = useState<string>("");
+  // notes internes par notice (bailleur)
+  const [draftNotes, setDraftNotes] = useState<Record<number, string>>({});
 
   const selectedLease = useMemo(() => {
     if (!selectedLeaseId) return null;
@@ -74,7 +214,7 @@ export const PreavisList: React.FC = () => {
     const t = selectedLease?.tenant;
     if (!t) return "—";
     const name = `${t.first_name || ""} ${t.last_name || ""}`.trim();
-    return name || t.email || "Locataire";
+    return name || t?.user?.email || "Locataire";
   }, [selectedLease]);
 
   const propertyLabel = useMemo(() => {
@@ -84,27 +224,22 @@ export const PreavisList: React.FC = () => {
     return `${p.address || "Sans adresse"}${city}`;
   }, [selectedLease]);
 
-  const computedReason = useMemo(() => {
-    const address = selectedLease?.property?.address || "Logement";
-    const city = selectedLease?.property?.city ? ` (${selectedLease.property.city})` : "";
-    return `Préavis de libération du logement${city} – ${address}`;
-  }, [selectedLease]);
-
   const fetchAll = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setError(null);
-      setLoading(true);
+      const [leasesRes, noticesRes] = await Promise.all([leaseService.listLeases(), noticeService.list()]);
+      const leasesArr = Array.isArray(leasesRes) ? leasesRes : [];
+      const noticesArr = Array.isArray(noticesRes) ? noticesRes : [];
 
-      const [leasesRes, noticesRes] = await Promise.all([
-        leaseService.listLeases(),
-        noticeService.list(),
-      ]);
+      setLeases(leasesArr);
+      setItems(noticesArr);
 
-      setLeases(Array.isArray(leasesRes) ? leasesRes : []);
-      setNotices(Array.isArray(noticesRes) ? (noticesRes as any) : []);
+      const map: Record<number, string> = {};
+      noticesArr.forEach((n) => (map[n.id] = n.notes || ""));
+      setDraftNotes(map);
     } catch (e: any) {
-      console.error(e);
-      setError(e?.response?.data?.message || e?.message || "Erreur lors du chargement");
+      setError(e?.response?.data?.message || e?.message || "Erreur lors du chargement.");
     } finally {
       setLoading(false);
     }
@@ -116,19 +251,69 @@ export const PreavisList: React.FC = () => {
 
   const resetCreate = () => {
     setSelectedLeaseId("");
-    setReleaseDate(isoToday());
+    setNoticeType("landlord");
+    setEndDate(isoToday());
+    setReason("");
     setNotes("");
   };
 
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+
+    return items
+      .filter((it) => {
+        const matchesStatus = status === "all" ? true : it.status === status;
+        const matchesType = type === "all" ? true : it.type === type;
+
+        const tenantName = `${it.tenant?.first_name || ""} ${it.tenant?.last_name || ""}`.trim();
+        const tenantEmail = it.tenant?.user?.email || "";
+        const propLine = [it.property?.address, it.property?.city].filter(Boolean).join(" ");
+
+        const blob = [it.reason, it.notes, it.type, tenantName, tenantEmail, propLine]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        const matchesQ = needle ? blob.includes(needle) : true;
+        return matchesStatus && matchesType && matchesQ;
+      })
+      .sort((a, b) => {
+        const prio = (s: NoticeStatus) => (s === "pending" ? 0 : s === "confirmed" ? 1 : 2);
+        const pa = prio(a.status);
+        const pb = prio(b.status);
+        if (pa !== pb) return pa - pb;
+
+        const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return db - da;
+      });
+  }, [items, q, status, type]);
+
+  const quickUpdate = async (id: number, payload: Partial<Pick<Notice, "status" | "notes">>) => {
+    setSavingId(id);
+    try {
+      const updated = await noticeService.update(id, payload);
+      setItems((prev) => prev.map((x) => (x.id === id ? updated : x)));
+      setDraftNotes((prev) => ({ ...prev, [id]: updated.notes || "" }));
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Erreur lors de la mise à jour.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const saveNotes = async (id: number) => {
+    const n = draftNotes[id] ?? "";
+    await quickUpdate(id, { notes: n || null });
+  };
+
   const handleCreate = async () => {
-    if (!selectedLease || !computedPropertyId) {
-      setError("Choisis une location valide.");
-      return;
-    }
-    if (!releaseDate) {
-      setError("Choisis une date de libération.");
-      return;
-    }
+    if (!selectedLease || !computedPropertyId) return setError("Choisis une location valide.");
+    if (!endDate) return setError("Choisis une date de libération.");
+
+    // si le bailleur crée -> il doit écrire la raison (pas auto imposée)
+    const r = (reason || "").trim();
+    if (!r) return setError("Ajoute une raison (motif du préavis).");
 
     setBusy(true);
     setError(null);
@@ -136,106 +321,72 @@ export const PreavisList: React.FC = () => {
     try {
       await noticeService.create({
         property_id: Number(computedPropertyId),
-        lease_id: Number(selectedLease.id), // backend déduit le tenant
-        type: "landlord",
-        reason: computedReason,
+        lease_id: Number(selectedLease.id), // backend déduit tenant_id
+        type: noticeType, // landlord / tenant
+        reason: r,
         notice_date: isoToday(),
-        end_date: releaseDate,
-        notes: notes || undefined,
+        end_date: endDate,
+        notes: notes || null,
       });
 
       setOpenCreate(false);
       resetCreate();
       await fetchAll();
     } catch (e: any) {
-      console.error(e);
-      setError(
-        e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          e?.message ||
-          "Erreur lors de la création"
-      );
+      setError(e?.response?.data?.message || e?.response?.data?.error || e?.message || "Erreur lors de la création.");
     } finally {
       setBusy(false);
     }
   };
-
-  const startEdit = (n: Notice) => {
-    setEditingId(n.id);
-    setEditStatus(n.status);
-    setEditNotes(n.notes || "");
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditStatus("pending");
-    setEditNotes("");
-  };
-
-  const saveEdit = async (id: number) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await noticeService.update(id, { status: editStatus, notes: editNotes || null });
-      await fetchAll();
-      cancelEdit();
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.response?.data?.message || e?.message || "Erreur lors de la mise à jour");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const remove = async (id: number) => {
-    if (!confirm("Supprimer ce préavis ?")) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await noticeService.delete(id);
-      await fetchAll();
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.response?.data?.message || e?.message || "Erreur lors de la suppression");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-white rounded-2xl border border-slate-200">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
+    <div className="py-8">
       {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-blue-700">Préavis</h1>
-          <p className="text-slate-600 mt-1">
-            Crée, modifie et supprime les préavis (propriétaire).
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+            <Wrench size={14} />
+            Préavis
+          </div>
+
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-900">
+            Suivi des préavis
+          </h1>
+
+          <p className="mt-1 text-sm font-semibold text-gray-600">
+            Demandes de sortie + préavis bailleur. Confirme/annule et ajoute tes notes.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-4 md:mt-0">
           <button
             onClick={fetchAll}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="
+              inline-flex items-center justify-center gap-2
+              rounded-2xl border border-blue-200 bg-white px-4 py-3
+              text-sm font-extrabold text-gray-800
+              hover:bg-blue-50 hover:text-blue-700
+              disabled:opacity-60 disabled:cursor-not-allowed
+              transition
+            "
+            type="button"
           >
-            <RefreshCw className="h-4 w-4 text-blue-700" />
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
             Actualiser
           </button>
 
           <button
             onClick={() => setOpenCreate(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="
+              inline-flex items-center justify-center gap-2
+              rounded-2xl bg-blue-600 px-4 py-3
+              text-sm font-extrabold text-white
+              hover:bg-blue-700 transition
+            "
+            type="button"
           >
-            <Plus className="h-4 w-4" />
+            <Plus size={18} />
             Nouveau préavis
           </button>
         </div>
@@ -243,7 +394,7 @@ export const PreavisList: React.FC = () => {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+        <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700 font-bold">
           {error}
         </div>
       )}
@@ -251,117 +402,152 @@ export const PreavisList: React.FC = () => {
       {/* Create Modal */}
       {openCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <h2 className="text-lg font-semibold text-blue-700">Créer un préavis</h2>
+          <div className="w-full max-w-3xl rounded-3xl border border-blue-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-blue-100 px-6 py-5">
+              <div className="flex items-center gap-2">
+                <FileText className="text-blue-700" size={18} />
+                <h2 className="text-lg font-extrabold text-gray-900">Créer un préavis</h2>
+              </div>
+
               <button
                 onClick={() => {
                   setOpenCreate(false);
                   resetCreate();
                 }}
-                className="rounded-xl p-2 text-slate-600 hover:bg-slate-100"
+                className="rounded-2xl p-2 text-gray-600 hover:bg-blue-50 transition"
+                type="button"
+                aria-label="Fermer"
               >
-                <X className="h-5 w-5" />
+                <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-5 px-5 py-4">
-              {/* Lease Select */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Location (bail)
-                </label>
-
-                <select
-                  value={selectedLeaseId}
-                  onChange={(e) => setSelectedLeaseId(e.target.value ? Number(e.target.value) : "")}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="">— Choisir une location —</option>
-                  {leases.map((l: any) => {
-                    const addr = l.property?.address || `Bien #${l.property_id}`;
-                    const t = l.tenant ? `${l.tenant.first_name || ""} ${l.tenant.last_name || ""}`.trim() : "";
-                    const label = `${addr}${t ? ` — ${t}` : ""}`;
-                    return (
-                      <option key={l.id} value={l.id}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
-
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-xs text-slate-500">Bien</div>
-                    <div className="text-sm font-medium text-blue-700">{propertyLabel}</div>
+            <div className="px-6 py-5 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Type</FieldLabel>
+                  <div className="mt-2">
+                    <Select
+                      value={noticeType}
+                      onChange={(v) => setNoticeType(v as NoticeType)}
+                      options={[
+                        { value: "landlord", label: "Préavis bailleur" },
+                        { value: "tenant", label: "Préavis locataire (simulation)" },
+                      ]}
+                    />
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="text-xs text-slate-500">Locataire</div>
-                    <div className="text-sm font-medium text-blue-700">{tenantLabel}</div>
+                </div>
+
+                <div>
+                  <FieldLabel>Location (bail)</FieldLabel>
+                  <div className="mt-2">
+                    <Select
+                      value={String(selectedLeaseId || "")}
+                      onChange={(v) => setSelectedLeaseId(v ? Number(v) : "")}
+                      options={[
+                        { value: "", label: "— Choisir une location —" },
+                        ...leases.map((l: any) => {
+                          const addr = l.property?.address || `Bien #${l.property_id}`;
+                          const t = l.tenant
+                            ? `${l.tenant.first_name || ""} ${l.tenant.last_name || ""}`.trim()
+                            : "";
+                          const label = `${addr}${t ? ` — ${t}` : ""}`;
+                          return { value: String(l.id), label };
+                        }),
+                      ]}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Reason (readonly, auto) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Motif (auto)
-                </label>
-                <input
-                  value={computedReason}
-                  readOnly
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-blue-700"
-                />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <div className="flex items-center gap-2 text-xs font-extrabold tracking-wide text-blue-700 uppercase">
+                    <Home size={14} /> Bien
+                  </div>
+                  <div className="mt-1 text-sm font-extrabold text-gray-900">{propertyLabel}</div>
+                </div>
+
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <div className="flex items-center gap-2 text-xs font-extrabold tracking-wide text-blue-700 uppercase">
+                    <User size={14} /> Locataire
+                  </div>
+                  <div className="mt-1 text-sm font-extrabold text-gray-900">{tenantLabel}</div>
+                </div>
               </div>
 
-              {/* Release Date */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Date de libération (fin du préavis)
-                </label>
-                <input
-                  type="date"
-                  value={releaseDate}
-                  onChange={(e) => setReleaseDate(e.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-blue-700 outline-none focus:ring-2 focus:ring-blue-600"
-                />
-                <p className="mt-2 text-xs text-slate-500">
-                  Le préavis est enregistré avec <span className="font-medium text-blue-700">notice_date = aujourd’hui</span>.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Date de libération (fin du préavis)</FieldLabel>
+                  <div className="mt-2">
+                    <Input
+                      value={endDate}
+                      onChange={(v) => setEndDate(v)}
+                      placeholder="YYYY-MM-DD"
+                    />
+                    <div className="mt-2 text-xs font-bold text-gray-500 flex items-center gap-2">
+                      <CalendarDays size={14} className="text-blue-700" />
+                      notice_date = aujourd’hui ({isoToday()})
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>Raison (motif)</FieldLabel>
+                  <div className="mt-2">
+                    <Input
+                      value={reason}
+                      onChange={setReason}
+                      placeholder='Ex : "Reprise pour habiter" / "Fin de bail" / "Vente"...'
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Notes (optionnel)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  placeholder="Ex : remise des clés, visite de sortie, instructions…"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-blue-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <FieldLabel>Message / notes (visible dans le préavis)</FieldLabel>
+                <div className="mt-2">
+                  <TextArea
+                    value={notes}
+                    onChange={setNotes}
+                    placeholder="Ex : Merci de préparer l’état des lieux, remise des clés, plages de visite…"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
+            <div className="flex items-center justify-end gap-2 border-t border-blue-100 px-6 py-5">
               <button
                 onClick={() => {
                   setOpenCreate(false);
                   resetCreate();
                 }}
                 disabled={busy}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="
+                  rounded-2xl border border-blue-200 bg-white px-4 py-3
+                  text-sm font-extrabold text-gray-800
+                  hover:bg-blue-50
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                  transition
+                "
+                type="button"
               >
                 Annuler
               </button>
+
               <button
                 onClick={handleCreate}
                 disabled={busy || !selectedLeaseId}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="
+                  inline-flex items-center gap-2 rounded-2xl
+                  bg-blue-600 px-4 py-3 text-sm font-extrabold text-white
+                  hover:bg-blue-700
+                  disabled:opacity-60 disabled:cursor-not-allowed
+                  transition
+                "
+                type="button"
               >
-                <Save className="h-4 w-4" />
+                {busy ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 Créer
               </button>
             </div>
@@ -370,119 +556,259 @@ export const PreavisList: React.FC = () => {
       )}
 
       {/* List */}
-      <div className="rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-5 py-3">
-          <p className="text-sm text-slate-600">
-            <span className="font-semibold text-blue-700">{notices.length}</span> préavis
-          </p>
+      <div className="mt-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <FieldLabel>Recherche</FieldLabel>
+            <div className="mt-2 relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search size={18} />
+              </div>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Raison, adresse, ville, locataire, email…"
+                className="
+                  w-full rounded-2xl bg-white text-gray-900
+                  border border-blue-200
+                  pl-12 pr-4 py-3
+                  text-sm font-semibold
+                  placeholder:text-gray-400
+                  outline-none
+                  focus:ring-4 focus:ring-blue-200/60 focus:border-blue-400
+                  transition
+                "
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Type</FieldLabel>
+              <div className="mt-2">
+                <Select
+                  value={type}
+                  onChange={(v) => setType(v as any)}
+                  options={[
+                    { value: "all", label: "Tous" },
+                    { value: "tenant", label: "Locataire" },
+                    { value: "landlord", label: "Bailleur" },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div>
+              <FieldLabel>Statut</FieldLabel>
+              <div className="mt-2">
+                <Select
+                  value={status}
+                  onChange={(v) => setStatus(v as any)}
+                  options={[
+                    { value: "all", label: "Tous" },
+                    { value: "pending", label: "En attente" },
+                    { value: "confirmed", label: "Confirmé" },
+                    { value: "cancelled", label: "Annulé" },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {notices.length === 0 ? (
-          <div className="px-5 py-10 text-center text-slate-500">
-            Aucun préavis pour le moment.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-200">
-            {notices.map((n) => {
-              const isEditing = editingId === n.id;
+        <div className="mt-6">
+          {loading ? (
+            <div className="rounded-3xl border border-blue-200 bg-white p-8">
+              <div className="flex items-center gap-3 text-gray-700 font-bold">
+                <Loader2 className="animate-spin" /> Chargement des préavis…
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-3xl border border-blue-200 bg-white p-8">
+              <div className="text-gray-900 font-extrabold">Aucun préavis trouvé</div>
+              <div className="mt-1 text-sm font-semibold text-gray-600">
+                Essaie de changer le filtre ou la recherche.
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {filtered.map((it) => {
+                const tenantName = `${it.tenant?.first_name || ""} ${it.tenant?.last_name || ""}`.trim();
+                const tenantEmail = it.tenant?.user?.email || "";
+                const tenantPhone = it.tenant?.user?.phone || "";
+                const propLine = [it.property?.address, it.property?.city].filter(Boolean).join(" • ");
 
-              return (
-                <div key={n.id} className="px-5 py-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-1">
-                      <div className="text-sm font-semibold text-blue-700">{n.reason}</div>
-                      <div className="text-xs text-slate-600">
-                        Bien: {n.property?.address || `#${n.property_id}`} • Notice: {String(n.notice_date).slice(0, 10)} • Libération:{" "}
-                        {String(n.end_date).slice(0, 10)}
+                const canDecide = it.status === "pending";
+
+                return (
+                  <div
+                    key={it.id}
+                    className="rounded-3xl border border-blue-200 bg-white shadow-sm hover:shadow-md transition p-5 md:p-6"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg md:text-xl font-extrabold text-gray-900 truncate">{it.reason}</h3>
+                          <StatusBadge status={it.status} />
+                          <Chip>{it.type === "tenant" ? "Demande locataire" : "Préavis bailleur"}</Chip>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                            <div className="flex items-center gap-2 text-xs font-extrabold tracking-wide text-blue-700 uppercase">
+                              <Home size={14} /> Bien
+                            </div>
+                            <div className="mt-1 text-sm font-extrabold text-gray-900">
+                              {propLine || <span className="text-gray-500">Bien non renseigné</span>}
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                            <div className="flex items-center gap-2 text-xs font-extrabold tracking-wide text-blue-700 uppercase">
+                              <User size={14} /> Locataire
+                            </div>
+                            <div className="mt-1 text-sm font-extrabold text-gray-900">
+                              {tenantName || <span className="text-gray-500">—</span>}
+                            </div>
+                            <div className="mt-1 text-xs font-bold text-gray-600">
+                              {tenantEmail ? <span>{tenantEmail}</span> : <span className="text-gray-500">Email —</span>}
+                              {tenantPhone ? <span> • {tenantPhone}</span> : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <Chip>
+                            <span className="inline-flex items-center gap-2">
+                              <CalendarDays size={14} />
+                              Notice: <span className="text-gray-900">{fmtDate(it.notice_date)}</span>
+                            </span>
+                          </Chip>
+                          <Chip>
+                            <span className="inline-flex items-center gap-2">
+                              <CalendarDays size={14} />
+                              Sortie: <span className="text-gray-900">{fmtDate(it.end_date)}</span>
+                            </span>
+                          </Chip>
+                          <Chip>ID #{it.id}</Chip>
+                        </div>
+                      </div>
+
+                      <div className="w-full md:w-[360px] space-y-3">
+                        <div className="rounded-3xl border border-blue-200 bg-white p-4">
+                          <FieldLabel>Décision</FieldLabel>
+
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              disabled={!canDecide || savingId === it.id}
+                              onClick={() => quickUpdate(it.id, { status: "confirmed" })}
+                              className="
+                                rounded-2xl bg-emerald-600 text-white px-4 py-3 text-sm font-extrabold
+                                hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition
+                                inline-flex items-center justify-center gap-2
+                              "
+                            >
+                              {savingId === it.id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                              Confirmer
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={!canDecide || savingId === it.id}
+                              onClick={() => quickUpdate(it.id, { status: "cancelled" })}
+                              className="
+                                rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-extrabold
+                                hover:bg-rose-100 disabled:opacity-60 disabled:cursor-not-allowed transition
+                                inline-flex items-center justify-center gap-2
+                              "
+                            >
+                              <XCircle size={16} />
+                              Annuler
+                            </button>
+                          </div>
+
+                          <div className="mt-3">
+                            <FieldLabel>Statut (manuel)</FieldLabel>
+                            <div className="mt-2">
+                              <Select
+                                value={it.status}
+                                disabled={savingId === it.id}
+                                onChange={(v) => quickUpdate(it.id, { status: v as NoticeStatus })}
+                                options={[
+                                  { value: "pending", label: "En attente" },
+                                  { value: "confirmed", label: "Confirmé" },
+                                  { value: "cancelled", label: "Annulé" },
+                                ]}
+                              />
+                            </div>
+
+                            {savingId === it.id && (
+                              <div className="mt-2 text-xs font-bold text-gray-500 flex items-center gap-2">
+                                <Loader2 size={14} className="animate-spin" />
+                                Mise à jour…
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="rounded-3xl border border-blue-200 bg-white p-4">
+                          <FieldLabel>Notes internes</FieldLabel>
+
+                          <div className="mt-2">
+                            <TextArea
+                              value={draftNotes[it.id] ?? ""}
+                              disabled={savingId === it.id}
+                              onChange={(v) => setDraftNotes((prev) => ({ ...prev, [it.id]: v }))}
+                              placeholder="Ex : organiser visite de sortie, état des lieux, remise des clés…"
+                            />
+
+                            <button
+                              type="button"
+                              disabled={savingId === it.id}
+                              onClick={() => saveNotes(it.id)}
+                              className="
+                                mt-2 w-full rounded-2xl bg-blue-600 text-white
+                                px-4 py-3 text-sm font-extrabold
+                                hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed
+                                transition inline-flex items-center justify-center gap-2
+                              "
+                            >
+                              {savingId === it.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                              Enregistrer les notes
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {!isEditing ? (
-                        <>
-                          <span
-                            className={`rounded-full border px-3 py-1 text-xs font-medium ${statusBadgeClasses(
-                              n.status
-                            )}`}
-                          >
-                            {statusLabel(n.status)}
-                          </span>
+                    {/* Message */}
+                    <div className="mt-4">
+                      <FieldLabel>Message</FieldLabel>
+                      <div className="mt-2 rounded-2xl border border-blue-200 bg-white p-4">
+                        <div className="flex items-start gap-2">
+                          <MessageSquareText size={16} className="text-blue-700 mt-0.5" />
+                          <p className="text-sm font-semibold text-gray-800 whitespace-pre-line">
+                            {it.notes ? it.notes : "Aucun message."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                          <button
-                            onClick={() => startEdit(n)}
-                            disabled={busy}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            <Pencil className="h-4 w-4 text-blue-700" />
-                            Modifier
-                          </button>
-
-                          <button
-                            onClick={() => remove(n.id)}
-                            disabled={busy}
-                            className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 hover:bg-rose-100 disabled:opacity-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Supprimer
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <select
-                            value={editStatus}
-                            onChange={(e) => setEditStatus(e.target.value as NoticeStatus)}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-blue-700 outline-none focus:ring-2 focus:ring-blue-600"
-                          >
-                            <option value="pending">En attente</option>
-                            <option value="confirmed">Confirmé</option>
-                            <option value="cancelled">Annulé</option>
-                          </select>
-
-                          <button
-                            onClick={() => saveEdit(n.id)}
-                            disabled={busy}
-                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                          >
-                            <Save className="h-4 w-4" />
-                            Sauver
-                          </button>
-
-                          <button
-                            onClick={cancelEdit}
-                            disabled={busy}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            <X className="h-4 w-4" />
-                            Annuler
-                          </button>
-                        </>
-                      )}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-gray-500">
+                      <div>Créé le {fmtDate(it.created_at)}</div>
+                      <div className="inline-flex items-center gap-2">
+                        <FileText size={14} className="text-blue-700" />
+                        {statusLabel[it.status]}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mt-3">
-                    {!isEditing ? (
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                        {n.notes ? n.notes : <span className="text-slate-400">Aucune note</span>}
-                      </div>
-                    ) : (
-                      <textarea
-                        value={editNotes}
-                        onChange={(e) => setEditNotes(e.target.value)}
-                        rows={3}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-blue-700 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-blue-600"
-                        placeholder="Notes…"
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default PreavisList;
+}

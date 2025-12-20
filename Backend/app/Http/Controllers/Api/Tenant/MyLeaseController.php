@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LeaseResource;
-use App\Http\Resources\InvoiceResource; // À créer
+use App\Http\Resources\InvoiceResource; // si tu l'as, sinon remplace par response()->json
 use App\Models\Lease;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,16 +13,35 @@ class MyLeaseController extends Controller
 {
     private function getTenant()
     {
-        return auth()->user()->tenant; // Relation définie dans User model
+        $user = auth()->user();
+
+        if (!$user || !$user->isTenant()) {
+            abort(403, 'Accès réservé aux locataires');
+        }
+
+        if (!$user->tenant) {
+            abort(404, 'Profil locataire introuvable');
+        }
+
+        return $user->tenant;
     }
 
     /**
-     * Liste l'historique des baux (Actif et passés).
+     * Liste l'historique des baux.
      */
     public function index()
     {
-        $leases = Lease::where('tenant_id', $this->getTenant()->id)
-            ->with(['property']) // On charge les infos du bien (adresse...)
+        $tenant = $this->getTenant();
+
+        $leases = Lease::where('tenant_id', $tenant->id)
+            ->with([
+                'property',
+                'property.landlord',
+                'property.landlord.user', // ✅ email/phone depuis users
+                'invoices' => function ($q) {
+                    $q->latest('due_date')->take(5);
+                },
+            ])
             ->orderBy('start_date', 'desc')
             ->get();
 
@@ -30,28 +49,36 @@ class MyLeaseController extends Controller
     }
 
     /**
-     * Détail du bail actif (Le "Dashboard" du locataire).
+     * Détail d'un bail.
      */
     public function show($uuid)
     {
+        $tenant = $this->getTenant();
+
         $lease = Lease::where('uuid', $uuid)
-            ->where('tenant_id', $this->getTenant()->id)
-            ->with(['property.landlord', 'invoices' => function($q) {
-                // On charge les 5 dernières factures/quittances
-                $q->latest('due_date')->take(5);
-            }])
+            ->where('tenant_id', $tenant->id)
+            ->with([
+                'property',
+                'property.landlord',
+                'property.landlord.user',
+                'invoices' => function ($q) {
+                    $q->latest('due_date')->take(5);
+                },
+            ])
             ->firstOrFail();
 
         return new LeaseResource($lease);
     }
 
     /**
-     * Télécharger le contrat de bail (PDF).
+     * Télécharger le contrat de bail.
      */
     public function downloadContract($uuid)
     {
+        $tenant = $this->getTenant();
+
         $lease = Lease::where('uuid', $uuid)
-            ->where('tenant_id', $this->getTenant()->id)
+            ->where('tenant_id', $tenant->id)
             ->firstOrFail();
 
         if (!$lease->contract_file_path || !Storage::exists($lease->contract_file_path)) {
@@ -62,21 +89,26 @@ class MyLeaseController extends Controller
     }
 
     /**
-     * Liste spécifique des paiements/quittances pour ce bail.
+     * Factures/quittances du bail.
      */
     public function invoices(Request $request, $uuid)
     {
+        $tenant = $this->getTenant();
+
         $lease = Lease::where('uuid', $uuid)
-            ->where('tenant_id', $this->getTenant()->id)
+            ->where('tenant_id', $tenant->id)
             ->firstOrFail();
 
         $query = $lease->invoices()->orderBy('due_date', 'desc');
 
-        // Filtre : Payé vs Impayé
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
+        // Si InvoiceResource existe :
         return InvoiceResource::collection($query->paginate(20));
+
+        // Sinon :
+        // return response()->json($query->paginate(20));
     }
 }

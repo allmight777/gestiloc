@@ -17,6 +17,9 @@ use App\Http\Controllers\Api\Finance\PdfController;
 use App\Http\Controllers\Api\PropertyConditionReportController;
 use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\RentReceiptController;
+use App\Http\Controllers\Api\Tenant\MaintenanceRequestController as TenantMaintenanceRequestController;
+use App\Http\Controllers\Api\Landlord\MaintenanceRequestController as LandlordMaintenanceRequestController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +62,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/recap-bailleur', [PdfController::class, 'generateLandlordSummary']);
     });
 
+    // ...
+
+Route::middleware('role:tenant')->prefix('tenant')->group(function () {
+    // ...
+    Route::get('incidents', [TenantMaintenanceRequestController::class, 'index']);
+    Route::post('incidents', [TenantMaintenanceRequestController::class, 'store']);
+    Route::get('incidents/{id}', [TenantMaintenanceRequestController::class, 'show']);
+    Route::put('incidents/{id}', [TenantMaintenanceRequestController::class, 'update']);
+    Route::delete('incidents/{id}', [TenantMaintenanceRequestController::class, 'destroy']);
+    Route::post('incidents/upload', [TenantMaintenanceRequestController::class, 'upload']);
+});
+
+Route::middleware('role:landlord')->group(function () {
+    // ...
+    Route::get('incidents', [LandlordMaintenanceRequestController::class, 'index']);
+    Route::get('incidents/{id}', [LandlordMaintenanceRequestController::class, 'show']);
+    Route::put('incidents/{id}', [LandlordMaintenanceRequestController::class, 'update']);
+});
+
+
     Route::middleware('role:landlord')->group(function () {
     Route::get('/rent-receipts', [RentReceiptController::class, 'index']);
     Route::post('/rent-receipts', [RentReceiptController::class, 'store']);
@@ -86,6 +109,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::apiResource('leases', LeaseController::class)->except(['update']);
         Route::post('leases/{uuid}/terminate', [LeaseController::class, 'terminate']);
         Route::get('/leases', [LeaseController::class, 'index']);
+        Route::get('/tenant/leases', [TenantController::class, 'myLeases']);
     });
 
     // ---------- ADMIN uniquement ----------

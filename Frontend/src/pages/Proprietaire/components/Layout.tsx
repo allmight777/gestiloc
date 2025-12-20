@@ -8,12 +8,8 @@ import {
   FilePlus,
   FileText,
   FileCheck,
-  PenTool,
-  DollarSign,
-  CreditCard,
   UserPlus,
   Bell,
-  User,
   LogOut,
   ChevronRight,
   ChevronDown,
@@ -46,6 +42,16 @@ interface MenuItem {
   badge?: number;
 }
 
+type UserData = {
+  id: number;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  roles?: string[];
+  default_role?: string | null;
+};
+
 const notifications: Notification[] = [
   {
     id: "1",
@@ -77,19 +83,40 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Accordéons ouverts par défaut (comme ton code)
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([
-    "biens",
-    "gestion-locative",
-    "documents",
-    "finances",
-  ]);
+  // Owner (from localStorage)
+  const [user, setUser] = useState<UserData | null>(null);
+
+  // ✅ Un seul menu accordéon ouvert à la fois
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch (e) {
+      console.error("Impossible de lire user depuis localStorage", e);
+    }
+  }, []);
+
+  const ownerName = useMemo(() => {
+    if (!user) return "Propriétaire";
+    const full = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    return full || user.email || "Propriétaire";
+  }, [user]);
+
+  const ownerInitials = useMemo(() => {
+    if (!user) return "P";
+    const a = (user.first_name?.[0] || "").toUpperCase();
+    const b = (user.last_name?.[0] || "").toUpperCase();
+    const initials = `${a}${b}`.trim();
+    return initials || (user.email?.[0] || "P").toUpperCase();
+  }, [user]);
 
   // ===================== MENUS =====================
   const menuItems: MenuItem[] = [
@@ -99,6 +126,7 @@ export const Layout: React.FC<LayoutProps> = ({
       icon: LayoutDashboard,
       path: "/proprietaire/dashboard",
     },
+
     {
       id: "biens",
       label: "Gestion des Biens",
@@ -107,9 +135,17 @@ export const Layout: React.FC<LayoutProps> = ({
       submenu: [
         { id: "ajouter-bien", label: "Ajouter un bien", icon: Home, path: "/proprietaire/ajouter-bien" },
         { id: "mes-biens", label: "Mes biens", icon: Building, path: "/proprietaire/mes-biens" },
-        { id: "coproprietaires", label: "Copropriétaires", icon: Users, path: "/proprietaire/coproprietaires" },
+        {
+          id: "incidents",
+          label: "Réparations",
+          icon: FileCheck,
+          path: "/proprietaire/incidents"
+        },
+        // ✅ COMMENTÉ : coproprietaires
+        // { id: "coproprietaires", label: "Copropriétaires", icon: Users, path: "/proprietaire/coproprietaires" },
       ],
     },
+
     {
       id: "gestion-locative",
       label: "Gestion Locative",
@@ -124,30 +160,21 @@ export const Layout: React.FC<LayoutProps> = ({
         { id: "etat-des-lieux", label: "États des lieux", icon: FileCheck, path: "/proprietaire/etats-des-lieux" },
       ],
     },
+
     {
       id: "documents",
       label: "Documents",
       icon: FileText,
       path: "/proprietaire/documents",
       submenu: [
-        { id: "documents-generaux", label: "Documents généraux", icon: FileText, path: "/proprietaire/documents/generaux" },
         { id: "baux", label: "Contrats de bail", icon: FileSignature, path: "/proprietaire/documents/baux" },
         { id: "quittances", label: "Quittances", icon: FileText, path: "/proprietaire/quittances" },
-        { id: "factures", label: "Factures", icon: FileText, path: "/proprietaire/documents/factures" },
-        { id: "modeles-lettres", label: "Modèles de lettres", icon: FileText, path: "/proprietaire/documents/modeles-lettres" },
-        { id: "signature-electronique", label: "Signature électronique", icon: PenTool, path: "/proprietaire/documents/signature-electronique" },
-      ],
-    },
-    {
-      id: "finances",
-      label: "Finances",
-      icon: DollarSign,
-      path: "/proprietaire/finances",
-      submenu: [
-        { id: "finances-overview", label: "Tableau de bord", icon: DollarSign, path: "/proprietaire/finances/tableau-de-bord" },
-        { id: "finances-summary", label: "Bilan financier", icon: FileText, path: "/proprietaire/finances/bilan" },
-        { id: "finances-loans", label: "Prêts", icon: CreditCard, path: "/proprietaire/finances/prets" },
-        { id: "finances-tax", label: "Déclarations fiscales", icon: FileText, path: "/proprietaire/finances/fiscalite" },
+
+        // ✅ COMMENTÉ : le reste
+        // { id: "documents-generaux", label: "Documents généraux", icon: FileText, path: "/proprietaire/documents/generaux" },
+        // { id: "factures", label: "Factures", icon: FileText, path: "/proprietaire/documents/factures" },
+        // { id: "modeles-lettres", label: "Modèles de lettres", icon: FileText, path: "/proprietaire/documents/modeles-lettres" },
+        // { id: "signature-electronique", label: "Signature électronique", icon: PenTool, path: "/proprietaire/documents/signature-electronique" },
       ],
     },
   ];
@@ -169,6 +196,13 @@ export const Layout: React.FC<LayoutProps> = ({
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
 
+  // ✅ Auto-open du menu parent du sous-menu actif
+  useEffect(() => {
+    const parent = menuItems.find((m) => m.submenu?.some((s) => s.path === activeTab || s.id === activeTab));
+    if (parent?.id) setExpandedMenu(String(parent.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   const handleNavigate = (tab: Tab | string) => {
     const menuItem = flatMenu.find((i) => i.id === tab || i.path === tab);
     if (menuItem?.path) onNavigate(menuItem.path as Tab);
@@ -179,10 +213,9 @@ export const Layout: React.FC<LayoutProps> = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // ✅ Un seul ouvert : toggle = ouvrir OU fermer, mais jamais plusieurs
   const toggleMenu = (menuId: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]
-    );
+    setExpandedMenu((prev) => (prev === menuId ? null : menuId));
   };
 
   const renderMenuItem = (item: MenuItem) => {
@@ -194,9 +227,8 @@ export const Layout: React.FC<LayoutProps> = ({
       (item.submenu?.some((s) => s.path === activeTab || s.id === activeTab) ?? false);
 
     const hasSub = !!item.submenu?.length;
-    const isExpanded = expandedMenus.includes(String(item.id));
+    const isExpanded = expandedMenu === String(item.id);
 
-    // Style EXACT du 2e layout (light/floating/blue)
     const baseBtn =
       "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative";
     const activeBtn = "bg-blue-600 text-white shadow-lg shadow-blue-600/30";
@@ -208,6 +240,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <button
             onClick={() => toggleMenu(String(item.id))}
             className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
+            type="button"
           >
             <div className="flex items-center gap-3.5">
               <Icon
@@ -218,9 +251,8 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
             <ChevronDown
               size={18}
-              className={`transition-transform ${
-                isExpanded ? "rotate-180" : ""
-              } ${isActive ? "text-white/90" : "text-gray-400 group-hover:text-blue-600"}`}
+              className={`transition-transform ${isExpanded ? "rotate-180" : ""} ${isActive ? "text-white/90" : "text-gray-400 group-hover:text-blue-600"
+                }`}
             />
           </button>
 
@@ -233,9 +265,9 @@ export const Layout: React.FC<LayoutProps> = ({
                   <button
                     key={String(sub.id)}
                     onClick={() => handleNavigate(sub.path ?? sub.id)}
-                    className={`${baseBtn} ${
-                      subActive ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : idleBtn
-                    } py-3`}
+                    className={`${baseBtn} ${subActive ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : idleBtn
+                      } py-3`}
+                    type="button"
                   >
                     <div className="flex items-center gap-3.5">
                       <SubIcon
@@ -247,9 +279,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
                     {typeof sub.badge === "number" && sub.badge > 0 && (
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          subActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-                        }`}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${subActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                          }`}
                       >
                         {sub.badge}
                       </span>
@@ -268,17 +299,21 @@ export const Layout: React.FC<LayoutProps> = ({
         key={String(item.id)}
         onClick={() => handleNavigate(item.path ?? item.id)}
         className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
+        type="button"
       >
         <div className="flex items-center gap-3.5">
-          <Icon size={20} className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`} />
+          <Icon
+            size={20}
+            className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`}
+          />
           {item.label}
         </div>
 
+
         {typeof item.badge === "number" && item.badge > 0 && (
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-            }`}
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+              }`}
           >
             {item.badge}
           </span>
@@ -289,8 +324,28 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-white flex font-sans text-black transition-colors duration-300">
-      {/* Fond (comme ton 2e layout) */}
       <div className="fixed inset-0 pointer-events-none z-0" />
+
+      {/* ✅ Scrollbar custom (fond blanc, thumb gris) */}
+      <style>{`
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(107,114,128,.7) transparent; /* thumb / track */
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 10px; }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: #ffffff;
+          border-radius: 999px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(107,114,128,.55);
+          border-radius: 999px;
+          border: 3px solid #ffffff; /* track blanc autour */
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(107,114,128,.8);
+        }
+      `}</style>
 
       {/* Toasts */}
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3">
@@ -307,14 +362,14 @@ export const Layout: React.FC<LayoutProps> = ({
         />
       )}
 
-      {/* Sidebar - Floating (STYLE EXACT du 2e) */}
+      {/* Sidebar FIXED desktop */}
       <aside
         className={`
-          fixed lg:static top-4 bottom-4 left-4 z-50 w-72
+          fixed top-4 bottom-4 left-4 z-50 w-72
           bg-white border border-blue-200
-          shadow-xl lg:shadow-lg rounded-3xl
+          shadow-xl rounded-3xl
           transform transition-all duration-300 ease-in-out flex flex-col
-          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0 lg:ml-4 lg:my-4"}
+          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"}
         `}
       >
         {/* Brand */}
@@ -335,13 +390,14 @@ export const Layout: React.FC<LayoutProps> = ({
             className="lg:hidden text-gray-400"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-label="Fermer le menu"
+            type="button"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-2 custom-scrollbar">
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-2 sidebar-scroll">
           {menuItems.map((item) => renderMenuItem(item))}
 
           <div className="my-4 mx-4 border-t border-blue-100" />
@@ -349,6 +405,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-3.5 px-4 py-3.5 text-sm font-medium rounded-2xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group"
+            type="button"
           >
             <LogOut size={20} className="text-gray-500 group-hover:text-red-500 transition-colors" />
             Déconnexion
@@ -357,41 +414,42 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Footer */}
         <div className="p-4 mt-auto border-t border-blue-100">
-          {/* Theme Toggle (même UI que ton 2e layout) */}
+          {/* Theme Toggle */}
           <div className="bg-blue-50 p-1 rounded-xl flex mb-4 border border-blue-200">
             <button
               onClick={toggleTheme}
-              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${
-                !isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
+              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${!isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
+                }`}
+              type="button"
             >
               <Sun size={14} className="mr-2" /> Light
             </button>
             <button
               onClick={toggleTheme}
-              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${
-                isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
+              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
+                }`}
+              type="button"
             >
               <Moon size={14} className="mr-2" /> Dark
             </button>
           </div>
 
-          {/* User Card (même style) */}
+          {/* User Card */}
           <div
             className="bg-blue-50 p-3 rounded-2xl flex items-center gap-3 border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
-            onClick={() => handleNavigate("profile")}
+            onClick={() => handleNavigate("/proprietaire/profile")}
+            role="button"
           >
             <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center ring-2 ring-white">
-                <User size={18} className="text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white">
+                {ownerInitials}
               </div>
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
             </div>
             <div className="overflow-hidden flex-1">
-              <p className="text-sm font-bold text-black truncate">Propriétaire</p>
+              <p className="text-sm font-bold text-black truncate">{ownerName}</p>
               <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 truncate">
-                Gestionnaire
+                Propriétaire
               </p>
             </div>
             <ChevronRight size={16} className="text-gray-400" />
@@ -399,13 +457,12 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 flex flex-col min-h-screen w-full lg:w-[calc(100%-20rem)] transition-all duration-300 relative z-10 bg-white">
-        {/* Header (même style) */}
+      {/* Main offset */}
+      <main className="flex-1 flex flex-col min-h-screen w-full transition-all duration-300 relative z-10 bg-white lg:ml-80">
+        {/* Header */}
         <header
-          className={`sticky top-0 z-30 transition-all duration-200 ${
-            scrolled ? "bg-white shadow-sm border-b border-blue-100" : "border-b border-blue-100"
-          }`}
+          className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white shadow-sm border-b border-blue-100" : "border-b border-blue-100"
+            }`}
         >
           <div className="px-4 lg:px-8 py-4 lg:py-6 flex justify-between items-center">
             <div className="flex items-center gap-3 lg:hidden">
@@ -413,6 +470,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="p-2 text-gray-600 hover:bg-blue-50 rounded-xl transition-colors"
                 aria-label="Ouvrir le menu"
+                type="button"
               >
                 <Menu size={24} />
               </button>
@@ -433,6 +491,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 className="relative p-2.5 bg-blue-50 text-gray-600 hover:text-blue-600 rounded-full transition-all shadow-sm hover:shadow-md focus:outline-none border border-blue-200"
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Afficher les notifications"
+                type="button"
               >
                 <Bell size={20} />
                 {notifications.some((n) => !n.isRead) && (
@@ -444,12 +503,12 @@ export const Layout: React.FC<LayoutProps> = ({
                 <div className="absolute right-0 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-blue-200 overflow-hidden animate-zoom-in ring-1 ring-black/5">
                   <div className="p-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
                     <h3 className="font-bold text-sm text-black">Notifications</h3>
-                    <button className="text-xs text-blue-600 font-medium hover:underline">
+                    <button className="text-xs text-blue-600 font-medium hover:underline" type="button">
                       Tout marquer lu
                     </button>
                   </div>
 
-                  <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                  <div className="max-h-80 overflow-y-auto sidebar-scroll">
                     {notifications.map((notif) => (
                       <div
                         key={notif.id}
@@ -457,11 +516,10 @@ export const Layout: React.FC<LayoutProps> = ({
                       >
                         <div className="flex gap-3">
                           <div
-                            className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                              notif.type === "critical"
+                            className={`w-2 h-2 mt-2 rounded-full shrink-0 ${notif.type === "critical"
                                 ? "bg-red-500 shadow-lg shadow-red-500/40"
                                 : "bg-blue-600 shadow-lg shadow-blue-600/40"
-                            }`}
+                              }`}
                           />
                           <div>
                             <p className="text-sm font-medium text-black group-hover:text-blue-600 transition-colors">
@@ -475,7 +533,7 @@ export const Layout: React.FC<LayoutProps> = ({
                       </div>
                     ))}
 
-                    <button className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800">
+                    <button className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" type="button">
                       Voir toutes les notifications
                     </button>
                   </div>

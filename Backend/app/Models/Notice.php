@@ -39,7 +39,6 @@ class Notice extends Model
         return $this->belongsTo(User::class, 'landlord_id');
     }
 
-    // ✅ IMPORTANT : tenant_id -> tenants.id
     public function tenant()
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');

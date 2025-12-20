@@ -19,7 +19,7 @@ import { TenantsList } from './components/TenantsList';
 import { Onboarding } from './components/Onboarding';
 import { MesBiens } from './components/MesBiens';
 import { Lease } from './components/Lease';
-import EtatsLieux from '../Admin/components/EtatsLieux';
+import EtatsLieux from './components/EtatsLieux';
 import { 
   Biens, Locataires, Locations, Inventaires, EtatDesLieux, 
   Finances, Carnet, Candidats, Outils, Corbeille 
@@ -27,8 +27,9 @@ import {
 import { Tab, ToastMessage } from './types';
 import { authService } from '@/services/api';
 import { DocumentsManager } from './components/DocumentsManager';
-import { PreavisList } from './components/PreavisList';
+import PreavisList from './components/PreavisList';
 import QuittancesIndependantes from './components/QuittancesIndependants';
+import LandlordIncidentsPage from './components/LandlordIncidentsPage';
 
 
 const ProprietaireApp: React.FC = () => {
@@ -185,6 +186,18 @@ const ProprietaireApp: React.FC = () => {
             onLogout={handleLogout}
           >
             <AjouterBien />
+          </Layout>
+        } />
+
+        <Route path="incidents" element={
+          <Layout
+            activeTab="incidents"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+          >
+            <LandlordIncidentsPage />
           </Layout>
         } />
         

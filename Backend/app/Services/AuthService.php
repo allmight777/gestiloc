@@ -61,37 +61,40 @@ class AuthService
      * @throws ValidationException
      */
     public function login(array $data): array
-    {
-        $user = User::where('email', $data['email'])->first();
+{
+    $user = User::with(['landlord', 'tenant'])->where('email', $data['email'])->first();
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages(['email' => ['Identifiants invalides']]);
-        }
-
-        $deviceName = $data['device_name'] ?? ('api-'.Str::random(8));
-        
-        // Révoquer les tokens existants si demandé
-        if (!empty($data['single_session']) && $data['single_session'] === true) {
-            $user->tokens()->delete();
-        }
-
-        $token = $user->createToken($deviceName)->plainTextToken;
-        $roles = $user->getRoleNames()->toArray();
-
-        return [
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'phone' => $user->phone,
-                'roles' => $roles,
-                'default_role' => !empty($roles) ? $roles[0] : null,
-            ],
-        ];
+    if (!$user || !Hash::check($data['password'], $user->password)) {
+        throw ValidationException::withMessages(['email' => ['Identifiants invalides']]);
     }
+
+    $deviceName = $data['device_name'] ?? ('api-'.Str::random(8));
+    
+    if (!empty($data['single_session']) && $data['single_session'] === true) {
+        $user->tokens()->delete();
+    }
+
+    $token = $user->createToken($deviceName)->plainTextToken;
+    $roles = $user->getRoleNames()->toArray();
+
+    // Récupérer first_name et last_name depuis landlord ou tenant
+    $firstName = $user->landlord->first_name ?? $user->tenant->first_name ?? null;
+    $lastName = $user->landlord->last_name ?? $user->tenant->last_name ?? null;
+
+    return [
+        'access_token' => $token,
+        'token_type' => 'Bearer',
+        'user' => [
+            'id' => $user->id,
+            'email' => $user->email,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'phone' => $user->phone,
+            'roles' => $roles,
+            'default_role' => !empty($roles) ? $roles[0] : null,
+        ],
+    ];
+}
 
     /**
      * Logout: revoke current token
