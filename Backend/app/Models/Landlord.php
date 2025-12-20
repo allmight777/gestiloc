@@ -11,19 +11,23 @@ class Landlord extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'first_name',
-        'last_name',
-        'company_name',
-        'address_billing',
-        'vat_number',
-        'meta'
-    ];
+   protected $fillable = [
+    'user_id',
+    'first_name',
+    'last_name',
+    'company_name',
+    'address_billing',
+    'vat_number',
+    'meta',
+    'fedapay_subaccount_id',
+    'fedapay_meta',
+];
 
-    protected $casts = [
-        'meta' => 'array',
-    ];
+protected $casts = [
+    'meta' => 'array',
+    'fedapay_meta' => 'array',
+];
+
 
     public function user(): BelongsTo
     {

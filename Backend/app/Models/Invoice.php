@@ -51,4 +51,17 @@ class Invoice extends Model
     {
         return max(0, $this->amount_total - $this->amount_paid);
     }
+
+    // ... en bas du modèle Invoice
+
+public function payment()
+{
+    return $this->hasOne(\App\Models\Payment::class);
+}
+
+public function rentReceipt()
+{
+    return $this->hasOne(\App\Models\RentReceipt::class);
+}
+
 }

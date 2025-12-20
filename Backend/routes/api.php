@@ -19,7 +19,9 @@ use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\RentReceiptController;
 use App\Http\Controllers\Api\Tenant\MaintenanceRequestController as TenantMaintenanceRequestController;
 use App\Http\Controllers\Api\Landlord\MaintenanceRequestController as LandlordMaintenanceRequestController;
-
+use App\Http\Controllers\Api\TenantPaymentController;
+use App\Http\Controllers\Api\FedapayWebhookController;
+use App\Http\Controllers\Api\TenantQuittanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +33,10 @@ use App\Http\Controllers\Api\Landlord\MaintenanceRequestController as LandlordMa
 Route::post('auth/register/landlord', [AuthController::class, 'registerLandlord']);
 Route::post('auth/login', [AuthController::class, 'login']);
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/tenant/invoices/{invoice}/receipt', [TenantQuittanceController::class, 'download']);
+});
+
 // Le locataire définit son mot de passe après invitation
 Route::post('auth/tenant/set-password', [AuthController::class, 'setPassword']);
 
@@ -39,6 +45,15 @@ Route::get('auth/tenant/accept-invitation/{invitationId}', [AuthController::clas
     ->name('api.auth.accept-invitation');
 
 Route::post('auth/tenant/complete-registration', [AuthController::class, 'completeTenantRegistration']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/tenant/invoices/{invoice}/pay', [TenantPaymentController::class, 'payInvoice']);
+});
+
+// webhook: pas d'auth
+Route::post('/webhooks/fedapay', [FedapayWebhookController::class, 'handle']);
+
+
 
 // ---------- Routes protégées ----------
 Route::middleware(['auth:sanctum'])->group(function () {
