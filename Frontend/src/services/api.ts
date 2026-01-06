@@ -254,70 +254,63 @@ export const authService = {
   },
 
   register: async (userData: any): Promise<RegisterResponse> => {
-    try {
-      await initializeCsrfToken();
+  try {
+    await initializeCsrfToken();
 
-      const requestData = {
-        first_name: userData.first_name || userData.firstName,
-        last_name: userData.last_name || userData.lastName,
-        email: userData.email,
-        phone: userData.phone,
-        password: userData.password,
-        password_confirmation:
-          userData.password_confirmation || userData.confirmPassword,
-        role: userData.role || 'proprietaire',
-      };
+    // ✅ on envoie TEL QUEL (ton Auth.tsx prépare déjà un payload backend-friendly)
+    const response = await api.post<RegisterResponse>(
+      '/auth/register/landlord',
+      userData,
+      {
+        withCredentials: true,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      }
+    );
 
-      const response = await api.post<RegisterResponse>(
-        '/auth/register/landlord',
-        requestData
-      );
+    const responseData = response.data;
 
-      const responseData = response.data;
+    // ✅ stock token/user si présent (2 formats possibles)
+    const token = responseData.token || responseData.data?.token;
+    const user = responseData.user || responseData.data?.user;
 
-      if (responseData.token || responseData.data?.token) {
-        const token = responseData.token || responseData.data?.token;
-        const user = responseData.user || responseData.data?.user;
+    if (token) localStorage.setItem('token', token);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
 
-        if (token) localStorage.setItem('token', token);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
+    return responseData;
+  } catch (error: any) {
+    console.error('API - Register error:', error);
+
+    if (error.response) {
+      if (error.response.data?.errors) {
+        const validationErrors = Object.values(error.response.data.errors).flat();
+        const errorMessage =
+          validationErrors && validationErrors.length > 0
+            ? (validationErrors as string[]).join('\n')
+            : 'Une erreur de validation est survenue';
+
+        const errorWithResponse = new Error(errorMessage);
+        (errorWithResponse as any).response = error.response;
+        throw errorWithResponse;
       }
 
-      return responseData;
-    } catch (error: any) {
-      console.error('API - Register error:', error);
-
-      if (error.response) {
-        if (error.response.data) {
-          if (error.response.data.errors) {
-            const validationErrors = Object.values(
-              error.response.data.errors
-            ).flat();
-            const errorMessage =
-              validationErrors && validationErrors.length > 0
-                ? (validationErrors as string[]).join('\n')
-                : 'Une erreur de validation est survenue';
-            const errorWithResponse = new Error(errorMessage);
-            (errorWithResponse as any).response = error.response;
-            throw errorWithResponse;
-          }
-          if (error.response.data.message) {
-            const errorWithResponse = new Error(error.response.data.message);
-            (errorWithResponse as any).response = error.response;
-            throw errorWithResponse;
-          }
-        }
-
-        const statusError = new Error(
-          `Erreur ${error.response.status}: ${error.response.statusText}`
-        );
-        (statusError as any).response = error.response;
-        throw statusError;
+      if (error.response.data?.message) {
+        const errorWithResponse = new Error(error.response.data.message);
+        (errorWithResponse as any).response = error.response;
+        throw errorWithResponse;
       }
 
-      throw error;
+      const statusError = new Error(`Erreur ${error.response.status}: ${error.response.statusText}`);
+      (statusError as any).response = error.response;
+      throw statusError;
     }
-  },
+
+    throw error;
+  }
+},
 
   logout: async () => {
     try {
@@ -1092,13 +1085,13 @@ export const rentReceiptService = {
   },
 
   // ✅ PDF quittance indépendante
-downloadPdf: async (id: number): Promise<Blob> => {
-  await initializeCsrfToken();
-  const response = await api.get(`/quittance-independent/${id}`, {
-    responseType: "blob",
-  });
-  return new Blob([response.data], { type: "application/pdf" });
-},
+  downloadPdf: async (id: number): Promise<Blob> => {
+    await initializeCsrfToken();
+    const response = await api.get(`/quittance-independent/${id}`, {
+      responseType: "blob",
+    });
+    return new Blob([response.data], { type: "application/pdf" });
+  },
 
 };
 
