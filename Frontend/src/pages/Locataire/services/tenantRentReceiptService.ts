@@ -3,6 +3,29 @@ import api from "@/services/api";
 export type RentReceiptType = "independent" | "invoice" | string;
 export type RentReceiptStatus = "issued" | "draft" | string;
 
+export interface Lease {
+  id: number;
+  property_id: number;
+  tenant_id: number;
+  start_date: string;
+  end_date?: string;
+  rent_amount: number;
+  charges_amount: number;
+  deposit?: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Landlord {
+  id: number;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type RentReceipt = {
   id: number;
   lease_id: number;
@@ -22,8 +45,8 @@ export type RentReceipt = {
   pdf_path?: string | null;
 
   property?: { id: number; address: string; city?: string | null } | null;
-  lease?: any;
-  landlord?: any;
+  lease?: Lease | null;
+  landlord?: Landlord | null;
 
   created_at?: string;
   updated_at?: string;
