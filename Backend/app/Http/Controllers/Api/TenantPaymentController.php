@@ -5,13 +5,31 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Services\Fedapay\FedapayPayments;
+use App\Services\FedapayPayments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class TenantPaymentController extends Controller
 {
+
+    public function index(Request $request)
+{
+    $user = $request->user();
+    $tenant = $user->tenant;
+
+    if (!$tenant) {
+        return response()->json(['data' => []]);
+    }
+
+    $invoices = \App\Models\Invoice::query()
+        ->whereHas('lease', fn($q) => $q->where('tenant_id', $tenant->id))
+        ->orderByDesc('due_date')
+        ->get();
+
+    return response()->json(['data' => $invoices]);
+}
+
     public function __construct(private FedapayPayments $fedapay) {}
 
     /**
