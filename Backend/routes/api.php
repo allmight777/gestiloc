@@ -147,6 +147,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('incidents/{id}', [TenantMaintenanceRequestController::class, 'update']);
         Route::delete('incidents/{id}', [TenantMaintenanceRequestController::class, 'destroy']);
         Route::post('incidents/upload', [TenantMaintenanceRequestController::class, 'upload']);
+       
+        Route::get('invoices', [\App\Http\Controllers\Api\TenantPaymentController::class, 'index']);
+       
+
     });
 
     /* =========================
