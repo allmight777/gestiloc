@@ -3,328 +3,385 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Admin\UserResource;
 use App\Models\User;
-use App\Models\Landlord;
-use App\Models\Tenant;
 use App\Models\Property;
 use App\Models\Lease;
-use App\Models\MaintenanceRequest;
 use App\Models\Invoice;
+use App\Models\MaintenanceRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Carbon\Carbon;
 
 class UserController extends Controller
 {
+    /**
+     * LISTE DES UTILISATEURS (ADMIN)
+     */
     public function index(Request $request): JsonResponse
     {
-        $query = User::with(['landlord', 'tenant', 'suspendedByAdmin', 'deactivatedByAdmin'])
-            ->withCount(['properties', 'leases']);
+        $query = User::query()->with([
+            'roles',
+            'landlord',
+            'tenant',
+            'agency',
+        ]);
 
-        // Filtres
-        if ($request->filled('role')) {
-            $query->role($request->role);
+        /* ======================
+         * FILTRE PAR TYPE MÉTIER
+         * ====================== */
+        if ($request->filled('type')) {
+            match ($request->type) {
+                'admin' =>
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'admin')),
+
+                'tenant' =>
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'tenant')),
+
+                'landlord' =>
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'landlord'))
+                          ->whereHas('landlord', fn ($q) => $q->where('owner_type', 'landlord')),
+
+                'co_owner' =>
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'landlord'))
+                          ->whereHas('landlord', fn ($q) => $q->where('owner_type', 'co_owner')),
+
+                'agency' =>
+                    $query->whereHas('roles', fn ($q) => $q->where('name', 'agency')),
+
+                default => null,
+            };
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('online')) {
-            $isOnline = $request->boolean('online');
-            if ($isOnline) {
-                $query->where('last_activity_at', '>=', now()->subMinutes(5));
-            } else {
-                $query->where(function($q) {
-                    $q->whereNull('last_activity_at')
-                      ->orWhere('last_activity_at', '<', now()->subMinutes(5));
-                });
-            }
-        }
-
+        /* ======================
+         * RECHERCHE TRANSVERSE
+         * ====================== */
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+
+            $query->where(function ($q) use ($search) {
                 $q->where('email', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhereHas('landlord', function($subQ) use ($search) {
-                      $subQ->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('company_name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('tenant', function($subQ) use ($search) {
-                      $subQ->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
-                  });
+                  ->orWhereHas('landlord', fn ($q) =>
+                        $q->where('first_name', 'like', "%{$search}%")
+                          ->orWhere('last_name', 'like', "%{$search}%")
+                          ->orWhere('company_name', 'like', "%{$search}%"))
+                  ->orWhereHas('tenant', fn ($q) =>
+                        $q->where('first_name', 'like', "%{$search}%")
+                          ->orWhere('last_name', 'like', "%{$search}%"))
+                  ->orWhereHas('agency', fn ($q) =>
+                        $q->where('company_name', 'like', "%{$search}%"));
             });
         }
 
-        // Tri
-        $sortBy = $request->get('sort_by', 'created_at');
+        /* ======================
+         * TRI & PAGINATION
+         * ====================== */
+        $sortable = ['created_at', 'email'];
+        $sortBy = in_array($request->sort_by, $sortable) ? $request->sort_by : 'created_at';
         $sortOrder = $request->get('sort_order', 'desc');
-        
-        if (in_array($sortBy, ['email', 'last_activity_at', 'created_at', 'status'])) {
-            $query->orderBy($sortBy, $sortOrder);
-        }
 
-        $users = $query->paginate($request->get('per_page', 15));
+        $users = $query
+            ->orderBy($sortBy, $sortOrder)
+            ->paginate($request->get('per_page', 15));
 
-        return response()->json([
-            'data' => $users->items(),
-            'meta' => [
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-            ],
-        ]);
+        return UserResource::collection($users)->response();
     }
 
+    /**
+     * DÉTAIL D’UN UTILISATEUR
+     */
     public function show(User $user): JsonResponse
     {
-        $user->load([
-            'landlord',
-            'tenant', 
-            'suspendedByAdmin:id,email',
-            'deactivatedByAdmin:id,email'
+        $user->load(['roles', 'landlord', 'tenant', 'agency']);
+
+        return response()->json([
+            'user'     => new UserResource($user),
+            'summary'  => $this->buildSummary($user),
+            'activity' => $this->buildActivity($user),
         ]);
-
-        $data = [
-            'user' => $user,
-            'summary' => $this->getUserSummary($user),
-            'activity' => $this->getUserActivity($user),
-        ];
-
-        return response()->json($data);
     }
 
-    private function getUserSummary(User $user): array
+    /**
+     * SYNTHÈSE MÉTIER (ADMIN)
+     */
+    private function buildSummary(User $user): array
     {
-        $summary = [
-            'role' => null,
-            'properties_count' => 0,
-            'active_leases_count' => 0,
-            'total_revenue' => 0,
-            'maintenance_requests_count' => 0,
-        ];
-
-        if ($user->isLandlord()) {
-            $summary['role'] = 'landlord';
-            $landlord = $user->landlord;
-            
-            if ($landlord) {
-                $summary['properties_count'] = $landlord->properties()->count();
-                
-                $activeLeases = Lease::whereHas('property', function($q) use ($landlord) {
-                    $q->where('landlord_id', $landlord->id);
-                })->where('status', 'active')->count();
-                
-                $summary['active_leases_count'] = $activeLeases;
-                
-                // Revenus totaux (factures payées)
-                $totalRevenue = Invoice::whereHas('lease.property', function($q) use ($landlord) {
-                    $q->where('landlord_id', $landlord->id);
-                })->where('status', 'paid')->sum('amount_paid');
-                
-                $summary['total_revenue'] = (float) $totalRevenue;
-                
-                // Tickets maintenance
-                $summary['maintenance_requests_count'] = MaintenanceRequest::whereHas('property', function($q) use ($landlord) {
-                    $q->where('landlord_id', $landlord->id);
-                })->count();
-            }
-        } elseif ($user->isTenant()) {
-            $summary['role'] = 'tenant';
-            $tenant = $user->tenant;
-            
-            if ($tenant) {
-                $summary['active_leases_count'] = $tenant->leases()->where('status', 'active')->count();
-                
-                // Revenus payés par ce locataire
-                $totalRevenue = Invoice::whereHas('lease', function($q) use ($tenant) {
-                    $q->where('tenant_id', $tenant->id);
-                })->where('status', 'paid')->sum('amount_paid');
-                
-                $summary['total_revenue'] = (float) $totalRevenue;
-                
-                // Tickets maintenance créés par ce locataire
-                $summary['maintenance_requests_count'] = MaintenanceRequest::where('tenant_id', $tenant->id)->count();
-            }
-        } elseif ($user->isAdmin()) {
-            $summary['role'] = 'admin';
+        /* ========= ADMIN ========= */
+        if ($user->isAdmin()) {
+            return ['role' => 'admin'];
         }
 
-        return $summary;
+        /* ========= TENANT ========= */
+        if ($user->isTenant() && $user->tenant) {
+            return [
+                'role' => 'tenant',
+                'active_leases' => $user->tenant->leases()->where('status', 'active')->count(),
+                'total_paid' => (float) Invoice::whereHas('lease', fn ($q) =>
+                    $q->where('tenant_id', $user->tenant->id)
+                )->where('status', 'paid')->sum('amount_paid'),
+                'maintenance_requests' =>
+                    MaintenanceRequest::where('tenant_id', $user->tenant->id)->count(),
+            ];
+        }
+
+        /* ========= LANDLORD / CO-OWNER ========= */
+        if ($user->isLandlord() && $user->landlord) {
+            $landlord = $user->landlord;
+
+            return [
+                'role' => $landlord->isCoOwner() ? 'co_owner' : 'landlord',
+                'properties' => $landlord->properties()->count(),
+                'active_leases' => Lease::whereHas('property', fn ($q) =>
+                    $q->where('landlord_id', $landlord->id)
+                )->where('status', 'active')->count(),
+                'total_revenue' => (float) Invoice::whereHas('lease.property', fn ($q) =>
+                    $q->where('landlord_id', $landlord->id)
+                )->where('status', 'paid')->sum('amount_paid'),
+                'maintenance_requests' => MaintenanceRequest::whereHas('property', fn ($q) =>
+                    $q->where('landlord_id', $landlord->id)
+                )->count(),
+            ];
+        }
+
+        /* ========= AGENCY ========= */
+        if ($user->agency) {
+            return [
+                'role' => 'agency',
+                'managed_properties' => $user->agency->managedProperties()->count(),
+                'delegations' => $user->agency->delegations()->count(),
+            ];
+        }
+
+        return [];
     }
 
-    private function getUserActivity(User $user): array
+    /**
+     * ACTIVITÉ RÉCENTE (30 JOURS)
+     */
+    private function buildActivity(User $user): array
     {
         $activity = [];
-
-        // Activité récente (derniers 30 jours)
-        $thirtyDaysAgo = now()->subDays(30);
+        $since = now()->subDays(30);
 
         if ($user->isLandlord() && $user->landlord) {
-            // Nouveaux biens
             $newProperties = Property::where('landlord_id', $user->landlord->id)
-                ->where('created_at', '>=', $thirtyDaysAgo)
-                ->count();
-            
+                ->where('created_at', '>=', $since)->count();
+
             if ($newProperties > 0) {
                 $activity[] = [
                     'type' => 'properties_added',
                     'count' => $newProperties,
-                    'period' => '30_days',
-                    'label' => "{$newProperties} bien(s) ajouté(s)"
-                ];
-            }
-
-            // Nouveaux baux
-            $newLeases = Lease::whereHas('property', function($q) use ($user) {
-                $q->where('landlord_id', $user->landlord->id);
-            })->where('created_at', '>=', $thirtyDaysAgo)->count();
-            
-            if ($newLeases > 0) {
-                $activity[] = [
-                    'type' => 'leases_created',
-                    'count' => $newLeases,
-                    'period' => '30_days',
-                    'label' => "{$newLeases} bail(aux) créé(s)"
+                    'label' => "{$newProperties} bien(s) ajouté(s)",
                 ];
             }
         }
 
-        // Dernière connexion
+        if ($user->isTenant() && $user->tenant) {
+            $payments = Invoice::whereHas('lease', fn ($q) =>
+                $q->where('tenant_id', $user->tenant->id)
+            )->where('created_at', '>=', $since)->count();
+
+            if ($payments > 0) {
+                $activity[] = [
+                    'type' => 'payments',
+                    'count' => $payments,
+                    'label' => "{$payments} paiement(s) effectué(s)",
+                ];
+            }
+        }
+
         if ($user->last_activity_at) {
             $activity[] = [
                 'type' => 'last_login',
                 'date' => $user->last_activity_at->toISOString(),
-                'label' => 'Dernière connexion: ' . $user->last_activity_at->format('d/m/Y H:i')
+                'label' => 'Dernière connexion',
             ];
         }
 
         return $activity;
     }
 
-    public function suspend(Request $request, User $user): JsonResponse
+    /**
+     * SUSPENDRE UN UTILISATEUR
+     */
+    public function suspend(User $user): JsonResponse
     {
-        $request->validate([
-            'reason' => 'required|string|max:500',
-        ]);
+        // Vérifier que l'utilisateur n'est pas déjà suspendu
+        if ($user->status === 'suspended') {
+            return response()->json([
+                'message' => 'User is already suspended',
+                'error' => 'already_suspended'
+            ], 400);
+        }
 
+        // Vérifier qu'on ne peut pas suspendre un admin
         if ($user->isAdmin()) {
             return response()->json([
-                'message' => 'Impossible de suspendre un compte administrateur'
+                'message' => 'Cannot suspend admin users',
+                'error' => 'cannot_suspend_admin'
             ], 403);
         }
 
-        if ($user->isSuspended()) {
-            return response()->json([
-                'message' => 'Ce compte est déjà suspendu'
-            ], 422);
-        }
+        // Mettre à jour le statut et enregistrer la suspension
+        $user->update([
+            'status' => 'suspended',
+            'suspended_at' => now(),
+            'suspended_by' => auth()->id(),
+            'suspension_reason' => request('reason', 'Administrative suspension')
+        ]);
 
-        $user->suspend($request->reason, $request->user());
+        // Révoquer tous les tokens d'authentification
+        $user->tokens()->delete();
 
         return response()->json([
-            'message' => 'Compte suspendu avec succès',
-            'user' => $user->fresh(['suspendedByAdmin:id,email'])
+            'message' => 'User suspended successfully',
+            'user' => new UserResource($user)
         ]);
     }
 
-    public function reactivate(Request $request, User $user): JsonResponse
+    /**
+     * RÉACTIVER UN UTILISATEUR
+     */
+    public function reactivate(User $user): JsonResponse
     {
-        if (!$user->isSuspended()) {
+        // Vérifier que l'utilisateur est bien suspendu
+        if ($user->status !== 'suspended') {
             return response()->json([
-                'message' => 'Ce compte n\'est pas suspendu'
-            ], 422);
+                'message' => 'User is not suspended',
+                'error' => 'not_suspended'
+            ], 400);
         }
 
-        $user->reactivate($request->user());
+        // Mettre à jour le statut
+        $user->update([
+            'status' => 'active',
+            'suspended_at' => null,
+            'suspended_by' => null,
+            'suspension_reason' => null
+        ]);
 
         return response()->json([
-            'message' => 'Compte réactivé avec succès',
-            'user' => $user->fresh()
+            'message' => 'User reactivated successfully',
+            'user' => new UserResource($user)
         ]);
     }
 
-    public function deactivate(Request $request, User $user): JsonResponse
+    /**
+     * DÉSACTIVER UN UTILISATEUR
+     */
+    public function deactivate(User $user): JsonResponse
     {
-        $request->validate([
-            'reason' => 'required|string|max:500',
-        ]);
-
+        // Vérifier qu'on ne peut pas désactiver un admin
         if ($user->isAdmin()) {
             return response()->json([
-                'message' => 'Impossible de désactiver un compte administrateur'
+                'message' => 'Cannot deactivate admin users',
+                'error' => 'cannot_deactivate_admin'
             ], 403);
         }
 
-        if ($user->isDeactivated()) {
+        // Vérifier que l'utilisateur n'est pas déjà désactivé
+        if ($user->status === 'deactivated') {
             return response()->json([
-                'message' => 'Ce compte est déjà désactivé'
-            ], 422);
+                'message' => 'User is already deactivated',
+                'error' => 'already_deactivated'
+            ], 400);
         }
 
-        $user->deactivate($request->reason, $request->user());
+        // Mettre à jour le statut
+        $user->update([
+            'status' => 'deactivated',
+            'deactivated_at' => now(),
+            'deactivated_by' => auth()->id(),
+            'deactivation_reason' => request('reason', 'Administrative deactivation')
+        ]);
+
+        // Révoquer tous les tokens d'authentification
+        $user->tokens()->delete();
 
         return response()->json([
-            'message' => 'Compte désactivé avec succès',
-            'user' => $user->fresh(['deactivatedByAdmin:id,email'])
+            'message' => 'User deactivated successfully',
+            'user' => new UserResource($user)
         ]);
     }
 
+    /**
+     * IMPOSSONNER UN UTILISATEUR
+     */
     public function impersonate(User $user): JsonResponse
     {
+        // Vérifier que l'utilisateur n'est pas suspendu/désactivé
+        if (in_array($user->status, ['suspended', 'deactivated'])) {
+            return response()->json([
+                'message' => 'Cannot impersonate suspended or deactivated users',
+                'error' => 'cannot_impersonate'
+            ], 403);
+        }
+
+        // Vérifier qu'on ne peut pas impersonner un admin
         if ($user->isAdmin()) {
             return response()->json([
-                'message' => 'Impossible d\'impersonner un administrateur'
+                'message' => 'Cannot impersonate admin users',
+                'error' => 'cannot_impersonate_admin'
             ], 403);
         }
 
-        if (!$user->isActive()) {
-            return response()->json([
-                'message' => 'Impossible d\'impersonner un compte non actif'
-            ], 403);
-        }
-
-        // Créer un token d'impersonnation
-        $token = $user->createToken('admin-impersonation', ['*'], now()->addHours(1));
+        // Créer un token d'impersonation
+        $token = $user->createToken('impersonation', [
+            'impersonated_by' => auth()->id(),
+            'impersonated_at' => now()->toISOString()
+        ]);
 
         return response()->json([
-            'message' => 'Impersonnation démarrée',
+            'message' => 'Impersonation successful',
             'token' => $token->plainTextToken,
-            'user' => $user,
+            'user' => new UserResource($user),
             'expires_at' => $token->accessToken->expires_at
         ]);
     }
 
-    public function getOnlineStats(): JsonResponse
+    /**
+     * SUPPRIMER UN UTILISATEUR
+     */
+    public function destroy(User $user): JsonResponse
     {
-        $totalUsers = User::count();
-        $onlineUsers = User::where('last_activity_at', '>=', now()->subMinutes(5))->count();
-        $offlineUsers = $totalUsers - $onlineUsers;
+        // Vérifier qu'on ne peut pas supprimer un admin
+        if ($user->isAdmin()) {
+            return response()->json([
+                'message' => 'Cannot delete admin users',
+                'error' => 'cannot_delete_admin'
+            ], 403);
+        }
 
-        // Par rôle
-        $onlineByRole = User::where('last_activity_at', '>=', now()->subMinutes(5))
-            ->with('roles')
-            ->get()
-            ->groupBy(function($user) {
-                return $user->getRoleNames()->first() ?? 'unknown';
-            })
-            ->map(function($group) {
-                return $group->count();
-            });
+        // Vérifier les dépendances avant suppression
+        $dependencies = [];
+
+        if ($user->isLandlord() && $user->landlord) {
+            $propertiesCount = $user->landlord->properties()->count();
+            if ($propertiesCount > 0) {
+                $dependencies[] = "{$propertiesCount} properties";
+            }
+        }
+
+        if ($user->isTenant() && $user->tenant) {
+            $leasesCount = $user->tenant->leases()->count();
+            if ($leasesCount > 0) {
+                $dependencies[] = "{$leasesCount} active leases";
+            }
+        }
+
+        if (!empty($dependencies)) {
+            return response()->json([
+                'message' => 'Cannot delete user with active dependencies',
+                'error' => 'has_dependencies',
+                'dependencies' => $dependencies
+            ], 400);
+        }
+
+        // Soft delete
+        $user->delete();
 
         return response()->json([
-            'total_users' => $totalUsers,
-            'online_users' => $onlineUsers,
-            'offline_users' => $offlineUsers,
-            'online_percentage' => $totalUsers > 0 ? round(($onlineUsers / $totalUsers) * 100, 1) : 0,
-            'online_by_role' => $onlineByRole,
-            'updated_at' => now()->toISOString()
+            'message' => 'User deleted successfully'
         ]);
     }
 }

@@ -8,14 +8,16 @@ use App\Http\Controllers\Api\CoOwnerController;
 use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\LeaseController;
 use App\Http\Controllers\Api\PropertyDelegationController;
-use App\Http\Controllers\Api\Landlord\DashboardController;
+use App\Http\Controllers\Api\Landlord\DashboardController as LandlordDashboardController;
 use App\Http\Controllers\Api\Tenant\MyLeaseController;
 use App\Http\Controllers\Api\Tenant\TicketController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\Finance\InvoiceController;
 use App\Http\Controllers\Api\Finance\TransactionController;
 use App\Http\Controllers\Api\Finance\PdfController;
+use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\FinanceController;
+use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\PaymentManagementController;
 use App\Http\Controllers\Api\PropertyConditionReportController;
 use App\Http\Controllers\Api\NoticeController;
@@ -189,7 +191,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['role:landlord'])->group(function () {
 
         // Dashboard bailleur
-        Route::get('dashboard', [DashboardController::class, 'stats']);
+        Route::get('dashboard', [LandlordDashboardController::class, 'stats']);
 
         // Tenants
         Route::post('tenants/invite', [TenantController::class, 'invite']);
@@ -241,7 +243,53 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /* =========================
     |  ADMIN ONLY
     |========================= */
-    Route::middleware(['role:admin'])->group(function () {
+    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+        // Dashboard admin
+       
+
+        /* ======================
+         * GESTION UTILISATEURS
+         * ====================== */
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
+
+        Route::get('/users/{user}', [UserController::class, 'show'])
+            ->name('users.show');
+
+        /* ======================
+         * ACTIONS ADMIN
+         * ====================== */
+        Route::post('/users/{user}/suspend', [UserController::class, 'suspend'])
+            ->name('users.suspend');
+
+        Route::post('/users/{user}/reactivate', [UserController::class, 'reactivate'])
+            ->name('users.reactivate');
+
+        Route::post('/users/{user}/deactivate', [UserController::class, 'deactivate'])
+            ->name('users.deactivate');
+
+        /* ======================
+         * IMPERSONATION
+         * ====================== */
+        Route::post('/users/{user}/impersonate', [UserController::class, 'impersonate'])
+            ->name('users.impersonate');
+
+        /* ======================
+         * SUPPRESSION
+         * ====================== */
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->name('users.destroy');
+
+        /* ======================
+         * STATS
+         * ====================== */
+        Route::get('/users-stats/online', [UserController::class, 'getOnlineStats'])
+            ->name('users.stats.online');
+
+        // Dashboard admin
+        Route::get('dashboard/stats', [DashboardController::class, 'stats'])
+            ->name('admin.dashboard.stats');
+        
         // admin routes...
     });
 

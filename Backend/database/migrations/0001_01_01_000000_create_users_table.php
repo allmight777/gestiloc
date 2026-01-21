@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password')->nullable(); // created may be null for invited tenants
             $table->string('phone')->nullable()->unique();
-            // $table->string('role')->nullable()->index(); // mirrored role for quick queries (admin,landlord,tenant)
+            // mirrored role for quick queries (admin,landlord,tenant)
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
