@@ -166,7 +166,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('incidents/{id}', [TenantMaintenanceRequestController::class, 'update']);
         Route::delete('incidents/{id}', [TenantMaintenanceRequestController::class, 'destroy']);
         Route::post('incidents/upload', [TenantMaintenanceRequestController::class, 'upload']);
-       
+
         Route::get('invoices', [\App\Http\Controllers\Api\TenantPaymentController::class, 'index']);
     });
 
@@ -181,6 +181,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Tenants
         Route::post('tenants/invite', [TenantController::class, 'invite']);
         Route::get('tenants', [TenantController::class, 'index']);
+
+        // ✅ NOUVELLES ROUTES - Gestion des biens des locataires
+        Route::post('tenants/{tenant}/assign-property', [TenantController::class, 'assignProperty']);
+        Route::delete('tenants/{tenant}/properties/{property}', [TenantController::class, 'unassignProperty']);
+        Route::get('tenants/{tenant}/properties', [TenantController::class, 'getTenantProperties']);
+        Route::get('properties/{property}/history', [TenantController::class, 'getPropertyHistory']);
+        Route::get('occupation-stats', [TenantController::class, 'getOccupationStats']);
 
         // Co-owners
         Route::post('co-owners/invite', [CoOwnerController::class, 'invite']);
@@ -205,13 +212,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('incidents/{id}', [LandlordMaintenanceRequestController::class, 'show']);
         Route::put('incidents/{id}', [LandlordMaintenanceRequestController::class, 'update']);
 
-        // Delegations (anciennes routes - DOUBLONS, À SUPPRIMER SI VOUS UTILISEZ LES NOUVELLES)
-        // Route::get('landlords/delegations', [PropertyDelegationController::class, 'listLandlordDelegations']);
-        // Route::get('landlords/co-owners/{coOwner}/delegations', [PropertyDelegationController::class, 'listLandlordCoOwnerDelegations']);
-        // Route::post('properties/{property}/delegate', [PropertyDelegationController::class, 'delegate']);
-        // Route::post('properties/{property}/revoke-delegation', [PropertyDelegationController::class, 'revoke']);
-        // Route::put('delegations/{delegation}', [PropertyDelegationController::class, 'update']);
-        
         // Audit trails
         Route::get('delegations/{delegation}/audits', [\App\Http\Controllers\Api\DelegationAuditController::class, 'index']);
         Route::get('properties/{property}/delegation-audits', [\App\Http\Controllers\Api\DelegationAuditController::class, 'propertyAudits']);
@@ -225,30 +225,35 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /* =========================
     |  CO_OWNER ONLY
     |========================= */
-    Route::middleware(['auth:sanctum'])->group(function () {
-        // Routes pour le co-propriétaire connecté (co-owners/me/*)
-        Route::get('co-owners/me/profile', [CoOwnerMeController::class, 'getProfile']);
-        Route::put('co-owners/me/profile', [CoOwnerMeController::class, 'updateProfile']);
-        Route::get('co-owners/me/delegated-properties', [CoOwnerMeController::class, 'getDelegatedProperties']);
-        Route::get('co-owners/me/leases', [CoOwnerMeController::class, 'getLeases']);
-        Route::get('co-owners/me/receipts', [CoOwnerMeController::class, 'getRentReceipts']);
-        Route::get('co-owners/me/tenants', [CoOwnerMeController::class, 'getTenants']);
-        Route::get('co-owners/me/notices', [CoOwnerMeController::class, 'getNotices']);
-        /* ========= CO-OWNER: Gestion des photos ========= */
-Route::post('/co-owners/me/properties/{propertyId}/photos', [CoOwnerMeController::class, 'uploadPropertyPhotos']);
-        
-        // Routes FedaPay (co-propriétaire)
-        Route::get('co-owners/me/fedapay', [CoOwnerFedapayController::class, 'show']);
-        Route::post('co-owners/me/fedapay/subaccount', [CoOwnerFedapayController::class, 'createOrUpdate']);
-        
-        // Routes pour les propriétés
-        Route::put('co-owners/me/properties/{propertyId}', [CoOwnerMeController::class, 'updateProperty']);
-        
-        Route::middleware(['role:co_owner'])->group(function () {
-            // Route::get('co-owners/{coOwner}/delegations', [PropertyDelegationController::class, 'listCoOwnerDelegations']);
-            // Route::post('landlords/invite', [CoOwnerController::class, 'invite']);
-            // Route::get('my-invitations', [CoOwnerController::class, 'index']);
-        });
+    Route::middleware(['auth:sanctum'])->prefix('co-owners/me')->group(function () {
+        // Profile
+        Route::get('profile', [CoOwnerMeController::class, 'getProfile']);
+        Route::put('profile', [CoOwnerMeController::class, 'updateProfile']);
+
+        // Properties management
+        Route::get('delegated-properties', [CoOwnerMeController::class, 'getDelegatedProperties']);
+        Route::put('properties/{propertyId}', [CoOwnerMeController::class, 'updateProperty']);
+        Route::post('properties/{propertyId}/photos', [CoOwnerMeController::class, 'uploadPropertyPhotos']);
+
+        // Property audit history
+        Route::get('properties/{propertyId}/audit-history', [CoOwnerMeController::class, 'getPropertyAuditHistory']);
+
+        // Leases and receipts
+        Route::get('leases', [CoOwnerMeController::class, 'getLeases']);
+        Route::get('receipts', [CoOwnerMeController::class, 'getRentReceipts']);
+
+        // Tenants and notices
+        Route::get('tenants', [CoOwnerMeController::class, 'getTenants']);
+        Route::get('notices', [CoOwnerMeController::class, 'getNotices']);
+
+        // Delegations
+        Route::get('delegations', [CoOwnerMeController::class, 'getDelegations']);
+        Route::post('delegations/{delegationId}/accept', [CoOwnerMeController::class, 'acceptDelegation']);
+        Route::post('delegations/{delegationId}/reject', [CoOwnerMeController::class, 'rejectDelegation']);
+
+        // Fedapay
+        Route::get('fedapay', [CoOwnerFedapayController::class, 'show']);
+        Route::post('fedapay/subaccount', [CoOwnerFedapayController::class, 'createOrUpdate']);
     });
 
     /* =========================

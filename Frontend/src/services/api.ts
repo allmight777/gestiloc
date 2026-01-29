@@ -1258,4 +1258,25 @@ export const apiService = {
 };
 
 
+export interface TenantApi {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  solvency_score: number | null;
+  property?: {
+    name: string;
+    address: string;
+    city: string;
+  };
+  is_invited?: boolean;
+}
+
+export interface TenantIndexResponse {
+  tenants: TenantApi[];
+  invitations: any[];
+}
+
 export default api;

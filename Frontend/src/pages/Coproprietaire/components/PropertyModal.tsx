@@ -15,8 +15,19 @@ import {
   Sofa,
   CheckCircle,
   AlertCircle,
+  Edit,
+  ChevronRight,
+  ChevronLeft,
+  Star,
+  Layers,
+  Award,
+  Shield,
+  Globe,
+  Maximize2,
+  Camera,
+  ExternalLink,
+  Building2, // J'ajoute Building2 ici
 } from 'lucide-react';
-import { Button } from '../../Proprietaire/components/ui/Button';
 
 interface PropertyModalProps {
   property: any | null;
@@ -51,245 +62,970 @@ export const PropertyModal: React.FC<PropertyModalProps> = ({
         return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${firstPhoto}`;
       }
     }
-    return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
+    return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1200";
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} />
+    <>
+      <style>{`
+        :root{
+          --gradA:#667eea;
+          --gradB:#764ba2;
+          --indigo:#4f46e5;
+          --violet:#7c3aed;
+          --emerald:#10b981;
+          --rose:#f43f5e;
+          
+          --bg:#ffffff;
+          --ink:#0f172a;
+          --muted:#64748b;
+          --muted2:#94a3b8;
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-          {/* Header */}
-          <div className="bg-white px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Building className="w-6 h-6 text-blue-600" />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{property.name}</h3>
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {property.address}, {property.city}
+          --line: rgba(15,23,42,.08);
+          --line2: rgba(15,23,42,.05);
+
+          --shadow: 0 22px 70px rgba(0,0,0,.18);
+          --shadow2: 0 12px 35px rgba(15,23,42,.10);
+          --shadow3: 0 8px 18px rgba(15,23,42,.08);
+
+          --ring: 0 0 0 4px rgba(79,70,229,.14);
+          --halo: 0 0 40px rgba(79,70,229,.12);
+        }
+
+        *{ box-sizing:border-box; }
+
+        .modal-overlay-premium{
+          position: fixed;
+          inset: 0;
+          background: rgba(15,23,42,.82);
+          backdrop-filter: blur(12px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 26px;
+          z-index: 9999;
+          opacity: 0;
+          animation: fadeIn 0.25s ease forwards;
+        }
+
+        @keyframes fadeIn {
+          to { opacity: 1; }
+        }
+
+        .modal-shell-premium{
+          max-width: 1000px;
+          width: 100%;
+          margin: 0 auto;
+          opacity: 0;
+          transform: translateY(20px);
+          animation: slideUp 0.3s ease 0.1s forwards;
+        }
+
+        @keyframes slideUp {
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-card-premium{
+          background: rgba(255,255,255,.96);
+          border-radius: 24px;
+          box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.4);
+          overflow: hidden;
+          position: relative;
+          backdrop-filter: blur(20px);
+          overflow-y: auto;
+          max-height: 90vh;
+        }
+
+        .modal-card-premium::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          pointer-events:none;
+          background:
+            radial-gradient(circle at 20% 10%, rgba(102,126,234,.08), rgba(102,126,234,0) 60%),
+            radial-gradient(circle at 80% 20%, rgba(118,75,162,.06), rgba(118,75,162,0) 60%),
+            radial-gradient(circle at 40% 90%, rgba(16,185,129,.04), rgba(16,185,129,0) 60%);
+          z-index: 0;
+        }
+
+        .modal-header-premium{
+          background: linear-gradient(135deg, var(--gradA) 0%, var(--gradB) 100%);
+          padding: 2rem 2.5rem;
+          color: #fff;
+          position: relative;
+          overflow:hidden;
+          z-index: 1;
+        }
+
+        .modal-header-premium::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,.1) 50%, transparent 70%);
+          animation: shine 3s infinite;
+          z-index: 0;
+        }
+
+        @keyframes shine {
+          0%, 100% { transform: translateX(-100%); }
+          50% { transform: translateX(100%); }
+        }
+
+        .modal-header-art-premium{
+          position:absolute;
+          inset:0;
+          pointer-events:none;
+          z-index:0;
+        }
+        .modal-header-art-premium .blob{
+          position:absolute;
+          right:-120px;
+          top:-140px;
+          width: 480px;
+          height: 480px;
+          opacity: .22;
+          filter: drop-shadow(0 18px 44px rgba(0,0,0,.18));
+        }
+
+        .modal-header-row-premium{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap: 14px;
+          flex-wrap: wrap;
+          position: relative;
+          z-index: 2;
+        }
+
+        .modal-title-wrap-premium{ display:flex; flex-direction:column; gap: 8px; flex: 1; }
+
+        .modal-title-premium{
+          display:flex;
+          align-items:center;
+          gap: 12px;
+          font-weight: 1000;
+          letter-spacing: -0.025em;
+          font-size: 26px;
+          margin: 0;
+          line-height: 1.1;
+          color: white;
+        }
+
+        .modal-subtitle-premium{
+          margin: 0;
+          opacity: .94;
+          font-weight: 650;
+          font-size: 14px;
+          max-width: 72ch;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .modal-badge-row-premium{
+          display:flex;
+          gap: .6rem;
+          align-items:center;
+          flex-wrap: wrap;
+        }
+
+        .modal-pill-head-premium{
+          display:inline-flex;
+          align-items:center;
+          gap: .5rem;
+          padding: .5rem .75rem;
+          border-radius: 999px;
+          background: rgba(255,255,255,.14);
+          border: 1px solid rgba(255,255,255,.18);
+          backdrop-filter: blur(10px);
+          font-weight: 850;
+          font-size: .82rem;
+          white-space: nowrap;
+          transition: 180ms ease;
+        }
+        .modal-pill-head-premium:hover{ transform: translateY(-1px); }
+
+        .close-btn-premium{
+          position: absolute;
+          top: 24px;
+          right: 24px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(255,255,255,.18);
+          border: 1px solid rgba(255,255,255,.25);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          z-index: 10;
+          box-shadow: 0 8px 24px rgba(0,0,0,.12);
+        }
+        .close-btn-premium:hover{
+          background: rgba(255,255,255,.28);
+          transform: rotate(90deg) scale(1.05);
+        }
+
+        .modal-body-premium{
+          padding: 2.25rem;
+          position: relative;
+          z-index: 1;
+        }
+
+        .property-image-container{
+          position: relative;
+          border-radius: 20px;
+          overflow: hidden;
+          margin-bottom: 2rem;
+          box-shadow: var(--shadow2), 0 0 0 1px rgba(15,23,42,.05);
+          border: 1px solid rgba(255,255,255,.6);
+        }
+
+        .property-image{
+          width: 100%;
+          height: 320px;
+          object-fit: cover;
+          display: block;
+        }
+
+        .image-overlay{
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(transparent, rgba(15,23,42,.85));
+          padding: 1.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+        }
+
+        .image-badges{
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .image-badge{
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          background: rgba(255,255,255,.92);
+          border-radius: 999px;
+          font-weight: 850;
+          font-size: .85rem;
+          color: var(--ink);
+          box-shadow: 0 4px 16px rgba(0,0,0,.12);
+        }
+
+        .grid-premium{
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        .section-premium{
+          background: rgba(255,255,255,.85);
+          padding: 1.5rem;
+          border-radius: 18px;
+          border: 1px solid rgba(17,24,39,.08);
+          box-shadow: var(--shadow3);
+          backdrop-filter: blur(10px);
+          position: relative;
+          overflow:hidden;
+          transition: 200ms ease;
+        }
+        .section-premium:hover{
+          transform: translateY(-2px);
+          box-shadow: 0 18px 40px rgba(15,23,42,.12);
+          border-color: rgba(79,70,229,.15);
+        }
+
+        .section-premium::before{
+          content:"";
+          position:absolute;
+          inset:0;
+          background:
+            radial-gradient(500px 200px at 90% 0%, rgba(124,58,237,.04), transparent 62%),
+            radial-gradient(500px 200px at 10% 0%, rgba(79,70,229,.05), transparent 62%);
+          pointer-events:none;
+        }
+
+        .section-head-premium{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap: 10px;
+          margin-bottom: 1rem;
+          padding-bottom: .75rem;
+          border-bottom: 2px solid rgba(102,126,234,.18);
+        }
+
+        .section-title-premium{
+          display:flex;
+          align-items:center;
+          gap: 10px;
+          font-weight: 950;
+          font-size: 15px;
+          margin: 0;
+          letter-spacing: -0.01em;
+          color: var(--ink);
+        }
+
+        .section-icon-premium{
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(102,126,234,.1), rgba(118,75,162,.1));
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--indigo);
+        }
+
+        .pill-premium{
+          display:inline-flex;
+          align-items:center;
+          gap: .45rem;
+          padding: .4rem .8rem;
+          border-radius: 999px;
+          background: rgba(79,70,229,.08);
+          border: 1px solid rgba(79,70,229,.18);
+          color: #4338ca;
+          font-weight: 950;
+          font-size: .78rem;
+          white-space: nowrap;
+          box-shadow: 0 4px 12px rgba(79,70,229,.08);
+        }
+
+        .info-grid{
+          display:grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: .75rem;
+        }
+
+        .info-item{
+          display:flex;
+          flex-direction:column;
+          gap: 4px;
+        }
+
+        .info-label{
+          font-size: 12px;
+          font-weight: 850;
+          color: #475569;
+          letter-spacing: -0.005em;
+          display:flex;
+          align-items:center;
+          gap: 6px;
+        }
+
+        .info-value{
+          font-size: 14px;
+          font-weight: 750;
+          color: var(--ink);
+          padding: 8px 12px;
+          background: rgba(249,250,251,.8);
+          border-radius: 10px;
+          border: 1px solid rgba(226,232,240,.6);
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+        }
+
+        .info-value-highlight{
+          background: linear-gradient(135deg, rgba(102,126,234,.08), rgba(118,75,162,.08));
+          border-color: rgba(102,126,234,.2);
+          color: var(--indigo);
+          font-weight: 850;
+        }
+
+        .equipment-grid{
+          display:flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .equipment-badge{
+          display:inline-flex;
+          align-items:center;
+          gap: 6px;
+          padding: 8px 14px;
+          background: rgba(249,250,251,.8);
+          border: 1px solid rgba(226,232,240,.6);
+          border-radius: 999px;
+          font-weight: 850;
+          font-size: .85rem;
+          color: var(--ink);
+          transition: 180ms ease;
+        }
+        .equipment-badge:hover{
+          transform: translateY(-1px);
+          background: rgba(255,255,255,1);
+          border-color: rgba(79,70,229,.3);
+          box-shadow: 0 6px 16px rgba(79,70,229,.08);
+        }
+
+        .description-box{
+          padding: 1rem;
+          background: rgba(249,250,251,.8);
+          border: 1px solid rgba(226,232,240,.6);
+          border-radius: 12px;
+          font-size: 14px;
+          line-height: 1.6;
+          color: var(--muted);
+          font-weight: 650;
+        }
+
+        .footer-premium{
+          display:flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 1.75rem 2.25rem;
+          border-top: 1px solid rgba(15,23,42,.06);
+          background: rgba(249,250,251,.92);
+        }
+
+        .btn-premium{
+          border: 2px solid rgba(67,56,202,.20);
+          background: rgba(255,255,255,.92);
+          color: #4338ca;
+          border-radius: 14px;
+          padding: 12px 24px;
+          font-weight: 950;
+          font-size: 14px;
+          display:inline-flex;
+          align-items:center;
+          gap: 10px;
+          cursor: pointer;
+          transition: 180ms ease;
+          box-shadow: 0 8px 24px rgba(15,23,42,.06);
+          white-space: nowrap;
+          font-family: inherit;
+        }
+        .btn-premium:hover:not(:disabled){
+          transform: translateY(-2px);
+          background: rgba(67,56,202,.06);
+          box-shadow: 0 14px 32px rgba(15,23,42,.10);
+        }
+
+        .btn-premium-danger{
+          color: #e11d48;
+          border-color: rgba(225,29,72,.18);
+        }
+        .btn-premium-danger:hover:not(:disabled){ background: rgba(225,29,72,.06); }
+
+        .btn-premium-primary{
+          border: none;
+          color:#fff;
+          background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+          box-shadow: 0 14px 30px rgba(79,70,229,.22), 0 0 0 1px rgba(255,255,255,.2);
+        }
+        .btn-premium-primary:hover:not(:disabled){
+          box-shadow: 0 18px 34px rgba(79,70,229,.28), 0 0 0 1px rgba(255,255,255,.3);
+          transform: translateY(-2px);
+        }
+
+        .btn-premium-primary span{
+          background: rgba(255,255,255,.12);
+          padding: 4px 8px;
+          border-radius: 6px;
+          margin-left: 6px;
+          font-size: .9em;
+        }
+
+        @media (max-width: 900px){
+          .grid-premium{ grid-template-columns: 1fr; }
+          .modal-overlay-premium{ padding: 16px; }
+          .modal-header-premium{ padding: 1.5rem; }
+          .modal-body-premium{ padding: 1.5rem; }
+          .footer-premium{ padding: 1.5rem; flex-direction: column; }
+          .btn-premium{ width: 100%; justify-content:center; }
+          .modal-header-art-premium .blob{ right:-200px; top:-220px; }
+          .info-grid{ grid-template-columns: 1fr; }
+        }
+      `}</style>
+
+      <div className="modal-overlay-premium" onClick={onClose}>
+        <div className="modal-shell-premium" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card-premium">
+            {/* Header */}
+            <div className="modal-header-premium">
+              <div className="modal-header-art-premium" aria-hidden="true">
+                <svg className="blob" viewBox="0 0 600 600" fill="none">
+                  <path
+                    d="M420 70C500 110 560 190 560 290C560 420 460 520 320 540C190 560 70 490 50 360C30 240 110 140 240 90C310 62 360 44 420 70Z"
+                    fill="rgba(255,255,255,.15)"
+                  />
+                </svg>
+              </div>
+
+              <button className="close-btn-premium" onClick={onClose}>
+                <X size={20} color="white" />
+              </button>
+
+              <div className="modal-header-row-premium">
+                <div className="modal-title-wrap-premium">
+                  <h1 className="modal-title-premium">
+                    <Building2 size={24} />
+                    {property.name}
+                    <span className="pill-premium">
+                      <Star size={12} />
+                      {property.reference_code || 'REF'}
+                    </span>
+                  </h1>
+                  <p className="modal-subtitle-premium">
+                    <MapPin size={16} />
+                    {property.address}, {property.city} • {property.zip_code} • {property.country || 'France'}
                   </p>
                 </div>
+
+                <div className="modal-badge-row-premium">
+                  <span className="modal-pill-head-premium">
+                    <Home size={16} />
+                    {property.property_type || 'Bien'}
+                  </span>
+                  <span className="modal-pill-head-premium">
+                    <Award size={16} />
+                    {property.status || 'Disponible'}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            {/* Body */}
+            <div className="modal-body-premium">
+              {/* Image principale avec badges */}
+              <div className="property-image-container">
+                <img
+                  src={getPropertyImage()}
+                  alt={property.name}
+                  className="property-image"
+                />
+                <div className="image-overlay">
+                  <div className="image-badges">
+                    <span className="image-badge">
+                      <Ruler size={14} />
+                      {property.surface || '—'} m²
+                    </span>
+                    <span className="image-badge">
+                      <Bed size={14} />
+                      {property.bedroom_count || '0'} chambres
+                    </span>
+                    <span className="image-badge">
+                      <DollarSign size={14} />
+                      {formatCurrency(property.rent_amount)}
+                    </span>
+                  </div>
+                  <button className="modal-pill-head-premium">
+                    <Camera size={14} />
+                    {property.photos?.length || '0'} photos
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid d'informations */}
+              <div className="grid-premium">
+                {/* Colonne gauche */}
+                <div className="space-y-6">
+                  {/* Informations générales */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <Building size={16} />
+                        </div>
+                        Informations générales
+                      </h2>
+                      <span className="pill-premium">Détails</span>
+                    </div>
+                    
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Building size={12} />
+                          Type
+                        </div>
+                        <div className="info-value">
+                          {property.property_type || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Shield size={12} />
+                          Statut
+                        </div>
+                        <div className={`info-value ${property.status === 'available' ? 'info-value-highlight' : ''}`}>
+                          {property.status || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                        <div className="info-label">
+                          <Globe size={12} />
+                          Description
+                        </div>
+                        <div className="description-box">
+                          {property.description || 'Aucune description disponible'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Localisation */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <MapPin size={16} />
+                        </div>
+                        Localisation
+                      </h2>
+                      <span className="pill-premium">Adresse</span>
+                    </div>
+                    
+                    <div className="info-grid">
+                      <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                        <div className="info-label">
+                          <Home size={12} />
+                          Adresse complète
+                        </div>
+                        <div className="info-value info-value-highlight">
+                          {property.address}, {property.city}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Layers size={12} />
+                          Quartier
+                        </div>
+                        <div className="info-value">
+                          {property.district || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <MapPin size={12} />
+                          Code postal
+                        </div>
+                        <div className="info-value">
+                          {property.zip_code || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Globe size={12} />
+                          Pays
+                        </div>
+                        <div className="info-value">
+                          {property.country || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Layers size={12} />
+                          Région
+                        </div>
+                        <div className="info-value">
+                          {property.state || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Composition */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <DoorOpen size={16} />
+                        </div>
+                        Composition
+                      </h2>
+                      <span className="pill-premium">Pièces</span>
+                    </div>
+                    
+                    <div className="equipment-grid">
+                      <span className="equipment-badge">
+                        <DoorOpen size={14} />
+                        {property.room_count || '0'} pièces
+                      </span>
+                      <span className="equipment-badge">
+                        <Bed size={14} />
+                        {property.bedroom_count || '0'} chambres
+                      </span>
+                      <span className="equipment-badge">
+                        <Bath size={14} />
+                        {property.bathroom_count || '0'} salles de bain
+                      </span>
+                      <span className="equipment-badge">
+                        <DoorOpen size={14} />
+                        {property.wc_count || '0'} WC
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Colonne droite */}
+                <div className="space-y-6">
+                  {/* Caractéristiques */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <Ruler size={16} />
+                        </div>
+                        Caractéristiques
+                      </h2>
+                      <span className="pill-premium">Dimensions</span>
+                    </div>
+                    
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Maximize2 size={12} />
+                          Surface
+                        </div>
+                        <div className="info-value info-value-highlight">
+                          {property.surface || '—'} m²
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Layers size={12} />
+                          Étage
+                        </div>
+                        <div className="info-value">
+                          {property.floor || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Building size={12} />
+                          Total étages
+                        </div>
+                        <div className="info-value">
+                          {property.total_floors || '—'}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item">
+                        <div className="info-label">
+                          <Calendar size={12} />
+                          Année construction
+                        </div>
+                        <div className="info-value">
+                          {property.construction_year || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tarification */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <DollarSign size={16} />
+                        </div>
+                        Tarification
+                      </h2>
+                      <span className="pill-premium">Prix</span>
+                    </div>
+                    
+                    <div className="info-grid">
+                      <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                        <div className="info-label">
+                          <DollarSign size={12} />
+                          Loyer mensuel
+                        </div>
+                        <div className="info-value info-value-highlight">
+                          {formatCurrency(property.rent_amount)}
+                        </div>
+                      </div>
+                      
+                      <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                        <div className="info-label">
+                          <DollarSign size={12} />
+                          Charges mensuelles
+                        </div>
+                        <div className="info-value">
+                          {formatCurrency(property.charges_amount)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Équipements */}
+                  <div className="section-premium">
+                    <div className="section-head-premium">
+                      <h2 className="section-title-premium">
+                        <div className="section-icon-premium">
+                          <Sofa size={16} />
+                        </div>
+                        Équipements
+                      </h2>
+                      <span className="pill-premium">Confort</span>
+                    </div>
+                    
+                    <div className="equipment-grid">
+                      {property.has_garage && (
+                        <span className="equipment-badge">
+                          <Car size={14} /> Garage
+                        </span>
+                      )}
+                      {property.has_parking && (
+                        <span className="equipment-badge">
+                          <Car size={14} /> Parking
+                        </span>
+                      )}
+                      {property.is_furnished && (
+                        <span className="equipment-badge">
+                          <Sofa size={14} /> Meublé
+                        </span>
+                      )}
+                      {property.has_elevator && (
+                        <span className="equipment-badge">
+                          <Building size={14} /> Ascenseur
+                        </span>
+                      )}
+                      {property.has_balcony && (
+                        <span className="equipment-badge">
+                          <Home size={14} /> Balcon
+                        </span>
+                      )}
+                      {property.has_terrace && (
+                        <span className="equipment-badge">
+                          <Home size={14} /> Terrasse
+                        </span>
+                      )}
+                      {property.has_cellar && (
+                        <span className="equipment-badge">
+                          <Building size={14} /> Cave
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Équipements supplémentaires */}
+                    {property.amenities && property.amenities.length > 0 && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <div className="info-label" style={{ marginBottom: '8px' }}>
+                          <CheckCircle size={12} />
+                          Équipements supplémentaires
+                        </div>
+                        <div className="equipment-grid">
+                          {property.amenities.map((amenity: string, index: number) => (
+                            <span key={index} className="equipment-badge">
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Délégation */}
+                  {property.delegation && (
+                    <div className="section-premium">
+                      <div className="section-head-premium">
+                        <h2 className="section-title-premium">
+                          <div className="section-icon-premium">
+                            <Users size={16} />
+                          </div>
+                          Délégation
+                        </h2>
+                        <span className="pill-premium">Gestion</span>
+                      </div>
+                      
+                      <div className="info-grid">
+                        <div className="info-item">
+                          <div className="info-label">
+                            <Shield size={12} />
+                            Statut
+                          </div>
+                          <div className="info-value">
+                            {property.delegation.status}
+                          </div>
+                        </div>
+                        
+                        <div className="info-item">
+                          <div className="info-label">
+                            <Calendar size={12} />
+                            Expire le
+                          </div>
+                          <div className="info-value">
+                            {property.delegation.expires_at 
+                              ? new Date(property.delegation.expires_at).toLocaleDateString('fr-FR')
+                              : '—'}
+                          </div>
+                        </div>
+                        
+                        <div className="info-item" style={{ gridColumn: 'span 2' }}>
+                          <div className="info-label">
+                            <CheckCircle size={12} />
+                            Permissions
+                          </div>
+                          <div className="info-value">
+                            {property.delegation.permissions?.join(', ') || 'Aucune'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="footer-premium">
               <button
+                className="btn-premium"
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X size={16} />
+                Fermer
               </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
-            {/* Image principale */}
-            <div className="mb-6">
-              <img
-                src={getPropertyImage()}
-                alt={property.name}
-                className="w-full h-64 object-cover rounded-lg"
-              />
-            </div>
-
-            {/* Grille d'informations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Colonne gauche */}
-              <div className="space-y-6">
-                {/* Informations générales */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Building className="w-5 h-5" />
-                    Informations générales
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Type de bien</span>
-                      <span className="font-medium">{property.property_type || '—'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Référence</span>
-                      <span className="font-medium">{property.reference_code || '—'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Description</span>
-                      <span className="font-medium text-right">{property.description || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Localisation */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Localisation
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Adresse</span>
-                      <span className="font-medium">{property.address}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Ville</span>
-                      <span className="font-medium">{property.city}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Code postal</span>
-                      <span className="font-medium">{property.zip_code || '—'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Pays</span>
-                      <span className="font-medium">{property.country || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Colonne droite */}
-              <div className="space-y-6">
-                {/* Caractéristiques */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Ruler className="w-5 h-5" />
-                    Caractéristiques
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Surface</span>
-                      <span className="font-medium">{property.surface || '—'} m²</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Étage</span>
-                      <span className="font-medium">{property.floor || '—'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Année construction</span>
-                      <span className="font-medium">{property.construction_year || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Composition */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <DoorOpen className="w-5 h-5" />
-                    Composition
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Bed className="w-4 h-4 text-gray-400" />
-                      <span>{property.bedroom_count || '0'} chambre(s)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Bath className="w-4 h-4 text-gray-400" />
-                      <span>{property.bathroom_count || '0'} salle(s) de bain</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DoorOpen className="w-4 h-4 text-gray-400" />
-                      <span>{property.room_count || '0'} pièce(s)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tarification */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    Tarification
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Loyer mensuel</span>
-                      <span className="font-medium">{formatCurrency(property.rent_amount)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Charges mensuelles</span>
-                      <span className="font-medium">{formatCurrency(property.charges_amount)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Équipements */}
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Sofa className="w-5 h-5" />
-                    Équipements
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {property.has_garage && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm">
-                        <Car className="w-3 h-3" /> Garage
-                      </span>
-                    )}
-                    {property.has_parking && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm">
-                        <Car className="w-3 h-3" /> Parking
-                      </span>
-                    )}
-                    {property.is_furnished && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm">
-                        <Sofa className="w-3 h-3" /> Meublé
-                      </span>
-                    )}
-                    {property.has_elevator && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm">
-                        <Building className="w-3 h-3" /> Ascenseur
-                      </span>
-                    )}
-                  </div>
-                </div>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {property.delegation?.permissions?.includes('edit') && (
+                  <button
+                    className="btn-premium btn-premium-primary"
+                    onClick={() => {
+                      onClose();
+                      notify('Utilisez le bouton "Modifier" sur la carte du bien', 'info');
+                    }}
+                  >
+                    <Edit size={16} />
+                    Modifier ce bien
+                    <span>Édition</span>
+                  </button>
+                )}
+                
+                <button
+                  className="btn-premium"
+                  onClick={() => {
+                    // Action pour voir les détails avancés
+                    notify('Vue détaillée activée', 'info');
+                  }}
+                >
+                  <ExternalLink size={16} />
+                  Voir les détails
+                  <span>Avancé</span>
+                </button>
               </div>
             </div>
-
-            {/* Délégation */}
-            {property.delegation && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="font-medium text-gray-900 mb-3">Informations de délégation</h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-600">Statut</span>
-                      <p className="font-medium">{property.delegation.status}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">Permissions</span>
-                      <p className="font-medium">{property.delegation.permissions?.join(', ') || '—'}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">Expire le</span>
-                      <p className="font-medium">
-                        {property.delegation.expires_at 
-                          ? new Date(property.delegation.expires_at).toLocaleDateString('fr-FR')
-                          : '—'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-            <Button variant="outline" onClick={onClose}>
-              Fermer
-            </Button>
-            {property.delegation?.permissions?.includes('edit') && (
-              <Button
-                onClick={() => {
-                  // Cette fonctionnalité sera gérée par le parent
-                  onClose();
-                  notify('Utilisez le bouton "Modifier" sur la carte du bien', 'info');
-                }}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Modifier ce bien
-              </Button>
-            )}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

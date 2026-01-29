@@ -119,7 +119,7 @@ export const Layout: React.FC<LayoutProps> = ({
       icon: Building,
       path: "/coproprietaire/biens",
       submenu: [
-        { id: "biens", label: "Mes biens délégués", icon: Home, path: "/coproprietaire/biens" },
+        { id: "biens", label: "Biens délégués", icon: Home, path: "/coproprietaire/biens" },
         { id: "delegations", label: "Délégations reçues", icon: Building, path: "/coproprietaire/delegations" },
       ],
     },
@@ -260,8 +260,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
     const baseBtn =
       "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative";
-    const activeBtn = "bg-blue-600 text-white shadow-lg shadow-blue-600/30";
-    const idleBtn = "text-gray-600 hover:bg-blue-50 hover:text-blue-600";
+    const activeBtn = "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/30";
+    const idleBtn = "text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-200";
 
     if (hasSub) {
       return (
@@ -274,14 +274,14 @@ export const Layout: React.FC<LayoutProps> = ({
             <div className="flex items-center gap-3.5">
               <Icon
                 size={20}
-                className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`}
+                className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
               />
               {item.label}
             </div>
             <ChevronDown
               size={18}
               className={`transition-transform ${isExpanded ? "rotate-180" : ""} ${
-                isActive ? "text-white/90" : "text-gray-400 group-hover:text-blue-600"
+                isActive ? "text-white/90" : "text-gray-500 group-hover:text-blue-600"
               }`}
             />
           </button>
@@ -296,7 +296,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     key={String(sub.id)}
                     onClick={() => handleNavigate(sub.path ?? sub.id)}
                     className={`${baseBtn} ${
-                      subActive ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : idleBtn
+                      subActive ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/30" : idleBtn
                     } py-3`}
                     type="button"
                   >
@@ -304,7 +304,7 @@ export const Layout: React.FC<LayoutProps> = ({
                       <SubIcon
                         size={18}
                         className={`${
-                          subActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"
+                          subActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"
                         }`}
                       />
                       {sub.label}
@@ -334,7 +334,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="flex items-center gap-3.5">
           <Icon
             size={20}
-            className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`}
+            className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
           />
           {item.label}
         </div>
@@ -349,119 +349,153 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex lg:flex-shrink-0">
-          <div className="flex flex-col w-64">
-            <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-4 h-16 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
-              </div>
-              <nav className="flex-1 px-4 py-6 space-y-2">
-                {menuItems.map(renderMenuItem)}
-              </nav>
-            </div>
-          </div>
-        </aside>
-
-        {/* Mobile sidebar */}
-        <div className={`fixed inset-0 z-50 lg:hidden ${isMobileMenuOpen ? '' : 'pointer-events-none'}`}>
-          <div className={`fixed inset-0 bg-gray-600 transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
-          <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white transform transition-transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
-              <button
-                type="button"
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <X className="h-6 w-6 text-white" />
-              </button>
-            </div>
-            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4">
-                <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
-              </div>
-              <nav className="mt-5 px-2 space-y-1">
-                {menuItems.map(renderMenuItem)}
-              </nav>
-            </div>
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div className="flex flex-col w-0 flex-1 overflow-hidden">
-          {/* Top bar */}
-          <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 lg:border-none">
-            <button
-              type="button"
-              className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 lg:hidden"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <div className="flex-1 px-4 flex justify-between items-center sm:px-6 lg:px-8">
-              <div className="flex-1">
-                <div className="max-w-lg">
-                  <h1 className="text-2xl font-bold text-gray-900">{activeTitle}</h1>
+    <>
+      <style>{`
+        /* Style global pour assurer un fond blanc */
+        body, #root {
+          background-color: white !important;
+        }
+        
+        .bg-gray-50 {
+          background-color: #ffffff !important;
+        }
+        
+        .bg-gray-900 {
+          background-color: #f9fafb !important;
+        }
+        
+        .dark .bg-gray-900 {
+          background-color: white !important;
+        }
+        
+        /* Ajustements pour les pages enfants */
+        main {
+          background-color: white !important;
+        }
+        
+        /* Cartes et conteneurs */
+        .bg-white {
+          background-color: white !important;
+        }
+        
+        /* Sidebar */
+        .border-gray-200 {
+          border-color: #e5e7eb !important;
+        }
+      `}</style>
+      
+      <div className="min-h-screen bg-white">
+        <div className="flex h-screen bg-white">
+          {/* Sidebar */}
+          <aside className="hidden lg:flex lg:flex-shrink-0">
+            <div className="flex flex-col w-64">
+              <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto shadow-lg">
+                <div className="flex items-center flex-shrink-0 px-4 h-16 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+                  <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">GestiLoc</h1>
                 </div>
-              </div>
-              <div className="ml-4 flex items-center md:ml-6 space-x-4">
-                {/* Theme toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                </button>
-
-                {/* User menu */}
-                <div className="relative">
+                <nav className="flex-1 px-4 py-6 space-y-2 bg-white">
+                  {menuItems.map(renderMenuItem)}
+                </nav>
+                <div className="p-4 border-t border-gray-200 bg-gradient-to-r from-blue-50/50 to-white">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/30">
                       {ownerInitials}
                     </div>
-                    <div className="hidden md:block">
-                      <div className="text-sm font-medium text-gray-900">{ownerName}</div>
-                      <div className="text-xs text-gray-500">Co-propriétaire</div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-gray-900">{ownerName}</div>
+                      <div className="text-xs text-gray-600">Co-propriétaire</div>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </aside>
 
-                {/* Logout */}
+          {/* Mobile sidebar */}
+          <div className={`fixed inset-0 z-50 lg:hidden ${isMobileMenuOpen ? '' : 'pointer-events-none'}`}>
+            <div className={`fixed inset-0 bg-gray-600/50 transition-opacity backdrop-blur-sm ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
+            <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white transform transition-transform shadow-2xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+              <div className="absolute top-0 right-0 -mr-12 pt-2">
                 <button
-                  onClick={onLogout}
-                  className="p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-                  title="Déconnexion"
+                  type="button"
+                  className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <LogOut className="w-5 h-5" />
+                  <X className="h-6 w-6 text-white" />
                 </button>
+              </div>
+              <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto bg-white">
+                <div className="flex-shrink-0 flex items-center px-4">
+                  <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">GestiLoc</h1>
+                </div>
+                <nav className="mt-5 px-2 space-y-1">
+                  {menuItems.map(renderMenuItem)}
+                </nav>
               </div>
             </div>
           </div>
 
-          {/* Page content */}
-          <main className="flex-1 relative overflow-y-auto focus:outline-none">
-            <div className="py-6">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {children}
+          {/* Main content */}
+          <div className="flex flex-col w-0 flex-1 overflow-hidden bg-white">
+            {/* Top bar */}
+            <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 lg:border-none shadow-sm">
+              <button
+                type="button"
+                className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+              <div className="flex-1 px-4 flex justify-between items-center sm:px-6 lg:px-8">
+                <div className="flex-1">
+                  <div className="max-w-lg">
+                    <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700">{activeTitle}</h1>
+                  </div>
+                </div>
+                <div className="ml-4 flex items-center md:ml-6 space-x-4">
+                  {/* Theme toggle */}
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  </button>
+
+                  {/* Logout */}
+                  <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                    title="Déconnexion"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </main>
+
+            {/* Page content */}
+            <main className="flex-1 relative overflow-y-auto focus:outline-none bg-white">
+              <div className="py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  {children}
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+
+        {/* Toast container */}
+        <div className="fixed bottom-4 right-4 z-50 space-y-2">
+          {toasts.map((toast) => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
         </div>
       </div>
-
-      {/* Toast container */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2">
-        {toasts.map((toast) => (
-          <Toast
-            key={toast.id}
-            message={toast.message}
-            type={toast.type}
-            onClose={() => removeToast(toast.id)}
-          />
-        ))}
-      </div>
-    </div>
+    </>
   );
 };

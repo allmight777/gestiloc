@@ -16,9 +16,19 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  ChevronRight,
+  ChevronLeft,
+  Star,
+  Shield,
+  Layers,
+  Ruler,
+  Bath,
+  Bed,
+  Car,
+  Sofa,
+  Building2,
+  ExternalLink,
 } from 'lucide-react';
-import { Button } from '../../Proprietaire/components/ui/Button';
-import { Card } from '../../Proprietaire/components/ui/Card';
 import { coOwnerApi, CoOwnerProperty } from '../../../services/coOwnerApi';
 import { PropertyModal } from './PropertyModal';
 import { PropertyEditModal } from './PropertyEditModal';
@@ -66,13 +76,13 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gradient-to-r from-emerald-50 to-white text-emerald-700 border border-emerald-200 shadow-emerald-100';
       case 'rented':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gradient-to-r from-blue-50 to-white text-blue-700 border border-blue-200 shadow-blue-100';
       case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gradient-to-r from-amber-50 to-white text-amber-700 border border-amber-200 shadow-amber-100';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gradient-to-r from-slate-50 to-white text-slate-700 border border-slate-200 shadow-slate-100';
     }
   };
 
@@ -118,7 +128,7 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
         return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/storage/${firstPhoto}`;
       }
     }
-    return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
+    return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=600";
   };
 
   const handleDeleteProperty = async (propertyId: number) => {
@@ -163,232 +173,457 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Biens délégués</h1>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="p-6">
-              <div className="animate-pulse space-y-4">
-                <div className="h-40 bg-gray-200 rounded-lg"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="min-h-screen bg-white p-6">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Biens délégués</h1>
+              <p className="text-gray-600">Chargement...</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border-2 border-blue-100 shadow-xl overflow-hidden animate-pulse">
+                <div className="h-64 bg-gradient-to-br from-blue-50 to-blue-100"></div>
+                <div className="p-6 space-y-4">
+                  <div className="h-6 bg-gradient-to-r from-blue-100 to-blue-50 rounded-full w-3/4"></div>
+                  <div className="h-4 bg-gradient-to-r from-blue-100 to-blue-50 rounded-full w-1/2"></div>
+                  <div className="h-4 bg-gradient-to-r from-blue-100 to-blue-50 rounded-full w-2/3"></div>
+                </div>
               </div>
-            </Card>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Biens délégués</h1>
-          <p className="text-gray-600 mt-1">
+    <div className="min-h-screen bg-white p-6">
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
+        }
+        
+        .stats-card {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          border-radius: 20px;
+          box-shadow: 0 10px 40px rgba(59, 130, 246, 0.1);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .stats-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+          z-index: 1;
+        }
+        
+        .stats-card:hover {
+          transform: translateY(-8px);
+          border-color: rgba(59, 130, 246, 0.4);
+          box-shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+          animation: glow 2s infinite;
+        }
+        
+        .property-card {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.15);
+          border-radius: 24px;
+          box-shadow: 0 15px 50px rgba(59, 130, 246, 0.1);
+          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .property-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+          background-size: 200% 100%;
+          animation: gradient 3s linear infinite;
+          z-index: 1;
+        }
+        
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        .property-card:hover {
+          transform: translateY(-12px);
+          border-color: rgba(59, 130, 246, 0.5);
+          box-shadow: 0 25px 70px rgba(59, 130, 246, 0.25);
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .search-input {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          border-radius: 16px;
+          box-shadow: 0 8px 30px rgba(59, 130, 246, 0.1);
+          transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 12px 40px rgba(59, 130, 246, 0.15);
+        }
+        
+        .filter-select {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          border-radius: 16px;
+          box-shadow: 0 8px 30px rgba(59, 130, 246, 0.1);
+          transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 12px 40px rgba(59, 130, 246, 0.15);
+        }
+        
+        .action-btn {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          border-radius: 14px;
+          box-shadow: 0 8px 25px rgba(59, 130, 246, 0.1);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .action-btn:hover {
+          transform: translateY(-3px);
+          border-color: #3b82f6;
+          box-shadow: 0 15px 40px rgba(59, 130, 246, 0.2);
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+        }
+        
+        .action-btn-primary {
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          border: none;
+          color: white;
+          box-shadow: 0 15px 40px rgba(59, 130, 246, 0.3);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .action-btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: 0.5s;
+        }
+        
+        .action-btn-primary:hover::before {
+          left: 100%;
+        }
+        
+        .action-btn-primary:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 20px 50px rgba(59, 130, 246, 0.4);
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+        
+        .empty-state {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.15);
+          border-radius: 24px;
+          box-shadow: 0 20px 60px rgba(59, 130, 246, 0.1);
+        }
+        
+        .icon-circle {
+          background: white;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
+        }
+        
+        .image-overlay {
+          background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, transparent 70%);
+        }
+        
+        .status-badge {
+          backdrop-filter: blur(10px);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-item {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.03));
+          border: 1px solid rgba(59, 130, 246, 0.1);
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+        
+        .info-item:hover {
+          border-color: rgba(59, 130, 246, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+        }
+      `}</style>
+
+      <div className="max-w-7xl mx-auto space-y-10">
+        {/* Header avec titre et description */}
+        <div className="flex flex-col">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent mb-3">
+            Biens délégués
+          </h1>
+          <p className="text-xl text-gray-700">
             Gérez les biens qui vous ont été délégués
           </p>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Building className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total</p>
-              <p className="text-xl font-bold text-gray-900">{properties.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Home className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Disponibles</p>
-              <p className="text-xl font-bold text-gray-900">
-                {properties.filter(p => p.status === 'available').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Loués</p>
-              <p className="text-xl font-bold text-gray-900">
-                {properties.filter(p => p.status === 'rented').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">En maintenance</p>
-              <p className="text-xl font-bold text-gray-900">
-                {properties.filter(p => p.status === 'maintenance').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Rechercher un bien..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="available">Disponible</option>
-            <option value="rented">Loué</option>
-            <option value="maintenance">En maintenance</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Properties Grid */}
-      {filteredProperties.length === 0 ? (
-        <Card className="p-12 text-center">
-          <Building className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {searchTerm || statusFilter !== 'all' ? 'Aucun bien trouvé' : 'Aucun bien délégué'}
-          </h3>
-          <p className="text-gray-600 mb-6">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Essayez de modifier vos filtres de recherche'
-              : 'Les biens qui vous seront délégués apparaîtront ici'
-            }
-          </p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <Card key={property.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              {/* Property Image */}
-              <div className="h-48 bg-gray-200 relative">
-                <img
-                  src={getPropertyImage(property)}
-                  alt={property.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
-                  }}
-                />
-                <div className="absolute top-3 right-3">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(property.status)}`}>
-                    {getStatusIcon(property.status)}
-                    {getStatusLabel(property.status)}
-                  </span>
-                </div>
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="stats-card p-6">
+            <div className="flex items-center gap-5">
+              <div className="icon-circle p-4 rounded-2xl">
+                <Building2 className="w-8 h-8 text-blue-600" />
               </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium mb-2">Total</p>
+                <p className="text-3xl font-bold text-gray-900">{properties.length}</p>
+              </div>
+            </div>
+          </div>
 
-              {/* Property Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1">
-                  {property.name}
-                </h3>
-                
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span className="line-clamp-1">
-                      {property.address}, {property.city}
+          <div className="stats-card p-6">
+            <div className="flex items-center gap-5">
+              <div className="icon-circle p-4 rounded-2xl">
+                <Home className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium mb-2">Disponibles</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {properties.filter(p => p.status === 'available').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-card p-6">
+            <div className="flex items-center gap-5">
+              <div className="icon-circle p-4 rounded-2xl">
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium mb-2">Loués</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {properties.filter(p => p.status === 'rented').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-card p-6">
+            <div className="flex items-center gap-5">
+              <div className="icon-circle p-4 rounded-2xl">
+                <AlertCircle className="w-8 h-8 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium mb-2">En maintenance</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {properties.filter(p => p.status === 'maintenance').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtres et recherche */}
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-blue-500 w-6 h-6" />
+            <input
+              type="text"
+              placeholder="Rechercher un bien..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input w-full pl-16 pr-6 py-4 text-lg focus:outline-none placeholder-gray-500"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="icon-circle p-3 rounded-xl">
+              <Filter className="w-6 h-6 text-blue-600" />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="filter-select px-6 py-4 text-lg focus:outline-none"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="available">Disponible</option>
+              <option value="rented">Loué</option>
+              <option value="maintenance">En maintenance</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Grille des biens */}
+        {filteredProperties.length === 0 ? (
+          <div className="empty-state p-16 text-center">
+            <div className="w-32 h-32 mx-auto mb-8 rounded-full icon-circle flex items-center justify-center">
+              <Building className="w-16 h-16 text-blue-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              {searchTerm || statusFilter !== 'all' ? 'Aucun bien trouvé' : 'Aucun bien délégué'}
+            </h3>
+            <p className="text-gray-700 mb-10 max-w-lg mx-auto text-lg">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Essayez de modifier vos filtres de recherche'
+                : 'Les biens qui vous seront délégués apparaîtront ici'
+              }
+            </p>
+            <button
+              onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}
+              className="action-btn px-8 py-4 inline-flex items-center gap-3 font-semibold text-lg text-blue-600"
+            >
+              <ExternalLink className="w-6 h-6" />
+              Réinitialiser les filtres
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {filteredProperties.map((property) => (
+              <div key={property.id} className="property-card">
+                {/* Image du bien */}
+                <div className="h-72 relative overflow-hidden">
+                  <img
+                    src={getPropertyImage(property)}
+                    alt={property.name}
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=600";
+                    }}
+                  />
+                  <div className="absolute inset-0 image-overlay"></div>
+                  <div className="absolute top-5 right-5">
+                    <span className={`status-badge inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold ${getStatusColor(property.status)}`}>
+                      {getStatusIcon(property.status)}
+                      {getStatusLabel(property.status)}
                     </span>
                   </div>
-                  
-                  {property.rent_amount && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      <span className="font-medium text-gray-900">
-                        {formatCurrency(property.rent_amount)}/mois
-                      </span>
-                    </div>
-                  )}
-
-                  {property.surface && (
-                    <div className="flex items-center gap-2">
-                      <Home className="w-4 h-4" />
-                      <span>{property.surface} m²</span>
-                    </div>
-                  )}
-
-                  {property.property_type && (
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4" />
-                      <span>{property.property_type}</span>
-                    </div>
-                  )}
+                  <div className="absolute bottom-5 left-5 right-5">
+                    <span className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-bold bg-white/95 backdrop-blur-sm text-gray-900 border border-blue-100">
+                      <Star className="w-5 h-5 text-amber-500" />
+                      {property.reference_code || 'REF-' + property.id}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewProperty(property)}
-                    className="flex-1"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Détails
-                  </Button>
-                  {property.delegation?.permissions?.includes('edit') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditProperty(property)}
-                      className="flex-1"
+                {/* Informations du bien */}
+                <div className="p-7">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-5 line-clamp-1">
+                    {property.name}
+                  </h3>
+                  
+                  <div className="space-y-5 mb-7">
+                    <div className="info-item p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                          <MapPin className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-900 text-lg line-clamp-1">{property.address}</p>
+                          <p className="text-gray-700">{property.city}, {property.zip_code}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {property.rent_amount && (
+                        <div className="info-item p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+                              <DollarSign className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Loyer</p>
+                              <p className="font-bold text-gray-900 text-lg">{formatCurrency(property.rent_amount)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {property.surface && (
+                        <div className="info-item p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                              <Ruler className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Surface</p>
+                              <p className="font-bold text-gray-900 text-lg">{property.surface} m²</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      {property.bedroom_count && (
+                        <span className="info-item inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium text-gray-800">
+                          <Bed className="w-4 h-4 text-blue-600" />
+                          {property.bedroom_count} chambre(s)
+                        </span>
+                      )}
+                      {property.bathroom_count && (
+                        <span className="info-item inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium text-gray-800">
+                          <Bath className="w-4 h-4 text-blue-600" />
+                          {property.bathroom_count} sdb
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-4 pt-6 border-t border-blue-100">
+                    <button
+                      onClick={() => handleViewProperty(property)}
+                      className="action-btn flex-1 py-4 px-6 flex items-center justify-center gap-3 font-bold text-gray-800"
                     >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Modifier
-                    </Button>
-                  )}
-                  {property.delegation?.permissions?.includes('delete') && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteProperty(property.id)}
-                      className="text-red-600 hover:text-red-700 hover:border-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                      <Eye className="w-6 h-6" />
+                      Détails
+                    </button>
+                    
+                    {property.delegation?.permissions?.includes('edit') && (
+                      <button
+                        onClick={() => handleEditProperty(property)}
+                        className="action-btn-primary flex-1 py-4 px-6 flex items-center justify-center gap-3 font-bold"
+                      >
+                        <Edit className="w-6 h-6" />
+                        Modifier
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Property View Modal */}
+      {/* Modals */}
       <PropertyModal
         property={selectedProperty}
         isOpen={isViewModalOpen}
@@ -397,7 +632,6 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
         onUpdate={handlePropertyUpdated}
       />
 
-      {/* Property Edit Modal */}
       <PropertyEditModal
         property={selectedEditProperty}
         isOpen={isEditModalOpen}
