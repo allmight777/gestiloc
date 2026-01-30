@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Search,
   X,
+  Eye,
+  Edit,
 } from "lucide-react";
 import {
   propertyService,
@@ -17,9 +19,6 @@ import {
   PaginatedResponse,
   uploadService,
 } from "@/services/api";
-
-// ✅ IMPORTANT : on n’écrit PLUS "http://localhost:8000" ici.
-// On prend l’origin depuis la config axios de api.ts (baseURL = http://localhost:8000/api)
 import api from "@/services/api";
 
 const styles = `
@@ -143,7 +142,6 @@ const styles = `
     display: flex;
     flex-direction: column;
     border: 1px solid #e5e7eb;
-    cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
@@ -316,6 +314,50 @@ const styles = `
     color: #6b7280;
     font-size: 0.75rem;
     font-weight: 500;
+  }
+
+  .property-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem 1rem;
+    border-top: 1px solid #e5e7eb;
+    justify-content: flex-end;
+  }
+
+  .btn-view {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: none;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-view:hover {
+    background: #e5e7eb;
+  }
+
+  .btn-edit {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .btn-edit:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
   }
 
   .empty-state,
@@ -604,15 +646,12 @@ const typeLabel: Record<string, string> = {
   other: "Autre",
 };
 
-// ✅ Utilise l’origin du backend à partir de axios baseURL (api.ts)
-// baseURL ex: http://localhost:8000/api  => origin: http://localhost:8000
 const getBackendOrigin = () => {
   const baseURL = (api.defaults.baseURL || "").toString();
-  if (!baseURL) return window.location.origin; // fallback
+  if (!baseURL) return window.location.origin;
   try {
     return new URL(baseURL).origin;
   } catch {
-    // si baseURL est relatif
     try {
       return new URL(baseURL, window.location.origin).origin;
     } catch {
@@ -621,33 +660,71 @@ const getBackendOrigin = () => {
   }
 };
 
-// ✅ Convertit un path stocké en DB (properties/xxx.png) en URL affichable
 const resolvePhotoUrl = (p?: string | null) => {
   if (!p) return null;
-
-  // déjà une URL complète
   if (p.startsWith("http://") || p.startsWith("https://")) return p;
-
   const origin = getBackendOrigin();
-
-  // Si tu stockes déjà "/storage/...."
   if (p.startsWith("/storage/")) return `${origin}${p}`;
-
-  // Cas DB : "properties/xxx.png" (ou parfois "properties\xxx.png")
   const normalized = p.replace(/\\/g, "/").replace(/^\/+/, "");
   return `${origin}/storage/${normalized}`;
 };
 
 interface MesBiensProps {
   notify?: (msg: string, type: "success" | "info" | "error") => void;
+  currentUser?: {
+    id: number;
+    email: string;
+    role: "landlord" | "co_owner" | "admin";
+    co_owner_type?: "co_owner" | "agency"; // Type spécifique pour les co-owners
+    is_professional?: boolean;
+  };
 }
 
-export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
+export const MesBiens: React.FC<MesBiensProps> = ({ 
+  notify, 
+  currentUser = { 
+    id: 1, 
+    email: "test@test.com", 
+    role: "landlord",
+    co_owner_type: "co_owner",
+    is_professional: false
+  }
+}) => {
   const [data, setData] = useState<PaginatedResponse<Property> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+
+  // ✅ CORRECTION: Déterminer les permissions BASÉES SUR LE TYPE D'UTILISATEUR
+  const canEditProperties = useMemo(() => {
+    // LANDLORD (propriétaire principal) : peut tout faire
+    if (currentUser.role === "landlord") return true;
+    
+    // ADMIN : peut tout faire
+    if (currentUser.role === "admin") return true;
+    
+    // CO_OWNER : dépend du type
+    if (currentUser.role === "co_owner") {
+      // Si c'est une AGENCE (co_owner_type = "agency" ou is_professional = true) : lecture seule
+      if (currentUser.co_owner_type === "agency" || currentUser.is_professional === true) {
+        return false;
+      }
+      // Si c'est un COPROPRIÉTAIRE SIMPLE : peut modifier
+      return true;
+    }
+    
+    return false;
+  }, [currentUser]);
+
+  const isAgency = useMemo(() => {
+    return currentUser.role === "co_owner" && 
+           (currentUser.co_owner_type === "agency" || currentUser.is_professional === true);
+  }, [currentUser]);
+
+  const isViewOnly = useMemo(() => {
+    return !canEditProperties;
+  }, [canEditProperties]);
 
   // Modale / édition
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -693,7 +770,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
 
   const properties = useMemo(() => data?.data ?? [], [data]);
 
-  // 🔎 Filtre côté frontend : nom, adresse, ville, référence
   const filtered = useMemo(() => {
     if (!search.trim()) return properties;
     const term = search.toLowerCase();
@@ -709,10 +785,25 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
   }, [properties, search]);
 
   const handleAddProperty = () => {
+    if (!canEditProperties) {
+      if (notify) {
+        notify("Vous n'avez pas la permission d'ajouter un bien", "error");
+      } else {
+        alert("❌ Vous n'avez pas la permission d'ajouter un bien.");
+      }
+      return;
+    }
     navigate("/proprietaire/ajouter-bien");
   };
 
   const handleOpenProperty = (property: Property) => {
+    // ✅ CORRECTION: Si c'est une agence, rediriger vers la vue
+    if (isAgency) {
+      handleViewProperty(property);
+      return;
+    }
+    
+    // Sinon, ouvrir la modale d'édition
     setSelectedProperty(property);
     setEditName(property.name || "");
     setEditAddress(property.address || "");
@@ -726,9 +817,7 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
     const photos = property.photos || [];
     setEditPhotos(photos);
 
-    // ✅ preview = URL affichable
     setPhotoPreview(photos.length ? resolvePhotoUrl(photos[0]) : null);
-
     setIsModalOpen(true);
   };
 
@@ -740,6 +829,15 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
   const handlePhotoChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    if (!canEditProperties) {
+      if (notify) {
+        notify("Vous n'avez pas la permission de modifier les photos", "error");
+      } else {
+        alert("❌ Vous n'avez pas la permission de modifier les photos.");
+      }
+      return;
+    }
+
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
 
@@ -747,8 +845,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
       setIsUploadingPhoto(true);
 
       const res = await uploadService.uploadPhoto(file);
-
-      // ✅ ON STOCKE LE PATH EN DB (stable)
       const path = res.path;
 
       setEditPhotos((prev) => {
@@ -758,7 +854,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
         return next;
       });
 
-      // ✅ MAIS ON AFFICHE L’URL
       setPhotoPreview(resolvePhotoUrl(path));
     } catch (err) {
       console.error("Erreur upload photo:", err);
@@ -769,7 +864,16 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
   };
 
   const handleSaveProperty = async () => {
-    if (!selectedProperty) return;
+    if (!selectedProperty || !canEditProperties) {
+      alert("❌ Vous n'avez pas la permission de modifier ce bien.");
+      return;
+    }
+
+    // ✅ Double vérification pour les agences
+    if (isAgency) {
+      alert("❌ Les agences immobilières n'ont pas la permission de modifier les biens.");
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -799,10 +903,7 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
         status: editStatus,
         reference_code: selectedProperty.reference_code,
         amenities: selectedProperty.amenities,
-
-        // ✅ on envoie des PATHS (pas des URLs)
         photos: editPhotos,
-
         meta: selectedProperty.meta,
       };
 
@@ -811,7 +912,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
         payload
       );
 
-      // Mettre à jour la liste locale
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -820,7 +920,11 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
         };
       });
 
-      alert("✅ Bien mis à jour avec succès.");
+      if (notify) {
+        notify("✅ Bien mis à jour avec succès.", "success");
+      } else {
+        alert("✅ Bien mis à jour avec succès.");
+      }
       handleCloseModal();
     } catch (err: unknown) {
       const errorObj = err as {
@@ -843,13 +947,37 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
     }
   };
 
+  const handleViewProperty = (property: Property) => {
+    navigate(`/bien/${property.id}/view`);
+  };
+
+  // ✅ CORRECTION: Déterminer le type d'action pour chaque propriété
+  const getPropertyAction = (property: Property) => {
+    // Si l'utilisateur est une agence : toujours "Voir"
+    if (isAgency) {
+      return "view";
+    }
+    
+    // Si l'utilisateur est un copropriétaire simple : "Modifier"
+    if (currentUser.role === "co_owner" && !isAgency) {
+      return "edit";
+    }
+    
+    // Propriétaire ou admin : "Modifier"
+    if (currentUser.role === "landlord" || currentUser.role === "admin") {
+      return "edit";
+    }
+    
+    // Par défaut : "Voir"
+    return "view";
+  };
+
   return (
     <>
       <style>{styles}</style>
 
       <div className="properties-page">
         <div className="properties-container">
-          {/* Header + recherche + bouton */}
           <div className="properties-header">
             <div className="properties-title-block">
               <div className="properties-title">
@@ -857,8 +985,10 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                 <span>Mes biens</span>
               </div>
               <p className="properties-subtitle">
-                Gérez l’ensemble de vos biens : appartements, maisons, locaux
-                professionnels…
+                {isViewOnly 
+                  ? "Visualisation des biens qui vous sont attribués" 
+                  : "Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels…"}
+                {isAgency && " (Agence - Lecture seule)"}
               </p>
             </div>
 
@@ -874,18 +1004,19 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                 />
               </div>
 
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={handleAddProperty}
-              >
-                <Plus size={18} />
-                Ajouter un bien
-              </button>
+              {canEditProperties && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={handleAddProperty}
+                >
+                  <Plus size={18} />
+                  Ajouter un bien
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Loading */}
           {isLoading && (
             <div className="loading-state">
               <Loader2 className="loading-icon" size={32} />
@@ -895,7 +1026,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
             </div>
           )}
 
-          {/* Erreur */}
           {!isLoading && error && (
             <div className="error-state">
               <AlertCircle size={28} color="#b91c1c" />
@@ -911,29 +1041,32 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
             </div>
           )}
 
-          {/* Aucun bien */}
           {!isLoading && !error && properties.length === 0 && (
             <div className="empty-state">
               <Home size={32} color="#9ca3af" />
               <p className="empty-title">
-                Vous n’avez encore aucun bien enregistré
+                {isViewOnly 
+                  ? "Aucun bien ne vous est actuellement attribué" 
+                  : "Vous n'avez encore aucun bien enregistré"}
               </p>
               <p className="empty-text">
-                Ajoutez votre premier bien pour commencer à suivre vos locations,
-                loyers et locataires dans Gestiloc.
+                {isViewOnly 
+                  ? "Contactez le propriétaire principal pour vous attribuer des biens."
+                  : "Ajoutez votre premier bien pour commencer à suivre vos locations, loyers et locataires dans Gestiloc."}
               </p>
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={handleAddProperty}
-              >
-                <Plus size={18} />
-                Ajouter mon premier bien
-              </button>
+              {canEditProperties && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={handleAddProperty}
+                >
+                  <Plus size={18} />
+                  Ajouter mon premier bien
+                </button>
+              )}
             </div>
           )}
 
-          {/* Liste filtrée vide */}
           {!isLoading &&
             !error &&
             properties.length > 0 &&
@@ -949,25 +1082,29 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
               </div>
             )}
 
-          {/* Liste filtrée */}
           {!isLoading && !error && filtered.length > 0 && (
             <div className="properties-grid">
               {filtered.map((property) => {
-                // ✅ on resolve en URL affichable
                 const firstPhoto = resolvePhotoUrl(
                   property.photos?.[0] ?? null
                 );
 
                 const statusKey = property.status ?? "available";
                 const statusClass = `property-status-badge status-${statusKey}`;
+                
+                // ✅ CORRECTION: Déterminer l'action pour cette propriété
+                const actionType = getPropertyAction(property);
 
                 return (
                   <div
                     className="property-card"
                     key={property.id}
-                    onClick={() => handleOpenProperty(property)}
                   >
-                    <div className="property-image-wrapper">
+                    <div 
+                      className="property-image-wrapper"
+                      onClick={() => actionType === "view" ? handleViewProperty(property) : handleOpenProperty(property)}
+                      style={{ cursor: "pointer" }}
+                    >
                       {firstPhoto ? (
                         <img
                           src={firstPhoto}
@@ -975,9 +1112,7 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                           className="property-image"
                           loading="lazy"
                           onError={(e) => {
-                            // fallback icone si image cassée
-                            (e.currentTarget as HTMLImageElement).style.display =
-                              "none";
+                            (e.currentTarget as HTMLImageElement).style.display = "none";
                           }}
                         />
                       ) : (
@@ -989,7 +1124,11 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                       </div>
                     </div>
 
-                    <div className="property-body">
+                    <div 
+                      className="property-body"
+                      onClick={() => actionType === "view" ? handleViewProperty(property) : handleOpenProperty(property)}
+                      style={{ cursor: "pointer" }}
+                    >
                       <p className="property-type">
                         {typeLabel[property.type] ?? property.type}
                       </p>
@@ -1018,7 +1157,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                           {formatSurface(property.surface)}
                         </div>
 
-                        {/* Nouveaux détails */}
                         {(property.room_count || property.bedroom_count || property.bathroom_count) && (
                           <div className="property-rooms" style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
                             {property.room_count && <span>{property.room_count}p</span>}
@@ -1027,7 +1165,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                           </div>
                         )}
 
-                        {/* Caractéristiques principales */}
                         {property.meta && (
                           <div className="property-features" style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {typeof property.meta.floor === 'number' && <span>Étage {property.meta.floor}</span>}
@@ -1036,7 +1173,7 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                             {property.meta.parking === true && <span>Parking</span>}
                             {property.meta.elevator === true && <span>Ascenseur</span>}
                             {property.meta.furnished === true && <span>Meublé</span>}
-                            {typeof property.meta.energy_class === 'string' && <span className="energy-badge energy-{property.meta.energy_class}">{property.meta.energy_class}</span>}
+                            {typeof property.meta.energy_class === 'string' && <span className={`energy-badge energy-${property.meta.energy_class}`}>{property.meta.energy_class}</span>}
                           </div>
                         )}
                       </div>
@@ -1059,6 +1196,29 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                         </span>
                       )}
                     </div>
+
+                    <div className="property-actions">
+                      {/* ✅ CORRECTION: Utiliser actionType au lieu de isViewOnly */}
+                      {actionType === "view" ? (
+                        <button
+                          className="btn-view"
+                          type="button"
+                          onClick={() => handleViewProperty(property)}
+                        >
+                          <Eye size={14} />
+                          Voir les détails
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-edit"
+                          type="button"
+                          onClick={() => handleOpenProperty(property)}
+                        >
+                          <Edit size={14} />
+                          Modifier
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -1067,8 +1227,7 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
         </div>
       </div>
 
-      {/* 🪟 Modale fiche / édition bien */}
-      {isModalOpen && selectedProperty && (
+      {isModalOpen && selectedProperty && !isViewOnly && (
         <div className="modal-backdrop" onClick={handleCloseModal}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -1089,7 +1248,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
             </div>
 
             <div className="modal-body">
-              {/* Photo principale */}
               <div className="modal-photo-wrapper">
                 {photoPreview ? (
                   <img
@@ -1097,10 +1255,8 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                     alt="Photo du bien"
                     className="modal-photo-img"
                     onError={(e) => {
-                      // si l'image ne charge pas, on enlève la preview
                       setPhotoPreview(null);
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}
                   />
                 ) : (
@@ -1123,7 +1279,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                 </div>
               </div>
 
-              {/* Infos principales */}
               <div>
                 <p className="modal-section-label">Informations principales</p>
                 <div className="modal-grid">
@@ -1160,7 +1315,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                 </div>
               </div>
 
-              {/* Adresse */}
               <div>
                 <p className="modal-section-label">Adresse</p>
                 <div className="modal-grid">
@@ -1219,7 +1373,6 @@ export const MesBiens: React.FC<MesBiensProps> = ({ notify }) => {
                 </div>
               </div>
 
-              {/* Caractéristiques */}
               <div>
                 <p className="modal-section-label">Caractéristiques</p>
                 <div className="modal-grid">

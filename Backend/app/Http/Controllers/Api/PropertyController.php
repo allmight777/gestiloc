@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePropertyRequest;
 use App\Models\Property;
+use App\Models\CoOwner;
+use App\Models\Delegation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends Controller
 {
@@ -22,14 +25,6 @@ class PropertyController extends Controller
         return config('app.name', 'Gestiloc');
     }
 
-    protected $appends = ['photo_urls'];
-
-public function getPhotoUrlsAttribute()
-{
-    $photos = $this->photos ?? [];
-    return array_map(fn($p) => Storage::disk('public')->url($p), $photos);
-}
-
     private function frontendUrl(): string
     {
         return rtrim(config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
@@ -37,7 +32,6 @@ public function getPhotoUrlsAttribute()
 
     private function propertyRef(Property $property): string
     {
-        // si tu as uuid sur Property, tu peux l'utiliser. Ici fallback sur ID.
         return 'PROP-' . str_pad((string) $property->id, 6, '0', STR_PAD_LEFT);
     }
 
@@ -75,7 +69,7 @@ public function getPhotoUrlsAttribute()
           <tr>
             <td style="padding:18px 22px;border-top:1px solid #eef2f7;background:#fbfcff;">
               <div style="font-size:12px;color:#6b7280;line-height:1.6;">
-                Cet email a été envoyé automatiquement. Si vous n’êtes pas concerné, vous pouvez l’ignorer.
+                Cet email a été envoyé automatiquement. Si vous n'êtes pas concerné, vous pouvez l'ignorer.
               </div>
               <div style="font-size:12px;color:#6b7280;margin-top:8px;">
                 © {$year} {$appName}
@@ -175,7 +169,6 @@ HTML;
 
     private function computeDiffLines(array $old, array $new): string
     {
-        // Compare seulement les clés "intéressantes" (pas landlord_id/user_id/updated_at etc.)
         $keys = [
             'name', 'address', 'city', 'status', 'type', 'reference_code',
             'rooms', 'surface', 'floor', 'description'
@@ -188,7 +181,6 @@ HTML;
             $before = $old[$k] ?? null;
             $after  = $new[$k] ?? null;
 
-            // normalisation simple
             if (is_string($before)) $before = trim($before);
             if (is_string($after))  $after  = trim($after);
 
@@ -208,6 +200,37 @@ HTML;
         return '<ul style="margin:10px 0 0 18px;padding:0;font-size:13px;color:#374151;line-height:1.6;">' . implode('', $lines) . '</ul>';
     }
 
+    // ✅ Nouvelle méthode pour résoudre les URLs des photos
+    private function getPhotoUrls(Property $property): array
+    {
+        $photos = $property->photos ?? [];
+        $urls = [];
+
+        foreach ($photos as $photo) {
+            if (empty($photo)) continue;
+
+            // Si c'est déjà une URL complète
+            if (str_starts_with($photo, 'http://') || str_starts_with($photo, 'https://')) {
+                $urls[] = $photo;
+            }
+            // Si c'est un chemin relatif
+            else {
+                // Nettoyer le chemin
+                $cleanPath = str_replace('\\', '/', $photo);
+                $cleanPath = ltrim($cleanPath, '/');
+
+                // Vérifier si le fichier existe
+                if (Storage::disk('public')->exists($cleanPath)) {
+                    $urls[] = Storage::disk('public')->url($cleanPath);
+                } else {
+                    Log::warning('Photo not found in storage', ['path' => $cleanPath, 'property_id' => $property->id]);
+                }
+            }
+        }
+
+        return $urls;
+    }
+
     /* =========================
      * Actions
      * ========================= */
@@ -220,9 +243,13 @@ HTML;
         $user = $request->user();
 
         if ($user->isAdmin()) {
-            return response()->json(
-                Property::latest()->paginate(20)
-            );
+            $properties = Property::latest()->paginate(20);
+            // Ajouter les URLs des photos
+            $properties->getCollection()->transform(function ($property) {
+                $property->photo_urls = $this->getPhotoUrls($property);
+                return $property;
+            });
+            return response()->json($properties);
         }
 
         if ($user->isLandlord()) {
@@ -238,9 +265,49 @@ HTML;
                 ]);
             }
 
-            return response()->json(
-                $landlord->properties()->latest()->paginate(20)
-            );
+            $properties = $landlord->properties()->latest()->paginate(20);
+            // Ajouter les URLs des photos
+            $properties->getCollection()->transform(function ($property) {
+                $property->photo_urls = $this->getPhotoUrls($property);
+                return $property;
+            });
+            return response()->json($properties);
+        }
+
+        // ✅ Vérifier si c'est un co-owner
+        if ($user->isCoOwner()) {
+            $coOwner = CoOwner::where('user_id', $user->id)->first();
+
+            if (!$coOwner) {
+                return response()->json([
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                ]);
+            }
+
+            // Récupérer les propriétés via les délégations
+            $propertyIds = $coOwner->delegations()->pluck('property_id')->toArray();
+
+            if (empty($propertyIds)) {
+                return response()->json([
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                ]);
+            }
+
+            $properties = Property::whereIn('id', $propertyIds)->latest()->paginate(20);
+            // Ajouter les URLs des photos
+            $properties->getCollection()->transform(function ($property) {
+                $property->photo_urls = $this->getPhotoUrls($property);
+                return $property;
+            });
+            return response()->json($properties);
         }
 
         return response()->json(['message' => 'Forbidden'], 403);
@@ -264,11 +331,22 @@ HTML;
 
         $data = $request->validated();
 
+        // Gestion des photos
+        if (isset($data['photos']) && is_array($data['photos'])) {
+            // S'assurer que ce sont des chemins valides
+            $data['photos'] = array_filter($data['photos'], function($photo) {
+                return !empty($photo);
+            });
+        }
+
         // Sécurité serveur
         $data['landlord_id'] = $landlord->id;
         $data['user_id'] = $user->id;
 
         $property = Property::create($data);
+
+        // ✅ Ajouter les URLs des photos à la réponse
+        $property->photo_urls = $this->getPhotoUrls($property);
 
         // ✅ Mail confirmation au bailleur
         $to = $this->landlordEmail($request);
@@ -304,19 +382,34 @@ HTML;
         $property = Property::findOrFail($id);
         $user = $request->user();
 
+        // Vérifier les permissions
+        $canView = false;
+
         if ($user->isAdmin()) {
-            return response()->json($property);
-        }
-
-        if ($user->isLandlord()) {
-            if (! $user->landlord || $property->landlord_id !== $user->landlord->id) {
-                return response()->json(['message' => 'Forbidden'], 403);
+            $canView = true;
+        } elseif ($user->isLandlord()) {
+            if ($user->landlord && $property->landlord_id === $user->landlord->id) {
+                $canView = true;
             }
-
-            return response()->json($property);
+        } elseif ($user->isCoOwner()) {
+            $coOwner = CoOwner::where('user_id', $user->id)->first();
+            if ($coOwner) {
+                // Vérifier si ce co-owner a une délégation pour cette propriété
+                $hasDelegation = $coOwner->delegations()
+                    ->where('property_id', $property->id)
+                    ->exists();
+                $canView = $hasDelegation;
+            }
         }
 
-        return response()->json(['message' => 'Forbidden'], 403);
+        if (!$canView) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // ✅ Ajouter les URLs des photos à la réponse
+        $property->photo_urls = $this->getPhotoUrls($property);
+
+        return response()->json($property);
     }
 
     /**
@@ -327,19 +420,51 @@ HTML;
         $property = Property::findOrFail($id);
         $user = $request->user();
 
-        if (! $user->isAdmin()) {
-            if (! $user->isLandlord()) {
-                return response()->json(['message' => 'Forbidden'], 403);
-            }
+        // Vérifier les permissions
+        $canUpdate = false;
 
-            if (! $user->landlord || $property->landlord_id !== $user->landlord->id) {
-                return response()->json(['message' => 'Forbidden'], 403);
+        if ($user->isAdmin()) {
+            $canUpdate = true;
+        } elseif ($user->isLandlord()) {
+            if ($user->landlord && $property->landlord_id === $user->landlord->id) {
+                $canUpdate = true;
             }
+        } elseif ($user->isCoOwner()) {
+            $coOwner = CoOwner::where('user_id', $user->id)->first();
+            if ($coOwner) {
+                // ✅ CORRECTION IMPORTANTE: Vérifier le co_owner_type dans la table delegations
+                $delegation = Delegation::where('co_owner_id', $coOwner->id)
+                    ->where('property_id', $property->id)
+                    ->first();
+
+                // Si c'est une agence (co_owner_type = "agency" dans la délégation) : lecture seule
+                if ($delegation && $delegation->co_owner_type === 'agency') {
+                    return response()->json(['message' => 'Forbidden - Les agences ont uniquement un accès en lecture'], 403);
+                }
+
+                // Vérifier si ce co-owner a une délégation pour cette propriété
+                $hasDelegation = $coOwner->delegations()
+                    ->where('property_id', $property->id)
+                    ->exists();
+                $canUpdate = $hasDelegation;
+            }
+        }
+
+        if (!$canUpdate) {
+            return response()->json(['message' => 'Forbidden'], 403);
         }
 
         $before = $property->toArray();
 
         $data = $request->validated();
+
+        // Gestion des photos
+        if (isset($data['photos']) && is_array($data['photos'])) {
+            // S'assurer que ce sont des chemins valides
+            $data['photos'] = array_filter($data['photos'], function($photo) {
+                return !empty($photo);
+            });
+        }
 
         // 🔒 Protection anti-mass assignment
         unset($data['landlord_id'], $data['user_id']);
@@ -348,6 +473,9 @@ HTML;
 
         $propertyFresh = $property->fresh();
         $after = $propertyFresh->toArray();
+
+        // ✅ Ajouter les URLs des photos à la réponse
+        $propertyFresh->photo_urls = $this->getPhotoUrls($propertyFresh);
 
         // ✅ Mail modification au bailleur
         $to = $this->landlordEmail($request);
@@ -398,7 +526,7 @@ HTML;
             }
         }
 
-        // snapshot pour l’email
+        // snapshot pour l'email
         $propertySnapshot = clone $property;
 
         $property->delete();

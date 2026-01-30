@@ -301,6 +301,7 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
   return (
     <div className="space-y-8">
       {/* En-tête avec le type de profil */}
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">

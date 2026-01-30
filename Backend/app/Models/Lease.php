@@ -50,18 +50,23 @@ class Lease extends Model
     {
         return $this->belongsTo(Property::class);
     }
-    
+
+    public function propertyAssignments(): HasMany
+    {
+        return $this->hasMany(PropertyAssignment::class);
+    }
+
     public function conditionReports(): HasMany
     {
         return $this->hasMany(PropertyConditionReport::class);
     }
-    
+
     public function entryConditionReport()
     {
         return $this->hasOne(PropertyConditionReport::class)
             ->where('type', 'entry');
     }
-    
+
     public function exitConditionReport()
     {
         return $this->hasOne(PropertyConditionReport::class)
@@ -76,9 +81,9 @@ class Lease extends Model
     /**
      * Relation avec les factures du bail
      */
-    public function invoices(): HasMany 
-    { 
-        return $this->hasMany(Invoice::class); 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     // Accesseur : Calcul du total mensuel (Loyer + Charges)
