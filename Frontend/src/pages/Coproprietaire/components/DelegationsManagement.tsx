@@ -751,15 +751,7 @@ export const DelegationsManagement: React.FC<DelegationsManagementProps> = ({ on
                         </>
                       )}
                       
-                      {delegation.status === 'active' && (
-                        <button
-                          onClick={() => onNavigate(`delegation/${delegation.id}/manage`)}
-                          className="action-btn-primary flex-1 py-3 px-4 flex items-center justify-center gap-3 font-bold"
-                        >
-                          <Settings className="w-5 h-5" />
-                          Gérer cette délégation
-                        </button>
-                      )}
+                
                     </div>
                   </div>
                 </div>

@@ -2,13 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CoOwner\CoOwnerTenantController;
-use App\Http\Controllers\ReactRedirectController;
 use App\Http\Controllers\CoOwner\CoOwnerAssignPropertyController;
+use App\Http\Controllers\CoOwner\CoOwnerLeaseController;
+use App\Http\Controllers\CoOwner\CoOwnerLeaseDocumentController;
+use App\Http\Controllers\ReactRedirectController;
 
 // Page d'accueil Laravel
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
 
 // Routes de test Laravel
 Route::get('/test-laravel', function () {
@@ -43,6 +46,44 @@ Route::prefix('coproprietaire')->name('co-owner.')->group(function () {
             ->name('store');
     });
 
+
+// Routes pour les préavis des co-propriétaires
+Route::prefix('coproprietaire/notices')->name('co-owner.notices.')->group(function () {
+    // Liste des préavis
+    Route::get('/', [CoOwnerNoticeController::class, 'index'])
+        ->name('index');
+
+    // Formulaire création préavis
+    Route::get('/create', [CoOwnerNoticeController::class, 'create'])
+        ->name('create');
+
+    // Enregistrer préavis
+    Route::post('/', [CoOwnerNoticeController::class, 'store'])
+        ->name('store');
+
+    // Afficher un préavis
+    Route::get('/{notice}', [CoOwnerNoticeController::class, 'show'])
+        ->name('show');
+
+    // Modifier un préavis (formulaire)
+    Route::get('/{notice}/edit', [CoOwnerNoticeController::class, 'edit'])
+        ->name('edit');
+
+    // Mettre à jour un préavis
+    Route::put('/{notice}', [CoOwnerNoticeController::class, 'update'])
+        ->name('update');
+
+    // Supprimer un préavis
+    Route::delete('/{notice}', [CoOwnerNoticeController::class, 'destroy'])
+        ->name('destroy');
+
+    // Changer le statut (confirmé/annulé)
+    Route::post('/{notice}/status', [CoOwnerNoticeController::class, 'updateStatus'])
+        ->name('update-status');
+});
+
+
+
     // Routes pour les locataires
     Route::prefix('tenants')->name('tenants.')->group(function () {
         // Liste des locataires
@@ -76,6 +117,42 @@ Route::prefix('coproprietaire')->name('co-owner.')->group(function () {
         // Renvoyer invitation
         Route::post('/{tenant}/resend-invitation', [CoOwnerTenantController::class, 'resendInvitation'])
             ->name('resend-invitation');
+    });
+
+    // ✅ NOUVELLES ROUTES POUR LA GESTION DES BAUX
+    Route::prefix('leases')->name('leases.')->group(function () {
+        // Liste des baux
+        Route::get('/', [CoOwnerLeaseController::class, 'index'])
+            ->name('index');
+
+        // Afficher les documents d'un bail
+        Route::get('/{lease}/documents', [CoOwnerLeaseDocumentController::class, 'index'])
+            ->name('documents.index');
+
+        // Télécharger un document PDF
+        Route::get('/documents/{lease}/download', [CoOwnerLeaseDocumentController::class, 'downloadPdf'])
+            ->name('documents.download');
+
+    // Supprimer un document
+Route::delete('/{lease}/documents/{document}', [CoOwnerLeaseDocumentController::class, 'destroy'])
+    ->name('documents.destroy');
+
+
+             // Afficher les documents d'un bail
+    Route::get('/{lease}/documents', [CoOwnerLeaseDocumentController::class, 'index'])
+        ->name('documents.index');
+
+    // Télécharger un document PDF
+    Route::get('/documents/{lease}/download', [CoOwnerLeaseDocumentController::class, 'downloadPdf'])
+        ->name('documents.download');
+
+    // Prévisualiser un document PDF
+    Route::get('/documents/{lease}/preview', [CoOwnerLeaseDocumentController::class, 'previewPdf'])
+        ->name('documents.preview');
+
+    // Supprimer un document
+    Route::delete('/documents/{document}', [CoOwnerLeaseDocumentController::class, 'destroy'])
+        ->name('documents.destroy');
     });
 
     // Routes React pour le co-propriétaire
@@ -167,6 +244,7 @@ Route::get('/logout', function () {
 Route::get('/redirect/{path?}', [ReactRedirectController::class, 'redirect'])
     ->where('path', '.*')
     ->name('react.redirect');
+
 /*
 |--------------------------------------------------------------------------
 | Catch-all React
@@ -175,4 +253,4 @@ Route::get('/redirect/{path?}', [ReactRedirectController::class, 'redirect'])
 
 Route::get('/{any}', function () {
     return view('react-app');
-})->where('any', '^(?!api|coproprietaire/tenants|coproprietaire/assign-property|test-laravel|test-laravel-page).*$');
+})->where('any', '^(?!api|coproprietaire/tenants|coproprietaire/assign-property|coproprietaire/leases|test-laravel|test-laravel-page).*$');

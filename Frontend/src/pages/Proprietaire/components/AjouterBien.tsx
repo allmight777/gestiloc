@@ -147,6 +147,7 @@ const styles = `
     font-size: 28px;
     margin: 0;
     line-height: 1.05;
+     color: white;
   }
 
   .subtitle{
@@ -155,6 +156,7 @@ const styles = `
     font-weight: 650;
     font-size: 14px;
     max-width: 72ch;
+     color: white;
   }
 
   .badgeRow{

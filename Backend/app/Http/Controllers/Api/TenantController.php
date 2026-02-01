@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Property;
 use App\Models\PropertyUser;
 use App\Models\Lease;
+use App\Models\PropertyDelegation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -167,6 +168,214 @@ HTML;
     }
 
     /**
+     * ✅ Vérifier si un bien est délégué à une AGENCE
+     */
+    private function isPropertyDelegatedToAgency(int $propertyId): bool
+    {
+        return PropertyDelegation::where('property_id', $propertyId)
+            ->where('status', 'active')
+            ->where('co_owner_type', 'agency')
+            ->exists();
+    }
+
+    /**
+     * ✅ Vérifier si un bien est délégué à un CO-PROPRIÉTAIRE SIMPLE
+     */
+    private function isPropertyDelegatedToCoOwner(int $propertyId): bool
+    {
+        return PropertyDelegation::where('property_id', $propertyId)
+            ->where('status', 'active')
+            ->where('co_owner_type', 'co_owner')
+            ->exists();
+    }
+
+    /**
+     * ✅ Obtenir les locataires actuels d'un bien
+     */
+    private function getCurrentTenantsForProperty(int $propertyId): array
+    {
+        $currentAssignments = PropertyUser::where('property_id', $propertyId)
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->with(['tenant' => function($query) {
+                $query->select('id', 'first_name', 'last_name');
+            }])
+            ->get();
+
+        return $currentAssignments->map(function($assignment) {
+            $tenant = $assignment->tenant;
+            return [
+                'id' => $tenant->id ?? null,
+                'name' => $tenant ? ($tenant->first_name . ' ' . $tenant->last_name) : 'Inconnu',
+                'start_date' => $assignment->start_date,
+                'end_date' => $assignment->end_date,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * ✅ Nouvelle méthode : Obtenir les biens disponibles pour location
+     */
+    public function getAvailableProperties(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isLandlord()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $landlord = $user->landlord;
+        if (!$landlord) {
+            return response()->json(['message' => 'Landlord profile missing'], 422);
+        }
+
+        // Récupérer tous les biens du landlord
+        $properties = Property::where('landlord_id', $landlord->id)
+            ->with(['delegations' => function($query) {
+                $query->where('status', 'active');
+            }])
+            ->get();
+
+        $formattedProperties = $properties->map(function ($property) {
+            // Vérifier si le bien est délégué à une agence
+            $isDelegatedToAgency = $this->isPropertyDelegatedToAgency($property->id);
+
+            // Vérifier si le bien est délégué à un co-propriétaire simple
+            $isDelegatedToCoOwner = $this->isPropertyDelegatedToCoOwner($property->id);
+
+            // Vérifier si le bien a déjà des locataires actuels
+            $currentTenants = $this->getCurrentTenantsForProperty($property->id);
+            $isAlreadyAssigned = !empty($currentTenants);
+
+            // Règles de disponibilité :
+            // 1. Si délégué à une agence → PAS disponible
+            // 2. Si délégué à un co-propriétaire simple → DISPONIBLE (même avec des locataires existants, on peut en ajouter)
+            // 3. Si déjà attribué (sans délégation) → PAS disponible
+            $isAvailable = false;
+
+            if ($isDelegatedToAgency) {
+                // Cas 1 : Délégué à une agence → pas disponible
+                $isAvailable = false;
+            } elseif ($isDelegatedToCoOwner) {
+                // Cas 2 : Délégué à un co-propriétaire simple → disponible
+                // Un bien délégué à un co-propriétaire peut avoir plusieurs locataires
+                $isAvailable = true;
+            } elseif ($isAlreadyAssigned) {
+                // Cas 3 : Déjà attribué sans délégation → pas disponible
+                $isAvailable = false;
+            } else {
+                // Cas 4 : Pas délégué et pas attribué → disponible
+                $isAvailable = true;
+            }
+
+            // Déterminer le type de délégation
+            $delegationType = null;
+            if ($isDelegatedToAgency) {
+                $delegationType = 'agency';
+            } elseif ($isDelegatedToCoOwner) {
+                $delegationType = 'co_owner';
+            } elseif ($property->delegations->isNotEmpty()) {
+                $delegation = $property->delegations->first();
+                $delegationType = $delegation->co_owner_type ?? null;
+            }
+
+            // Récupérer les infos de délégation
+            $delegationInfo = null;
+            $delegatedToName = null;
+            if ($property->delegations->isNotEmpty()) {
+                $delegation = $property->delegations->first();
+                $delegationInfo = [
+                    'co_owner_name' => $delegation->co_owner_name ?? null,
+                    'co_owner_email' => $delegation->co_owner_email ?? null,
+                ];
+                $delegatedToName = $delegation->co_owner_name ?? null;
+            }
+
+            return [
+                'id' => $property->id,
+                'address' => $property->address,
+                'city' => $property->city,
+                'rent_amount' => $property->rent_amount,
+                'is_available' => $isAvailable,
+                'delegation_type' => $delegationType,
+                'delegation_info' => $delegationInfo,
+                'delegated_to_name' => $delegatedToName,
+                'is_already_assigned' => $isAlreadyAssigned,
+                'current_tenants' => $currentTenants,
+                'current_tenant_name' => $isAlreadyAssigned && count($currentTenants) > 0 ? $currentTenants[0]['name'] : null,
+                'category' => $this->determinePropertyCategory($isDelegatedToAgency, $isDelegatedToCoOwner, $isAlreadyAssigned, $isAvailable),
+            ];
+        });
+
+        return response()->json([
+            'available_properties' => $formattedProperties->where('is_available', true)->values(),
+            'unavailable_properties' => $formattedProperties->where('is_available', false)->values(),
+            'stats' => [
+                'total' => $formattedProperties->count(),
+                'available' => $formattedProperties->where('is_available', true)->count(),
+                'delegated_to_agency' => $formattedProperties->where('delegation_type', 'agency')->count(),
+                'delegated_to_coowner' => $formattedProperties->where('delegation_type', 'co_owner')->count(),
+                'already_assigned' => $formattedProperties->where('is_already_assigned', true)->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Détermine la catégorie d'un bien pour l'affichage
+     */
+    private function determinePropertyCategory(bool $isDelegatedToAgency, bool $isDelegatedToCoOwner, bool $isAlreadyAssigned, bool $isAvailable): string
+    {
+        if ($isDelegatedToAgency) {
+            return 'delegated_agency';
+        } elseif ($isDelegatedToCoOwner) {
+            return 'delegated_coowner';
+        } elseif ($isAlreadyAssigned && !$isAvailable) {
+            return 'occupied';
+        } elseif ($isAvailable) {
+            return 'available';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * ✅ Nouvelle méthode : Obtenir les locataires actuels d'un bien
+     */
+    public function getPropertyCurrentTenants(Request $request, $propertyId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isLandlord()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $property = Property::findOrFail($propertyId);
+        $landlord = $user->landlord;
+
+        // Vérifier que le bien appartient au landlord
+        if ($property->landlord_id != $landlord->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $currentTenants = $this->getCurrentTenantsForProperty($propertyId);
+
+        return response()->json([
+            'property' => [
+                'id' => $property->id,
+                'address' => $property->address,
+                'city' => $property->city,
+            ],
+            'tenants' => $currentTenants,
+            'is_delegated_to_agency' => $this->isPropertyDelegatedToAgency($propertyId),
+            'is_delegated_to_coowner' => $this->isPropertyDelegatedToCoOwner($propertyId),
+            'is_available_for_rent' => empty($currentTenants) && !$this->isPropertyDelegatedToAgency($propertyId),
+        ]);
+    }
+
+    /**
      * Invite un locataire (bailleur connecté).
      * - Crée une invitation ET un locataire avec un user temporaire
      */
@@ -239,23 +448,47 @@ HTML;
                 ],
             ]);
 
-            // Si un property_id est fourni, assigner le bien directement
+            // Si un property_id est fourni, vérifier qu'il est disponible
             if (!empty($data['property_id'])) {
-                try {
-                    $this->assignPropertyToTenantInternal(
-                        $tenant->id,
-                        $data['property_id'],
-                        $landlord->id,
-                        $data['lease_id'] ?? null,
-                        $data['start_date'] ?? now(),
-                        $data['end_date'] ?? null
-                    );
-                } catch (\Exception $e) {
-                    Log::warning('Failed to assign property during tenant invitation', [
-                        'tenant_id' => $tenant->id,
-                        'property_id' => $data['property_id'],
-                        'error' => $e->getMessage()
-                    ]);
+                $property = Property::find($data['property_id']);
+
+                // Vérifier que le bien appartient au landlord
+                if ($property && $property->landlord_id === $landlord->id) {
+                    // Vérifier si le bien est délégué à une agence
+                    if ($this->isPropertyDelegatedToAgency($property->id)) {
+                        return response()->json([
+                            'message' => 'Ce bien est délégué à une agence et ne peut pas être attribué.',
+                            'property_id' => $property->id
+                        ], 422);
+                    }
+
+                    // Vérifier si le bien a déjà des locataires (sauf si c'est un co-propriétaire simple)
+                    $currentTenants = $this->getCurrentTenantsForProperty($property->id);
+                    if (!empty($currentTenants) && !$this->isPropertyDelegatedToCoOwner($property->id)) {
+                        return response()->json([
+                            'message' => 'Ce bien est déjà attribué à un locataire.',
+                            'property_id' => $property->id,
+                            'current_tenant' => $currentTenants[0]['name']
+                        ], 422);
+                    }
+
+                    // Assigner le bien
+                    try {
+                        $this->assignPropertyToTenantInternal(
+                            $tenant->id,
+                            $data['property_id'],
+                            $landlord->id,
+                            $data['lease_id'] ?? null,
+                            $data['start_date'] ?? now(),
+                            $data['end_date'] ?? null
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to assign property during tenant invitation', [
+                            'tenant_id' => $tenant->id,
+                            'property_id' => $data['property_id'],
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
             }
 
@@ -538,6 +771,17 @@ HTML;
         // Vérifier que le bien appartient au landlord
         if ($property->landlord_id != $landlordId) {
             throw new \Exception('Le bien n\'appartient pas à ce propriétaire');
+        }
+
+        // Vérifier si le bien est délégué à une agence
+        if ($this->isPropertyDelegatedToAgency($property->id)) {
+            throw new \Exception('Ce bien est délégué à une agence et ne peut pas être attribué.');
+        }
+
+        // Vérifier si le bien a déjà des locataires actuels (sauf si c'est un co-propriétaire simple)
+        $currentTenants = $this->getCurrentTenantsForProperty($property->id);
+        if (!empty($currentTenants) && !$this->isPropertyDelegatedToCoOwner($property->id)) {
+            throw new \Exception('Ce bien est déjà attribué à un locataire.');
         }
 
         // Vérifier si un bail est fourni

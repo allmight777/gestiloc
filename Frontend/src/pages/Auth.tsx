@@ -882,11 +882,14 @@ export default function Auth() {
                               <Input
                                 id="register-password"
                                 type="password"
-                                placeholder="Minimum 8 caractères"
+                                placeholder="Ex : G3$t!L0c/2026***"
                                 {...registerForm.register("password")}
                                 className="pl-10 h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
                               />
                             </div>
+                            <p className="text-xs text-slate-500">
+                              Le mot de passe doit contenir au moins 8 caractères, avec des lettres, des chiffres et des caractères spéciaux.
+                            </p>
                             {registerForm.formState.errors.password && (
                               <p className="text-sm text-red-600">{registerForm.formState.errors.password.message}</p>
                             )}
@@ -903,7 +906,7 @@ export default function Auth() {
                             <Input
                               id="confirmPassword"
                               type="password"
-                              placeholder="Répétez votre mot de passe"
+                              placeholder="Répétez le mot de passe"
                               {...registerForm.register("confirmPassword")}
                               className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
                             />

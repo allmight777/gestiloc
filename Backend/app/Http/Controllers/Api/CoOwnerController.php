@@ -18,10 +18,6 @@ use Illuminate\Support\Str;
 
 class CoOwnerController extends Controller
 {
-    /* =========================
-     * Helpers emails
-     * ========================= */
-
     private function appName(): string
     {
         return config('app.name', 'Gestiloc');
@@ -75,7 +71,7 @@ class CoOwnerController extends Controller
           </tr>
         </table>
       </td>
-    </tr>  
+    </tr>
   </table>
 </body>
 </html>
@@ -128,7 +124,7 @@ HTML;
         $name = e((string) $inv->name);
         $exp = $inv->expires_at ? e($inv->expires_at->format('d/m/Y H:i')) : '—';
         $cta = $this->buttonHtml('Créer mon compte', $signedUrl);
-        
+
         $typeLabel = $invitationType === 'agency' ? 'Agence Immobilière' : 'Copropriétaire';
 
         return <<<HTML
@@ -159,9 +155,6 @@ HTML;
 HTML;
     }
 
-    /**
-     * Invite un copropriétaire (particulier) ou une agence
-     */
     public function invite(InviteCoOwnerRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -194,7 +187,7 @@ HTML;
                     'message' => 'Cet utilisateur est déjà un co-propriétaire'
                 ], 409);
             }
-            
+
             if ($existingUser->isLandlord()) {
                 return response()->json([
                     'message' => 'Cet utilisateur est déjà un propriétaire'
@@ -206,7 +199,7 @@ HTML;
         $isProfessional = $data['is_professional'];
 
         return DB::transaction(function () use ($data, $user, $invitationType, $isProfessional) {
-            
+
             $invitation = CoOwnerInvitation::create([
                 'invited_by_type' => 'landlord',
                 'invited_by_id' => $user->landlord->id,
@@ -240,7 +233,7 @@ HTML;
 
             $ref = $this->invitationRef($invitation);
             $toTarget = $data['email'];
-            
+
             if ($invitationType === 'agency') {
                 $typeLabel = 'Agence Immobilière';
                 $emailTitle = 'Invitation en tant qu\'Agence Immobilière ✉️';
@@ -269,13 +262,13 @@ HTML;
 
             $toInviter = $user->email;
             if ($toInviter) {
-                $confirmationTitle = $invitationType === 'agency' 
-                    ? 'Invitation agence envoyée ✅' 
+                $confirmationTitle = $invitationType === 'agency'
+                    ? 'Invitation agence envoyée ✅'
                     : 'Invitation copropriétaire envoyée ✅';
-                $confirmationSubject = $invitationType === 'agency' 
+                $confirmationSubject = $invitationType === 'agency'
                     ? "✅ Invitation agence envoyée : "
                     : "✅ Invitation copropriétaire envoyée : ";
-                
+
                 $content2 = <<<HTML
 <div style="font-size:14px;color:#374151;line-height:1.7;">
   Bonjour,<br><br>
@@ -313,9 +306,6 @@ HTML;
         });
     }
 
-    /**
-     * Lister les copropriétaires/agences et invitations d'un landlord
-     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -326,42 +316,27 @@ HTML;
 
         $landlord = $user->landlord;
 
-        // ✅ Charger les co-owners AVEC leurs délégations et les propriétés
         $coOwners = CoOwner::with([
             'user:id,email,phone',
-            'delegations.property' // Charger les délégations et les propriétés associées
+            'delegations.property'
         ])
         ->where('landlord_id', $landlord->id)
         ->get();
-
-        Log::info('CoOwners retrieved with delegations:', [
-            'landlord_id' => $landlord->id,
-            'count' => $coOwners->count(),
-            'co_owners' => $coOwners->map(function($co) {
-                return [
-                    'id' => $co->id,
-                    'user_id' => $co->user_id,
-                    'landlord_id' => $co->landlord_id,
-                    'first_name' => $co->first_name,
-                    'email' => $co->user ? $co->user->email : 'no user',
-                    'delegations_count' => $co->delegations ? $co->delegations->count() : 0,
-                    'delegations' => $co->delegations ? $co->delegations->toArray() : []
-                ];
-            })->toArray()
-        ]);
 
         $coOwnersList = $coOwners->map(function (CoOwner $coOwner) {
             $user = $coOwner->user;
             $meta = $coOwner->meta ?? [];
 
             $isProfessional = (bool) $coOwner->is_professional;
-            $invitationType = $meta['invitation_type']
+
+            // MODIFICATION IMPORTANTE ICI : utiliser co_owner_type au lieu de invitation_type
+            $coOwnerType = $coOwner->co_owner_type
+                ?? $meta['invitation_type']
                 ?? ($isProfessional ? 'agency' : 'co_owner');
 
-            // ✅ Transformer les délégations
             $delegations = $coOwner->delegations ? $coOwner->delegations->map(function ($delegation) {
                 $property = $delegation->property ?? null;
-                
+
                 return [
                     'id' => $delegation->id,
                     'property_id' => $delegation->property_id,
@@ -398,7 +373,8 @@ HTML;
                 'phone' => $coOwner->phone ?? ($user ? $user->phone : '') ?? ($meta['phone'] ?? ''),
                 'address_billing' => $coOwner->address_billing ?? '',
                 'is_professional' => $isProfessional,
-                'invitation_type' => $invitationType,
+                'co_owner_type' => $coOwnerType, // MODIFICATION : renommé de invitation_type à co_owner_type
+                'invitation_type' => $meta['invitation_type'] ?? ($isProfessional ? 'agency' : 'co_owner'), // Garder pour compatibilité
                 'license_number' => $coOwner->license_number ?? '',
                 'ifu' => $coOwner->ifu ?? ($meta['ifu'] ?? ''),
                 'rccm' => $coOwner->rccm ?? ($meta['rccm'] ?? ''),
@@ -408,7 +384,7 @@ HTML;
                 'created_at' => $coOwner->created_at?->toISOString(),
                 'updated_at' => $coOwner->updated_at?->toISOString(),
                 'meta' => $meta,
-                'delegations' => $delegations, // ✅ Ajouter les délégations ici
+                'delegations' => $delegations,
                 'delegations_count' => count($delegations)
             ];
         })->values();
@@ -440,56 +416,51 @@ HTML;
         ]);
     }
 
-    /**
-     * MÉTHODE NOUVELLE: Accepter une invitation co-owner et créer le compte
-     * Cette méthode devrait être dans AuthController, mais je l'ajoute ici pour vous montrer
-     */
     public function acceptInvitationAndCreateCoOwner($invitationId, Request $request)
     {
         try {
-            // Valider la signature de l'URL
             if (!$request->hasValidSignature()) {
                 return response()->json(['message' => 'Lien invalide ou expiré'], 401);
             }
 
             $invitation = CoOwnerInvitation::findOrFail($invitationId);
 
-            // Vérifier si l'invitation est déjà acceptée
             if ($invitation->accepted_at) {
                 return response()->json(['message' => 'Cette invitation a déjà été acceptée'], 400);
             }
 
-            // Vérifier si l'invitation est expirée
             if ($invitation->expires_at && $invitation->expires_at->isPast()) {
                 return response()->json(['message' => 'Cette invitation a expirée'], 400);
             }
 
             $meta = $invitation->meta ?? [];
-            
+
             return DB::transaction(function () use ($invitation, $meta) {
-                // Vérifier si l'utilisateur existe déjà
                 $existingUser = User::where('email', $invitation->email)->first();
-                
+
                 if (!$existingUser) {
-                    // Créer le nouvel utilisateur
                     $existingUser = User::create([
                         'email' => $invitation->email,
                         'name' => $invitation->name,
-                        'password' => Hash::make(Str::random(16)), // Mot de passe temporaire
+                        'password' => Hash::make(Str::random(16)),
                         'phone' => $meta['phone'] ?? null,
                     ]);
                 }
 
-                // ✅ IMPORTANT: Créer le co-owner avec le landlord_id
+                // Déterminer le type de co-owner
+                $invitationType = $meta['invitation_type'] ?? ($meta['is_professional'] ? 'agency' : 'co_owner');
+                $coOwnerType = $invitationType === 'agency' ? 'agency' : 'co_owner';
+
                 $coOwner = CoOwner::create([
                     'user_id' => $existingUser->id,
-                    'landlord_id' => $invitation->landlord_id, // Récupéré de l'invitation
+                    'landlord_id' => $invitation->landlord_id,
                     'first_name' => $meta['first_name'] ?? '',
                     'last_name' => $meta['last_name'] ?? '',
                     'company_name' => $meta['company_name'] ?? null,
                     'phone' => $meta['phone'] ?? null,
                     'license_number' => $meta['license_number'] ?? null,
                     'is_professional' => $meta['is_professional'] ?? false,
+                    'co_owner_type' => $coOwnerType, // Important: définir le type dans la colonne
                     'ifu' => $meta['ifu'] ?? null,
                     'rccm' => $meta['rccm'] ?? null,
                     'vat_number' => $meta['vat_number'] ?? null,
@@ -500,7 +471,6 @@ HTML;
                     'invitation_id' => $invitation->id,
                 ]);
 
-                // Marquer l'invitation comme acceptée
                 $invitation->update([
                     'accepted_at' => now(),
                     'co_owner_user_id' => $existingUser->id
@@ -510,7 +480,9 @@ HTML;
                     'co_owner_id' => $coOwner->id,
                     'user_id' => $existingUser->id,
                     'landlord_id' => $invitation->landlord_id,
-                    'invitation_id' => $invitation->id
+                    'invitation_id' => $invitation->id,
+                    'co_owner_type' => $coOwnerType,
+                    'is_professional' => $meta['is_professional'] ?? false
                 ]);
 
                 return response()->json([
@@ -520,6 +492,8 @@ HTML;
                         'email' => $existingUser->email,
                         'first_name' => $coOwner->first_name,
                         'last_name' => $coOwner->last_name,
+                        'co_owner_type' => $coOwnerType,
+                        'is_professional' => $meta['is_professional'] ?? false
                     ],
                     'requires_password_setup' => true
                 ]);

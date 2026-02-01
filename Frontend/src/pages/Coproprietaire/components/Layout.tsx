@@ -186,6 +186,22 @@ export const Layout: React.FC<LayoutProps> = ({
           path: "/coproprietaire/assign-property/create",
           isLaravel: true
         },
+
+        { 
+  id: "leases-index", 
+  label: "Contrats de bail", 
+  icon: FileText, 
+  path: "/coproprietaire/leases",
+  isLaravel: true
+},
+
+{ 
+  id: "co-owner-notices-index", 
+  label: "Préavis", 
+  icon: Bell, 
+  path: "/coproprietaire/notices",
+  isLaravel: true
+},
   
         { 
           id: "baux", 

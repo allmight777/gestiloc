@@ -21,6 +21,7 @@ class CoOwner extends Model
         'phone',
         'license_number',
         'is_professional',
+         'co_owner_type', 
         'ifu',
         'rccm',
         'vat_number',
@@ -93,7 +94,7 @@ class CoOwner extends Model
         if ($this->is_professional && $this->company_name) {
             return $this->company_name;
         }
-        
+
         return $this->full_name;
     }
 
