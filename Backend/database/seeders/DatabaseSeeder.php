@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-         $this->call([
-        RolesAndAdminSeeder::class,
-        TestUsersSeeder::class,
-    ]);
+        $this->call([
+            RolesAndAdminSeeder::class,
+            TestUsersSeeder::class,
+            AdminDashboardSeeder::class,
+        ]);
 
     }
 }

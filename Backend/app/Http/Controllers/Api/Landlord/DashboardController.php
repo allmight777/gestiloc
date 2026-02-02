@@ -13,12 +13,30 @@ class DashboardController extends Controller
 {
     private function getLandlord()
     {
-        return auth()->user()->landlord;
+        $user = auth()->user();
+        return $user ? $user->landlord : null;
     }
 
     public function stats()
     {
-        $landlordId = $this->getLandlord()->id;
+        $landlord = $this->getLandlord();
+
+        if (!$landlord) {
+            return response()->json([
+                'error' => 'Landlord profile not found',
+                'kpi' => [
+                    'total_properties' => 0,
+                    'active_tenants' => 0,
+                    'occupancy_rate' => 0,
+                    'revenue_expected' => 0,
+                    'revenue_collected' => 0,
+                ],
+                'charts' => ['revenue_trend' => []],
+                'recent_leases' => []
+            ], 404);
+        }
+
+        $landlordId = $landlord->id;
 
         // 1. Chiffres clés
         $totalProperties = $this->getLandlord()->properties()->count();
@@ -40,21 +58,21 @@ class DashboardController extends Controller
         $monthlyFinancials = Invoice::whereHas('lease.property', function ($q) use ($landlordId) {
             $q->where('landlord_id', $landlordId);
         })
-        ->whereBetween('due_date', [$startOfMonth, $endOfMonth])
-        ->select(
-            DB::raw('SUM(amount_total) as expected'),
-            DB::raw('SUM(amount_paid) as collected')
-        )->first();
+            ->whereBetween('due_date', [$startOfMonth, $endOfMonth])
+            ->select(
+                DB::raw('SUM(amount_total) as expected'),
+                DB::raw('SUM(amount_paid) as collected')
+            )->first();
 
         // 3. Derniers baux signés (pour liste rapide)
         $latestLeases = Lease::whereHas('property', function ($q) use ($landlordId) {
-                $q->where('landlord_id', $landlordId);
-            })
+            $q->where('landlord_id', $landlordId);
+        })
             ->with(['property:id,name', 'tenant:id,first_name,last_name'])
             ->latest()
             ->take(5)
             ->get()
-            ->map(function($lease) {
+            ->map(function ($lease) {
                 return [
                     'id' => $lease->uuid,
                     'property' => $lease->property->name,
@@ -69,8 +87,8 @@ class DashboardController extends Controller
                 'total_properties' => $totalProperties,
                 'active_tenants' => $activeLeases,
                 'occupancy_rate' => $occupancyRate,
-                'revenue_expected' => (float) $monthlyFinancials->expected ?? 0,
-                'revenue_collected' => (float) $monthlyFinancials->collected ?? 0,
+                'revenue_expected' => (float) ($monthlyFinancials->expected ?? 0),
+                'revenue_collected' => (float) ($monthlyFinancials->collected ?? 0),
             ],
             'charts' => [
                 // Ici on pourrait ajouter des données pour un graph sur 6 mois
@@ -84,8 +102,8 @@ class DashboardController extends Controller
     private function getRevenueTrend($landlordId)
     {
         return Invoice::whereHas('lease.property', function ($q) use ($landlordId) {
-                $q->where('landlord_id', $landlordId);
-            })
+            $q->where('landlord_id', $landlordId);
+        })
             ->where('status', 'paid')
             ->where('created_at', '>=', Carbon::now()->subMonths(6))
             ->select(
