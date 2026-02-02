@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails du préavis - Co-propriétaire</title>
+    <title>Créer une quittance - Co-propriétaire</title>
      <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
@@ -221,7 +221,6 @@
             background: #ffffff;
             padding: 2rem;
             position: relative;
-
         }
 
         .content-container::before {
@@ -288,6 +287,12 @@
             gap: 1rem;
         }
 
+        .top-actions-right {
+            display: flex;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
         .alert-box {
             border-radius: 14px;
             padding: 1.25rem;
@@ -299,16 +304,28 @@
             gap: 10px;
         }
 
-        .alert-success {
-            background: rgba(240,253,244,.92);
-            border-color: rgba(74,222,128,.30);
-            color: #166534;
+        .alert-info {
+            background: rgba(239,246,255,.92);
+            border-color: rgba(59,130,246,.30);
+            color: #1e40af;
+        }
+
+        .alert-warning {
+            background: rgba(254,252,232,.92);
+            border-color: rgba(245,158,11,.30);
+            color: #92400e;
         }
 
         .alert-error {
             background: rgba(254,242,242,.92);
             border-color: rgba(248,113,113,.30);
             color: #991b1b;
+        }
+
+        .alert-success {
+            background: rgba(240,253,244,.92);
+            border-color: rgba(74,222,128,.30);
+            color: #166534;
         }
 
         .button {
@@ -358,75 +375,274 @@
             background: rgba(239,68,68,.15);
         }
 
-        .notice-card {
-            background: white;
-            border-radius: 18px;
-            padding: 2rem;
+        .button-back {
+            background: rgba(255,255,255,.92);
+            color: var(--muted);
+            border: 2px solid rgba(148,163,184,.20);
+        }
+
+        .button-back:hover {
+            background: rgba(148,163,184,.06);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,.95);
             border: 2px solid rgba(102,126,234,.15);
-            box-shadow: 0 12px 40px rgba(0,0,0,.08);
-            margin-bottom: 2rem;
-        }
-
-        .notice-header {
+            border-radius: 16px;
+            padding: 1.75rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            gap: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,.05);
+            transition: all 0.3s ease;
         }
 
-        .notice-title {
-            font-size: 1.5rem;
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,.08);
+            border-color: rgba(102,126,234,.25);
+        }
+
+        .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.blue {
+            background: rgba(59,130,246,.15);
+            color: #1d4ed8;
+        }
+
+        .stat-icon.yellow {
+            background: rgba(245,158,11,.15);
+            color: #92400e;
+        }
+
+        .stat-icon.green {
+            background: rgba(34,197,94,.15);
+            color: #166534;
+        }
+
+        .stat-icon.purple {
+            background: rgba(168,85,247,.15);
+            color: #7c3aed;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
             font-weight: 950;
             color: var(--ink);
-        }
-
-        .notice-ref {
-            font-size: 0.9rem;
-            color: var(--muted);
-            font-weight: 850;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .info-section h3 {
-            font-size: 1rem;
-            font-weight: 950;
-            color: var(--indigo);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .info-item {
-            margin-bottom: 1rem;
-        }
-
-        .info-label {
-            font-size: 0.85rem;
-            font-weight: 850;
-            color: var(--muted);
+            line-height: 1;
             margin-bottom: 0.25rem;
         }
 
-        .info-value {
-            font-size: 1rem;
-            font-weight: 700;
+        .stat-label {
+            font-size: 0.9rem;
+            font-weight: 850;
+            color: var(--muted);
+        }
+
+        .form-container {
+            background: rgba(255,255,255,.95);
+            border: 2px solid rgba(102,126,234,.15);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,.05);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 850;
             color: var(--ink);
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border-radius: 12px;
+            border: 2px solid rgba(148,163,184,.25);
+            background: rgba(255,255,255,.92);
+            font-size: 0.95rem;
+            font-weight: 650;
+            color: var(--ink);
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px rgba(79,70,229,.15);
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--red);
+        }
+
+        .invalid-feedback {
+            color: var(--red);
+            font-size: 0.85rem;
+            font-weight: 650;
+            margin-top: 0.5rem;
+        }
+
+        .form-text {
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 650;
+            margin-top: 0.25rem;
+        }
+
+        .info-card {
+            background: rgba(239,246,255,.92);
+            border: 2px solid rgba(59,130,246,.25);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-card h6 {
+            color: #1d4ed8;
+            font-weight: 950;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card p {
+            margin-bottom: 0.5rem;
+            font-weight: 650;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card span {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid rgba(148,163,184,.35);
+            cursor: pointer;
+            appearance: none;
+            position: relative;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--indigo);
+            border-color: var(--indigo);
+        }
+
+        .form-check-input:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .form-check-label {
+            font-weight: 850;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid rgba(148,163,184,.15);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            border: 2px dashed rgba(148,163,184,.35);
+            border-radius: 16px;
+            background: rgba(255,255,255,.72);
+        }
+
+        .empty-state-icon {
+            margin: 0 auto 1rem;
+            width: 64px;
+            height: 64px;
+            color: #94a3b8;
+        }
+
+        .empty-state-title {
+            font-size: 1.1rem;
+            font-weight: 950;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-text {
+            color: #64748b;
+            font-weight: 650;
+            margin-bottom: 1.5rem;
         }
 
         .badge {
-            padding: 0.4rem 1rem;
+            padding: 0.25rem 0.75rem;
             border-radius: 9999px;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 850;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.25rem;
+        }
+
+        .badge-paid {
+            background: rgba(34,197,94,.15);
+            color: #166534;
+            border: 1px solid rgba(34,197,94,.25);
         }
 
         .badge-pending {
@@ -435,27 +651,10 @@
             border: 1px solid rgba(245,158,11,.25);
         }
 
-        .badge-confirmed {
-            background: rgba(34,197,94,.15);
-            color: #166534;
-            border: 1px solid rgba(34,197,94,.25);
-        }
-
-        .badge-cancelled {
-            background: rgba(148,163,184,.15);
-            color: #475569;
-            border: 1px solid rgba(148,163,184,.25);
-        }
-
-        .status-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .status-form {
-            display: inline;
+        .badge-overdue {
+            background: rgba(239,68,68,.15);
+            color: #991b1b;
+            border: 1px solid rgba(239,68,68,.25);
         }
     </style>
 </head>
@@ -517,10 +716,10 @@
                     <button class="submenu-item" onclick="navigateTo('/coproprietaire/leases')">
                         <span>Baux en cours</span>
                     </button>
-                    <button class="submenu-item active">
+                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/notices')">
                         <span>Préavis</span>
                     </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/quittances')">
+                    <button class="submenu-item active">
                         <span>Quittances</span>
                     </button>
                 </div>
@@ -602,39 +801,29 @@
         <!-- Main content -->
         <div class="main-content">
             <!-- Top bar -->
-
+            <header class="top-bar">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none;">
+                    <i data-lucide="menu"></i>
+                </button>
+            </header>
 
             <!-- Contenu -->
             <div class="content-container">
                 <div class="content-card">
                     <div class="content-header">
                         <h1>
-                            <i data-lucide="file-text" style="width: 32px; height: 32px;"></i>
-                            Détails du préavis
+                            <i data-lucide="file-plus" style="width: 32px; height: 32px;"></i>
+                            Créer une nouvelle quittance
                         </h1>
-                        <p>Préavis #NOTICE-{{ str_pad($notice->id, 6, '0', STR_PAD_LEFT) }}</p>
+                        <p>Remplissez le formulaire pour créer une quittance de loyer</p>
                     </div>
 
                     <div class="content-body">
                         <div class="top-actions">
-                            <a href="{{ route('co-owner.notices.index') }}" class="button button-secondary">
+                            <a href="{{ route('co-owner.quittances.index') }}" class="button button-back">
                                 <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
                                 Retour à la liste
                             </a>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <a href="{{ route('co-owner.notices.edit', $notice) }}" class="button button-secondary">
-                                    <i data-lucide="edit" style="width: 16px; height: 16px;"></i>
-                                    Modifier
-                                </a>
-                                <form action="{{ route('co-owner.notices.destroy', $notice) }}" method="POST" onsubmit="return confirm('Supprimer définitivement ce préavis ?');" style="display: inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="button button-danger">
-                                        <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
-                                        Supprimer
-                                    </button>
-                                </form>
-                            </div>
                         </div>
 
                         @if(session('success'))
@@ -657,152 +846,148 @@
                             </div>
                         @endif
 
-                        <div class="notice-card">
-                            <div class="notice-header">
-                                <div>
-                                    <div class="notice-title">{{ $notice->property->address ?? 'Bien sans nom' }}</div>
-                                    <div class="notice-ref">Référence : NOTICE-{{ str_pad($notice->id, 6, '0', STR_PAD_LEFT) }}</div>
-                                </div>
-                                <span class="badge badge-{{ $notice->status }}">
-                                    @if($notice->status == 'pending')
-                                        <i data-lucide="clock" style="width: 14px; height: 14px;"></i> En attente
-                                    @elseif($notice->status == 'confirmed')
-                                        <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Confirmé
-                                    @else
-                                        <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Annulé
-                                    @endif
-                                </span>
+                        @if($leases->isEmpty())
+                            <div class="empty-state">
+                                <i data-lucide="home" class="empty-state-icon" style="width: 64px; height: 64px;"></i>
+                                <h3 class="empty-state-title">Aucun bail disponible</h3>
+                                <p class="empty-state-text">Vous devez avoir au moins un bail actif pour créer une quittance.</p>
+                                <a href="{{ route('co-owner.leases.index') }}" class="button button-primary">
+                                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                                    Gérer les baux
+                                </a>
                             </div>
+                        @else
+                            <div class="form-container">
+                                <form method="POST" action="{{ route('co-owner.quittances.store') }}">
+                                    @csrf
 
-                            <div class="info-grid">
-                                <!-- Informations générales -->
-                                <div class="info-section">
-                                    <h3><i data-lucide="info" style="width: 16px; height: 16px;"></i> Informations générales</h3>
-                                    <div class="info-item">
-                                        <div class="info-label">Type de préavis</div>
-                                        <div class="info-value">
-                                            @if($notice->type == 'landlord')
-                                                <i data-lucide="home" style="width: 14px; height: 14px;"></i> Préavis bailleur
-                                            @else
-                                                <i data-lucide="user" style="width: 14px; height: 14px;"></i> Préavis locataire
-                                            @endif
+                                    <div class="form-grid">
+                                        <!-- Sélection du bail -->
+                                        <div class="form-group">
+                                            <label for="lease_id" class="form-label">Sélectionner le bail *</label>
+                                            <select name="lease_id" id="lease_id" class="form-control @error('lease_id') is-invalid @enderror" required>
+                                                <option value="">-- Choisir un bail --</option>
+                                                @foreach($leases as $lease)
+                                                    <option value="{{ $lease->id }}"
+                                                        data-property="{{ $lease->property->name }}"
+                                                        data-tenant="{{ $lease->tenant->first_name }} {{ $lease->tenant->last_name }}"
+                                                        data-rent="{{ number_format($lease->rent_amount, 2, ',', ' ') }}"
+                                                        {{ old('lease_id') == $lease->id ? 'selected' : '' }}>
+                                                        {{ $lease->property->name }} - {{ $lease->tenant->first_name }} {{ $lease->tenant->last_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('lease_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Choisissez le bail pour lequel créer la quittance</div>
+                                        </div>
+
+                                        <!-- Informations du bail -->
+                                        <div class="form-group">
+                                            <div class="info-card">
+                                                <h6><i data-lucide="info" style="width: 18px; height: 18px;"></i> Informations du bail</h6>
+                                                <div id="lease-info">
+                                                    <p><i data-lucide="home" style="width: 16px; height: 16px;"></i> <strong>Bien:</strong> <span id="property-name">-</span></p>
+                                                    <p><i data-lucide="user" style="width: 16px; height: 16px;"></i> <strong>Locataire:</strong> <span id="tenant-name">-</span></p>
+                                                    <p><i data-lucide="credit-card" style="width: 16px; height: 16px;"></i> <strong>Loyer mensuel:</strong> <span id="rent-amount">-</span> FCFA</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Date du préavis</div>
-                                        <div class="info-value">
-                                            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> {{ \Carbon\Carbon::parse($notice->notice_date)->format('d/m/Y') }}
+
+                                    <div class="form-grid">
+                                        <!-- Mois payé -->
+                                        <div class="form-group">
+                                            <label for="paid_month" class="form-label">Mois payé *</label>
+                                            <input type="month"
+                                                   name="paid_month"
+                                                   id="paid_month"
+                                                   class="form-control @error('paid_month') is-invalid @enderror"
+                                                   value="{{ old('paid_month', date('Y-m')) }}"
+                                                   required>
+                                            @error('paid_month')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Mois correspondant au loyer payé</div>
+                                        </div>
+
+                                        <!-- Date d'émission -->
+                                        <div class="form-group">
+                                            <label for="issued_date" class="form-label">Date d'émission *</label>
+                                            <input type="date"
+                                                   name="issued_date"
+                                                   id="issued_date"
+                                                   class="form-control @error('issued_date') is-invalid @enderror"
+                                                   value="{{ old('issued_date', date('Y-m-d')) }}"
+                                                   required>
+                                            @error('issued_date')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Date à laquelle la quittance est émise</div>
+                                        </div>
+
+                                        <!-- Montant payé -->
+                                        <div class="form-group">
+                                            <label for="amount_paid" class="form-label">Montant payé (FCFA) *</label>
+                                            <input type="number"
+                                                   step="0.01"
+                                                   min="0"
+                                                   name="amount_paid"
+                                                   id="amount_paid"
+                                                   class="form-control @error('amount_paid') is-invalid @enderror"
+                                                   value="{{ old('amount_paid') }}"
+                                                   placeholder="0.00"
+                                                   required>
+                                            @error('amount_paid')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <div class="form-text">Montant effectivement payé par le locataire</div>
                                         </div>
                                     </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Date de fin</div>
-                                        <div class="info-value">
-                                            <i data-lucide="calendar" style="width: 14px; height: 14px;"></i> {{ \Carbon\Carbon::parse($notice->end_date)->format('d/m/Y') }}
-                                        </div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Créé le</div>
-                                        <div class="info-value">
-                                            <i data-lucide="clock" style="width: 14px; height: 14px;"></i> {{ $notice->created_at->format('d/m/Y H:i') }}
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- Informations du bien -->
-                                <div class="info-section">
-                                    <h3><i data-lucide="home" style="width: 16px; height: 16px;"></i> Informations du bien</h3>
-                                    <div class="info-item">
-                                        <div class="info-label">Adresse</div>
-                                        <div class="info-value">{{ $notice->property->address ?? 'Non spécifié' }}</div>
+                                    <!-- Notes -->
+                                    <div class="form-group">
+                                        <label for="notes" class="form-label">Notes (optionnel)</label>
+                                        <textarea name="notes"
+                                                  id="notes"
+                                                  class="form-control @error('notes') is-invalid @enderror"
+                                                  rows="3"
+                                                  placeholder="Notes complémentaires...">{{ old('notes') }}</textarea>
+                                        @error('notes')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <div class="form-text">Informations complémentaires sur ce paiement</div>
                                     </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Ville</div>
-                                        <div class="info-value">{{ $notice->property->city ?? 'Non spécifié' }}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Code postal</div>
-                                        <div class="info-value">{{ $notice->property->postal_code ?? 'Non spécifié' }}</div>
-                                    </div>
-                                </div>
 
-                                <!-- Informations du locataire -->
-                                <div class="info-section">
-                                    <h3><i data-lucide="user" style="width: 16px; height: 16px;"></i> Locataire concerné</h3>
-                                    <div class="info-item">
-                                        <div class="info-label">Nom</div>
-                                        <div class="info-value">{{ $notice->tenant->user->name ?? 'Non spécifié' }}</div>
+                                    <!-- Option email -->
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               name="send_email"
+                                               id="send_email"
+                                               class="form-check-input"
+                                               value="1"
+                                               {{ old('send_email') ? 'checked' : '' }}>
+                                        <label for="send_email" class="form-check-label">
+                                            <i data-lucide="mail" style="width: 16px; height: 16px; margin-right: 0.5rem;"></i>
+                                            Envoyer automatiquement la quittance par email au locataire
+                                        </label>
                                     </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Email</div>
-                                        <div class="info-value">{{ $notice->tenant->user->email ?? 'Non spécifié' }}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Téléphone</div>
-                                        <div class="info-value">{{ $notice->tenant->phone ?? 'Non spécifié' }}</div>
-                                    </div>
-                                </div>
 
-                                <!-- Propriétaire principal -->
-                                <div class="info-section">
-                                    <h3><i data-lucide="shield" style="width: 16px; height: 16px;"></i> Propriétaire principal</h3>
-                                    <div class="info-item">
-                                        <div class="info-label">Nom</div>
-                                        <div class="info-value">{{ $notice->landlord->name ?? 'Non spécifié' }}</div>
+                                    <!-- Boutons -->
+                                    <div class="form-actions">
+                                        <button type="submit" class="button button-primary">
+                                            <i data-lucide="file-plus" style="width: 16px; height: 16px;"></i>
+                                            Créer la quittance
+                                        </button>
+                                        <a href="{{ route('co-owner.quittances.index') }}" class="button button-secondary">
+                                            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                                            Annuler
+                                        </a>
                                     </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Email</div>
-                                        <div class="info-value">{{ $notice->landlord->email ?? 'Non spécifié' }}</div>
-                                    </div>
-                                </div>
+                                </form>
                             </div>
-
-                            <!-- Motif -->
-                            <div style="margin-top: 2rem;">
-                                <h3 style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                    <i data-lucide="message-square" style="width: 16px; height: 16px;"></i> Motif du préavis
-                                </h3>
-                                <div style="background: rgba(102,126,234,.05); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(102,126,234,.15);">
-                                    <div style="font-size: 0.95rem; line-height: 1.6; color: var(--ink); white-space: pre-line;">{{ $notice->reason }}</div>
-                                </div>
-                            </div>
-
-                            <!-- Notes -->
-                            @if($notice->notes)
-                                <div style="margin-top: 2rem;">
-                                    <h3 style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                        <i data-lucide="file-text" style="width: 16px; height: 16px;"></i> Notes additionnelles
-                                    </h3>
-                                    <div style="background: rgba(148,163,184,.05); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(148,163,184,.15);">
-                                        <div style="font-size: 0.95rem; line-height: 1.6; color: var(--ink); white-space: pre-line;">{{ $notice->notes }}</div>
-                                    </div>
-                                </div>
-                            @endif
-
-                            <!-- Actions sur le statut -->
-                            @if($notice->status == 'pending')
-                                <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 2px solid rgba(148,163,184,.15);">
-                                    <h3 style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem;">
-                                        <i data-lucide="settings" style="width: 16px; height: 16px;"></i> Gérer le statut
-                                    </h3>
-                                    <div class="status-actions">
-                                        <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST" class="status-form">
-                                            @csrf
-                                            <input type="hidden" name="status" value="confirmed">
-                                            <button type="submit" class="button button-primary" onclick="return confirm('Confirmer ce préavis ?')">
-                                                <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Confirmer le préavis
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST" class="status-form">
-                                            @csrf
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <button type="submit" class="button button-danger" onclick="return confirm('Annuler ce préavis ?')">
-                                                <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> Annuler le préavis
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -828,6 +1013,7 @@
                                   path.includes('/assign-property') ||
                                   path.includes('/leases') ||
                                   path.includes('/notices') ||
+                                  path.includes('/quittances') ||
                                   path.includes('/test-laravel');
 
             let baseUrl = 'http://localhost:';
@@ -925,6 +1111,50 @@
         if (urlToken) {
             localStorage.setItem('token', urlToken);
         }
+
+        // Mise à jour des informations du bail
+        document.addEventListener('DOMContentLoaded', function() {
+            const leaseSelect = document.getElementById('lease_id');
+            const propertyName = document.getElementById('property-name');
+            const tenantName = document.getElementById('tenant-name');
+            const rentAmount = document.getElementById('rent-amount');
+            const amountPaid = document.getElementById('amount_paid');
+
+            // Mettre à jour les informations du bail
+            leaseSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+
+                if (selectedOption.value) {
+                    propertyName.textContent = selectedOption.getAttribute('data-property');
+                    tenantName.textContent = selectedOption.getAttribute('data-tenant');
+                    rentAmount.textContent = selectedOption.getAttribute('data-rent');
+
+                    // Pré-remplir le montant payé avec le loyer
+                    const rentValue = selectedOption.getAttribute('data-rent').replace(/\s/g, '').replace(',', '.');
+                    amountPaid.value = parseFloat(rentValue) || '';
+                } else {
+                    propertyName.textContent = '-';
+                    tenantName.textContent = '-';
+                    rentAmount.textContent = '-';
+                    amountPaid.value = '';
+                }
+            });
+
+            // Déclencher l'événement au chargement si une valeur est déjà sélectionnée
+            if (leaseSelect.value) {
+                leaseSelect.dispatchEvent(new Event('change'));
+            }
+        });
+
+        // Ajouter l'animation de spin pour le loader
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

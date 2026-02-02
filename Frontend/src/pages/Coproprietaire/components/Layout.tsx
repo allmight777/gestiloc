@@ -195,8 +195,16 @@ export const Layout: React.FC<LayoutProps> = ({
 {
   id: "leases-index",
   label: "Contrats de bail",
-  icon: FileSignature,   // 📄✍️ contrat / signature
+  icon: FileSignature,   
   path: "/coproprietaire/leases",
+  isLaravel: true
+},
+
+     {
+  id: "co-owner-quittances-index",
+  label: "Quittances de loyer",
+  icon: Bell,
+  path: "/coproprietaire/quittances",
   isLaravel: true
 },
 
@@ -222,12 +230,7 @@ export const Layout: React.FC<LayoutProps> = ({
           icon: FileText, 
           path: "/coproprietaire/baux" 
         },
-        { 
-          id: "quittances", 
-          label: "Quittances", 
-          icon: FileCheck, 
-          path: "/coproprietaire/quittances" 
-        },
+
       ],
     },
     {

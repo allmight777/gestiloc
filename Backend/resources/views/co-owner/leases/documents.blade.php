@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documents du bail - {{ $lease->property->name ?? 'Bien sans nom' }}</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
 
     <!-- Import des icônes Lucide -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -713,7 +714,7 @@
                 <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none;">
                     <i data-lucide="menu"></i>
                 </button>
-        
+
             </header>
 
             <!-- Contenu -->

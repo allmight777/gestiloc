@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Contrat de Bail - {{ $bailNumber }}</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
     <style>
         body {
             font-family: Arial, sans-serif;

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assigner un bien - Co-propriétaire</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
 
     <!-- Import des icônes Lucide -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -676,7 +677,7 @@
                     <i data-lucide="menu"></i>
                 </button>
                 <div class="top-bar-content">
-                   
+
                     <div class="top-bar-actions">
                         <button class="logout-btn" title="Déconnexion" onclick="logout()">
                             <i data-lucide="log-out"></i>

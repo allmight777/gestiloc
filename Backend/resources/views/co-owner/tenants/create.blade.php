@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Créer un Locataire - Co-propriétaire</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
@@ -555,7 +556,7 @@
                         <span>Assigner un bien</span>
 
                     </button>
-            
+
                     <button class="submenu-item" onclick="goToReact('/coproprietaire/baux')">
                         <span>Baux en cours</span>
                     </button>

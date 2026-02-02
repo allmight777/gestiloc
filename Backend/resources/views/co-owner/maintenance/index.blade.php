@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demandes de maintenance - Copropriétaire</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         :root {
@@ -827,7 +828,7 @@
                     <i data-lucide="menu"></i>
                 </button>
 
-            
+
             </header>
 
             <!-- Contenu -->

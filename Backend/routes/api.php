@@ -80,7 +80,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Download tenant receipt (protected)
     Route::get('/tenant/invoices/{invoice}/receipt', [TenantQuittanceController::class, 'download']);
 
-    // Tenant direct pay (si tu l'utilises)
+    // Tenant direct pay
     Route::post('/tenant/invoices/{invoice}/pay', [TenantPaymentController::class, 'payInvoice']);
 
     /* ========= Finance (commun auth) ========= */

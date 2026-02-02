@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $tenant->first_name }} {{ $tenant->last_name }} - Fiche Locataire</title>
+     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
 
     <!-- Import des icônes Lucide -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
