@@ -192,6 +192,46 @@ Route::prefix('coproprietaire')->name('co-owner.react.')->group(function () {
     });
 });
 
+
+// Routes pour les statistiques globales (Admin)
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('statistiques')->name('statistiques.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\StatistiqueController::class, 'index'])->name('index');
+        Route::get('/export/{type}', [\App\Http\Controllers\Admin\StatistiqueController::class, 'export'])->name('export');
+
+        // Routes API pour les données des graphiques
+        Route::get('/api/user-growth', function () {
+            $controller = new \App\Http\Controllers\Admin\StatistiqueController();
+            return response()->json($controller->getChartData()['user_growth']);
+        })->name('api.user-growth');
+
+        Route::get('/api/revenue-trend', function () {
+            $controller = new \App\Http\Controllers\Admin\StatistiqueController();
+            return response()->json($controller->getChartData()['revenue_trend']);
+        })->name('api.revenue-trend');
+    });
+});
+
+
+// Routes pour les logs système (Admin)
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('logs')->name('logs.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LogController::class, 'index'])->name('index');
+        Route::get('/download/{filename}', [\App\Http\Controllers\Admin\LogController::class, 'download'])->name('download');
+        Route::get('/clear/{filename}', [\App\Http\Controllers\Admin\LogController::class, 'clear'])->name('clear');
+        Route::get('/clear-all', [\App\Http\Controllers\Admin\LogController::class, 'clearAll'])->name('clear-all');
+        Route::get('/{filename}/{logId}', [\App\Http\Controllers\Admin\LogController::class, 'show'])->name('show');
+        Route::get('/ajax', [\App\Http\Controllers\Admin\LogController::class, 'getLogsAjax'])->name('ajax');
+        Route::get('/download-database', [\App\Http\Controllers\Admin\LogController::class, 'downloadDatabase'])->name('download-db');
+    });
+
+    // Routes pour les statistiques (déjà existantes)
+    Route::prefix('statistiques')->name('statistiques.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\StatistiqueController::class, 'index'])->name('index');
+        Route::get('/export/{type}', [\App\Http\Controllers\Admin\StatistiqueController::class, 'export'])->name('export');
+    });
+});
+
 /*
 |--------------------------------------------------------------------------
 | Catch-all React - DOIT ÊTRE ABSOLUMENT LA DERNIÈRE ROUTE
