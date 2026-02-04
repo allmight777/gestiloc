@@ -378,7 +378,7 @@ export const Layout: React.FC<LayoutProps> = ({
                         }`}
                       />
                       {sub.label}
-                      {/* SUPPRIMÉ : Le badge "Laravel" a été enlevé ici */}
+                      {/* SUPPRIMÉ : Le badge a été enlevé ici */}
                     </div>
                     {subActive && (
                       <ChevronRight
