@@ -732,6 +732,11 @@
                         Statistiques Globales
 
                     </button>
+
+                      <button class="nav-item active" onclick="navigateTo('/admin/logs')">
+                        <i data-lucide="file-text" class="nav-icon"></i>
+                        Journaux Système
+                    </button>
                 </div>
 
                 <!-- Section Administration -->

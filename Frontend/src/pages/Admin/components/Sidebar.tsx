@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, MessageSquare, FileText, Activity, Settings as SettingsIcon, X, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, FileText, Activity, Settings as SettingsIcon, X, BarChart3, LogOut, AlertCircle } from 'lucide-react';
 import { ViewType } from '../types';
 import { useAppContext } from '../context/AppContext';
 
@@ -12,6 +12,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, onClose }) => {
   const { t } = useAppContext();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   
   // ✅ FONCTION : Navigation vers Laravel
   const goToLaravelPage = (path: string) => {
@@ -21,7 +22,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
     if (!token) {
       console.error("Aucun token trouvé pour l'authentification Laravel");
       alert("Session expirée, veuillez vous reconnecter");
-      // Rediriger vers la page de login Laravel
       window.location.href = 'http://localhost:8000/login';
       return;
     }
@@ -39,6 +39,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
     
     console.log("Redirection vers Laravel:", fullUrl);
     window.location.href = fullUrl;
+  };
+
+  // ✅ FONCTION CORRIGÉE : Déconnexion qui redirige vers la route Laravel /logout
+  const handleLogout = () => {
+    // Rediriger vers la route de déconnexion Laravel
+    // Laravel s'occupera de nettoyer la session et rediriger vers React
+    window.location.href = 'http://localhost:8000/logout';
   };
 
   // ✅ Fonction pour gérer la navigation mixte (React ou Laravel)
@@ -75,20 +82,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
       label: t('sidebar.activity'), 
       icon: Activity 
     },
-    // ✅ NOUVEAU : Statistiques Globales (Laravel)
+    // ✅ NOUVEAU : Statistiques Globales 
     { 
       id: '/admin/statistiques', 
       label: 'Statistiques Globales', 
       icon: BarChart3,
       isLaravel: true
     },
-
     {
-  id: '/admin/logs',
-  label: 'Journaux Système',
-  icon: FileText, 
-  isLaravel: true
-},
+      id: '/admin/logs',
+      label: 'Journaux Système',
+      icon: FileText, 
+      isLaravel: true
+    },
   ];
 
   return (
@@ -98,6 +104,48 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
         className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
+
+      {/* Confirmation de déconnexion */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-fadeIn">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Confirmer la déconnexion
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Vous serez redirigé vers la page de connexion
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  // Appeler la déconnexion après un court délai
+                  setTimeout(() => {
+                    handleLogout();
+                  }, 300);
+                }}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-medium hover:from-red-700 hover:to-red-600 transition-all shadow-lg shadow-red-200 dark:shadow-red-900/30"
+              >
+                Oui, me déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sidebar Container */}
       <div className={`
@@ -128,10 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
                 key={item.id}
                 onClick={() => {
                   if (isLaravelRoute) {
-                    // ✅ Navigation vers Laravel
                     goToLaravelPage(item.id);
                   } else {
-                    // Navigation React normale
                     onChangeView(item.id as ViewType);
                   }
                   
@@ -162,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
                   {item.label}
                   {isLaravelRoute && (
                     <span className="text-[10px] font-bold bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 py-0.5 px-2 rounded-full">
-               
+                 
                     </span>
                   )}
                 </span>
@@ -171,7 +217,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
                   <span className="ml-auto bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300 py-0.5 px-2 rounded-full text-[10px] font-bold">3</span>
                 )}
                 
-                {/* Badge pour les statistiques */}
                 {item.id === '/admin/statistiques' && (
                   <span className="ml-auto bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300 py-0.5 px-2 rounded-full text-[10px] font-bold">
                     <BarChart3 size={12} />
@@ -202,10 +247,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
           {/* ✅ SECTION ADMIN - Liens Laravel */}
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-4 mt-8">Liens rapides</div>
           
-          {/* Bouton Statistiques Globales (version alternative) */}
-       
-          
-          {/* Liens rapides Laravel */}
           <div className="grid grid-cols-2 gap-2 mt-4 px-4">
             <button
               onClick={() => goToLaravelPage('/admin/statistiques/export/users')}
@@ -223,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
         </nav>
 
         {/* User Profile Snippet at Bottom */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => onChangeView('settings')}>
             <img 
               src="https://picsum.photos/100/100?random=99" 
@@ -231,22 +272,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isO
               className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-600 shadow-sm"
             />
             <div className="flex-1 min-w-0">
-            
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Super Admin</p>
+              <p className="font-medium text-sm text-slate-800 dark:text-white truncate">Super Admin</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">admin@gestiloc.com</p>
             </div>
-            {/* Badge Admin */}
             <span className="text-[10px] font-bold bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 py-1 px-2 rounded-full">
               Admin
             </span>
           </div>
           
-          {/* ✅ Lien direct vers les statistiques depuis le profil */}
+          {/* ✅ BOUTON DE DÉCONNEXION - MAINTENANT FONCTIONNEL */}
           <button
-            onClick={() => goToLaravelPage('/admin/statistiques')}
-            className="w-full mt-3 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-lg hover:from-blue-600 hover:to-violet-600 transition-all shadow-sm hover:shadow-md"
+            onClick={() => setShowLogoutConfirm(true)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
           >
-            <BarChart3 size={14} />
-            Voir les statistiques
+            <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <LogOut size={18} />
+            </div>
+            <span className="font-medium">Se déconnecter</span>
+         
           </button>
         </div>
       </div>

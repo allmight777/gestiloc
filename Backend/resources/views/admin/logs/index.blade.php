@@ -798,13 +798,13 @@
                         Activité Système
                     </button>
 
-                    <!-- Statistiques Globales (Laravel) -->
+                    <!-- Statistiques Globales  -->
                     <button class="nav-item" onclick="navigateTo('/admin/statistiques')">
                         <i data-lucide="bar-chart-3" class="nav-icon"></i>
                         Statistiques Globales
                     </button>
 
-                    <!-- Journaux Système (Laravel) -->
+                    <!-- Journaux Système  -->
                     <button class="nav-item active" onclick="navigateTo('/admin/logs')">
                         <i data-lucide="file-text" class="nav-icon"></i>
                         Journaux Système
@@ -850,7 +850,7 @@
             <!-- Profile section -->
             <div class="profile-section">
                 <div class="profile-info" onclick="goToReact('/coproprietaire/profile')">
-                
+
                     <div class="profile-details">
 
                         <div class="profile-role">Super Admin</div>
