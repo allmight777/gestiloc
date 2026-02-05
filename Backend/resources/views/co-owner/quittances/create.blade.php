@@ -1058,7 +1058,7 @@
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'http://localhost:8000/login';
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
                 return;
             }
 
@@ -1093,11 +1093,11 @@
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'http://localhost:8000/login';
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
                 return;
             }
 
-            const baseUrl = 'http://localhost:8000';
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
             let fullUrl = baseUrl + path;
 
             const separator = fullUrl.includes('?') ? '&' : '?';
@@ -1143,7 +1143,7 @@
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = 'http://localhost:8000/logout';
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
             }
         }
 
@@ -1221,7 +1221,7 @@
 
         if (!token) {
             alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'http://localhost:8000/login';
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
             return;
         }
 
@@ -1241,11 +1241,11 @@
 
         if (!token) {
             alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'http://localhost:8000/login';
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
             return;
         }
 
-        const baseUrl = 'http://localhost:8000';
+        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
         let fullUrl = baseUrl + path;
 
         const separator = fullUrl.includes('?') ? '&' : '?';
@@ -1289,7 +1289,7 @@
         if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = 'http://localhost:8000/logout';
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
         }
     }
 
