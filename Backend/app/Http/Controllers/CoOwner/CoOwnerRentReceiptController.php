@@ -21,7 +21,7 @@ use Carbon\Carbon;
 class CoOwnerRentReceiptController extends Controller
 {
     /**
-     * Liste des quittances
+     * Liste des quittances avec filtres
      */
     public function index(Request $request)
     {
@@ -36,14 +36,88 @@ class CoOwnerRentReceiptController extends Controller
             return view('co-owner.unauthorized')->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        // Récupérer les quittances pour les biens délégués à ce co-propriétaire
-        $receipts = RentReceipt::where('landlord_id', $user->id)
-            ->with(['property', 'lease', 'tenant.user'])
-            ->orderBy('issued_date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        // Récupérer les IDs des propriétés déléguées
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('status', 'active')
+            ->pluck('property_id');
 
-        return view('co-owner.quittances.index', compact('receipts', 'user'));
+        // Statistiques globales
+        $totalReceipts = RentReceipt::whereIn('property_id', $delegatedPropertyIds)->count();
+
+        $thisMonthReceipts = RentReceipt::whereIn('property_id', $delegatedPropertyIds)
+            ->whereMonth('issued_date', now()->month)
+            ->whereYear('issued_date', now()->year)
+            ->count();
+
+        $totalCollected = RentReceipt::whereIn('property_id', $delegatedPropertyIds)
+            ->sum('amount_paid');
+
+        $pendingReceipts = RentReceipt::whereIn('property_id', $delegatedPropertyIds)
+            ->where('status', 'pending')
+            ->count();
+
+        // Query de base pour les quittances
+        $query = RentReceipt::whereIn('property_id', $delegatedPropertyIds)
+            ->with(['property', 'lease', 'tenant.user']);
+
+        // Appliquer les filtres
+        $statusFilter = $request->get('status', 'all');
+        $searchTerm = $request->get('search', '');
+        $propertyFilter = $request->get('property_id', '');
+
+        // Filtre par statut
+        if ($statusFilter !== 'all') {
+            if ($statusFilter === 'sent') {
+                $query->where('status', 'issued');
+            } elseif ($statusFilter === 'pending') {
+                $query->where('status', 'pending');
+            } elseif ($statusFilter === 'year') {
+                $query->whereYear('issued_date', now()->year);
+            }
+        }
+
+        // Filtre par bien
+        if ($propertyFilter) {
+            $query->where('property_id', $propertyFilter);
+        }
+
+        // Filtre par recherche
+        if ($searchTerm) {
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('reference', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('tenant', function($tenantQuery) use ($searchTerm) {
+                      $tenantQuery->where('first_name', 'like', "%{$searchTerm}%")
+                                  ->orWhere('last_name', 'like', "%{$searchTerm}%");
+                  })
+                  ->orWhereHas('property', function($propertyQuery) use ($searchTerm) {
+                      $propertyQuery->where('name', 'like', "%{$searchTerm}%")
+                                    ->orWhere('city', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        // Récupérer les quittances avec pagination
+        $receipts = $query->orderBy('issued_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(9);
+
+        // Liste des propriétés pour le filtre
+        $properties = Property::whereIn('id', $delegatedPropertyIds)
+            ->orderBy('name')
+            ->get();
+
+        return view('co-owner.quittances.index', compact(
+            'receipts',
+            'user',
+            'totalReceipts',
+            'thisMonthReceipts',
+            'pendingReceipts',
+            'totalCollected',
+            'properties',
+            'statusFilter',
+            'searchTerm',
+            'propertyFilter'
+        ));
     }
 
     /**
@@ -62,7 +136,6 @@ class CoOwnerRentReceiptController extends Controller
             return redirect()->route('login')->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        // Récupérer les baux pour les propriétés déléguées à ce co-propriétaire
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id');
@@ -103,14 +176,12 @@ class CoOwnerRentReceiptController extends Controller
         try {
             DB::beginTransaction();
 
-            // Récupérer le bail avec les relations
             $lease = Lease::with(['property', 'tenant.user'])->find($validated['lease_id']);
 
             if (!$lease) {
                 throw new \Exception('Bail non trouvé');
             }
 
-            // Vérifier que la propriété est déléguée à ce co-propriétaire
             $delegation = PropertyDelegation::where('property_id', $lease->property_id)
                 ->where('co_owner_id', $coOwner->id)
                 ->where('status', 'active')
@@ -120,7 +191,6 @@ class CoOwnerRentReceiptController extends Controller
                 throw new \Exception('Cette propriété ne vous est pas déléguée');
             }
 
-            // Vérifier si une quittance existe déjà pour ce mois
             $existingReceipt = RentReceipt::where('lease_id', $lease->id)
                 ->where('paid_month', $validated['paid_month'])
                 ->first();
@@ -129,7 +199,6 @@ class CoOwnerRentReceiptController extends Controller
                 throw new \Exception('Une quittance existe déjà pour ce mois et ce bail');
             }
 
-            // Créer la référence
             [$year, $month] = explode('-', $validated['paid_month']);
             $receiptCount = RentReceipt::whereYear('issued_date', $year)
                 ->whereMonth('issued_date', $month)
@@ -137,7 +206,6 @@ class CoOwnerRentReceiptController extends Controller
             $reference = 'RR-' . $year . '-' . str_pad($month, 2, '0', STR_PAD_LEFT) . '-' .
                         str_pad((string) ($receiptCount + 1), 4, '0', STR_PAD_LEFT);
 
-            // Créer la quittance
             $receipt = RentReceipt::create([
                 'lease_id' => $lease->id,
                 'property_id' => $lease->property_id,
@@ -163,10 +231,8 @@ class CoOwnerRentReceiptController extends Controller
                 'tenant_id' => $lease->tenant_id,
             ]);
 
-            // Générer le PDF
             $pdfPath = $this->generatePdf($receipt);
 
-            // Envoyer l'email si demandé
             if ($request->has('send_email') && $request->send_email) {
                 $emailSent = $this->sendReceiptEmail($receipt, $pdfPath);
 
@@ -199,16 +265,11 @@ class CoOwnerRentReceiptController extends Controller
         }
     }
 
-    /**
-     * Générer le PDF de la quittance
-     */
     private function generatePdf(RentReceipt $receipt)
     {
         try {
-            // Charger les relations nécessaires
             $receipt->load(['property', 'lease', 'tenant.user', 'landlord']);
 
-            // Préparer les données pour la vue
             $data = [
                 'receipt' => $receipt,
                 'property' => $receipt->property,
@@ -220,7 +281,6 @@ class CoOwnerRentReceiptController extends Controller
                 'montant_lettres' => $this->numberToWords($receipt->amount_paid),
             ];
 
-            // Générer le PDF à partir du fichier Blade
             $pdf = PDF::loadView('pdf.quittance', $data)
                 ->setPaper('a4', 'portrait')
                 ->setOptions([
@@ -229,17 +289,14 @@ class CoOwnerRentReceiptController extends Controller
                     'isRemoteEnabled' => true,
                 ]);
 
-            // Sauvegarder le PDF
             $filename = 'quittance_' . $receipt->reference . '_' . time() . '.pdf';
             $path = storage_path('app/public/quittances/' . $filename);
 
-            // Créer le répertoire s'il n'existe pas
             if (!file_exists(dirname($path))) {
                 mkdir(dirname($path), 0755, true);
             }
 
             $pdf->save($path);
-
             return $path;
 
         } catch (\Exception $e) {
@@ -248,30 +305,21 @@ class CoOwnerRentReceiptController extends Controller
                 'receipt_id' => $receipt->id,
                 'trace' => $e->getTraceAsString()
             ]);
-
             throw $e;
         }
     }
 
-    /**
-     * Envoyer la quittance par email
-     */
     private function sendReceiptEmail(RentReceipt $receipt, $pdfPath)
     {
         try {
-            // Charger le locataire avec son utilisateur
             $receipt->load(['tenant.user', 'property']);
-
-            // Accéder à l'email via la relation user
             $tenantEmail = $receipt->tenant->user->email ?? null;
 
             if (!$tenantEmail) {
                 Log::warning('Email du locataire non trouvé', [
                     'receipt_id' => $receipt->id,
                     'tenant_id' => $receipt->tenant_id,
-                    'user_id' => $receipt->tenant->user_id ?? null
                 ]);
-
                 return false;
             }
 
@@ -304,16 +352,11 @@ class CoOwnerRentReceiptController extends Controller
             Log::error('Erreur envoi email quittance', [
                 'error' => $e->getMessage(),
                 'receipt_id' => $receipt->id,
-                'tenant_email' => $tenantEmail ?? 'null',
             ]);
-
             return false;
         }
     }
 
-    /**
-     * Télécharger le PDF
-     */
     public function downloadPdf(Request $request, $id)
     {
         $user = $this->getAuthenticatedUser($request);
@@ -324,30 +367,22 @@ class CoOwnerRentReceiptController extends Controller
 
         $receipt = RentReceipt::findOrFail($id);
 
-        // Vérifier que la quittance appartient à ce co-propriétaire
         if ($receipt->landlord_id != $user->id) {
             abort(403, 'Cette quittance ne vous appartient pas');
         }
 
         try {
-            // Générer le PDF
             $pdfPath = $this->generatePdf($receipt);
-
             return response()->download($pdfPath, 'quittance_' . $receipt->reference . '.pdf');
-
         } catch (\Exception $e) {
             Log::error('Erreur téléchargement PDF quittance', [
                 'error' => $e->getMessage(),
                 'receipt_id' => $receipt->id,
             ]);
-
             abort(404, 'Fichier non trouvé');
         }
     }
 
-    /**
-     * Envoyer par email (manuellement)
-     */
     public function sendByEmail(Request $request, $id)
     {
         $user = $this->getAuthenticatedUser($request);
@@ -358,16 +393,12 @@ class CoOwnerRentReceiptController extends Controller
 
         $receipt = RentReceipt::findOrFail($id);
 
-        // Vérifier que la quittance appartient à ce co-propriétaire
         if ($receipt->landlord_id != $user->id) {
             return back()->with('error', 'Cette quittance ne vous appartient pas');
         }
 
         try {
-            // Générer le PDF
             $pdfPath = $this->generatePdf($receipt);
-
-            // Envoyer l'email
             $emailSent = $this->sendReceiptEmail($receipt, $pdfPath);
 
             if ($emailSent) {
@@ -381,14 +412,10 @@ class CoOwnerRentReceiptController extends Controller
                 'error' => $e->getMessage(),
                 'receipt_id' => $receipt->id,
             ]);
-
             return back()->with('error', 'Erreur lors de l\'envoi: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Supprimer une quittance
-     */
     public function destroy(Request $request, $id)
     {
         $user = $this->getAuthenticatedUser($request);
@@ -399,31 +426,24 @@ class CoOwnerRentReceiptController extends Controller
 
         $receipt = RentReceipt::findOrFail($id);
 
-        // Vérifier que la quittance appartient à ce co-propriétaire
         if ($receipt->landlord_id != $user->id) {
             return back()->with('error', 'Cette quittance ne vous appartient pas');
         }
 
         try {
             $receipt->delete();
-
             return redirect()
                 ->route('co-owner.quittances.index')
                 ->with('success', 'Quittance supprimée avec succès');
-
         } catch (\Exception $e) {
             Log::error('Erreur suppression quittance', [
                 'error' => $e->getMessage(),
                 'receipt_id' => $receipt->id,
             ]);
-
             return back()->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Convertir un nombre en lettres (pour le montant en lettres)
-     */
     private function numberToWords($number)
     {
         $intPart = (int) $number;
@@ -466,12 +486,8 @@ class CoOwnerRentReceiptController extends Controller
         return (string) $number;
     }
 
-    /**
-     * Récupérer l'utilisateur authentifié
-     */
     private function getAuthenticatedUser(Request $request)
     {
-        // 1. Vérifier Sanctum token
         if ($request->bearerToken()) {
             $token = $request->bearerToken();
             $sanctumToken = PersonalAccessToken::findToken($token);
@@ -483,7 +499,6 @@ class CoOwnerRentReceiptController extends Controller
             }
         }
 
-        // 2. Vérifier token paramètre
         if ($request->has('api_token')) {
             $token = $request->get('api_token');
             $sanctumToken = PersonalAccessToken::findToken($token);
@@ -495,12 +510,10 @@ class CoOwnerRentReceiptController extends Controller
             }
         }
 
-        // 3. Session web
         if (auth()->check()) {
             return auth()->user();
         }
 
-        // 4. Header Authorization
         $authHeader = $request->header('Authorization');
         if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
             $token = str_replace('Bearer ', '', $authHeader);

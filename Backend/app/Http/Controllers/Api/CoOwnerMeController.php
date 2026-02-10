@@ -11,6 +11,9 @@ use App\Models\RentReceipt;
 use App\Models\User;
 use App\Models\Tenant;
 use App\Models\Notice;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Document;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +24,7 @@ use App\Mail\PropertyModifiedNotification;
 class CoOwnerMeController extends Controller
 {
     /**
-     * Récupérer le profil complet du co-propriétaire connecté
+     * Récupérer le profil complet du co-propriétaire connecté AVEC LES DONNÉES RÉELLES DU DASHBOARD
      */
     public function getProfile(Request $request): JsonResponse
     {
@@ -30,23 +33,17 @@ class CoOwnerMeController extends Controller
         Log::info('CoOwnerMeController::getProfile - Début', [
             'user_id' => $user?->id,
             'user_email' => $user?->email,
-            'user_phone' => $user?->phone,
         ]);
 
         // Vérifier si l'utilisateur a le rôle co_owner
         if (!$user || !$user->hasRole('co_owner')) {
-            Log::warning('CoOwnerMeController::getProfile - Accès refusé', [
-                'user_has_role' => $user ? $user->hasRole('co_owner') : false,
-            ]);
             return response()->json(['message' => 'Forbidden - User is not a co-owner'], 403);
         }
 
-        // Récupérer le profil co-propriétaire associé à l'utilisateur
+        // Récupérer le profil co-propriétaire
         $coOwner = CoOwner::where('user_id', $user->id)->first();
 
         if (!$coOwner) {
-            Log::info('CoOwnerMeController::getProfile - Création du profil co-owner', ['user_id' => $user->id]);
-            // Si aucun profil co-propriétaire n'existe, en créer un basé sur les infos de l'utilisateur
             $coOwner = CoOwner::create([
                 'user_id' => $user->id,
                 'first_name' => $user->first_name ?? '',
@@ -57,98 +54,246 @@ class CoOwnerMeController extends Controller
                 'is_professional' => false,
                 'co_owner_type' => 'simple',
             ]);
-
-            Log::info('Co-owner profile created automatically', [
-                'user_id' => $user->id,
-                'co_owner_id' => $coOwner->id
-            ]);
-        } else {
-            // Synchroniser le téléphone si incohérence
-            if ($coOwner->phone !== $user->phone) {
-                Log::info('CoOwnerMeController::getProfile - Synchronisation du téléphone', [
-                    'old_phone' => $coOwner->phone,
-                    'new_phone' => $user->phone,
-                    'co_owner_id' => $coOwner->id
-                ]);
-                $coOwner->update(['phone' => $user->phone]);
-            }
         }
 
-        // Récupérer les statistiques
-        $delegatedPropertiesCount = PropertyDelegation::where('co_owner_id', $coOwner->id)
+        // Récupérer les délégations actives
+        $delegations = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
+            ->with('property')
+            ->get();
+
+        $propertyIds = $delegations->pluck('property_id')->toArray();
+
+        // Récupérer les baux actifs
+        $activeLeases = Lease::whereIn('property_id', $propertyIds)
+            ->where('status', 'active')
+            ->with(['property', 'tenant'])
+            ->get();
+
+        // === 1. DONNÉES DES LOYERS DES 6 DERNIERS MOIS ===
+        $rentData = [];
+        $monthlyTotals = [];
+
+        // Pour les 6 derniers mois
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $monthName = $monthStart->format('M');
+
+            // Loyers attendus ce mois-ci (somme des loyers des baux actifs)
+            $expectedRent = $activeLeases->filter(function($lease) use ($monthStart, $monthEnd) {
+                // Vérifier si le bail était actif pendant ce mois
+                $leaseStart = \Carbon\Carbon::parse($lease->start_date);
+                $leaseEnd = $lease->end_date ? \Carbon\Carbon::parse($lease->end_date) : null;
+
+                if ($leaseEnd) {
+                    return $leaseStart <= $monthEnd && $leaseEnd >= $monthStart;
+                }
+                return $leaseStart <= $monthEnd;
+            })->sum('rent_amount');
+
+            // Loyers reçus ce mois-ci depuis la table payments
+            $receivedRent = Payment::whereIn('lease_id', $activeLeases->pluck('id'))
+                ->where('status', 'approved')
+                ->whereBetween('paid_at', [$monthStart, $monthEnd])
+                ->sum('amount_total');
+
+            $rentData[] = [
+                'month' => $monthName,
+                'expected' => (float) $expectedRent,
+                'received' => (float) $receivedRent,
+            ];
+
+            // Garder les totaux pour le max du graphique
+            $monthlyTotals[] = max($expectedRent, $receivedRent);
+        }
+
+        // Trouver le maximum pour l'échelle du graphique
+        $maxRent = $monthlyTotals ? max($monthlyTotals) : 5000;
+        $graphMax = ceil($maxRent / 1000) * 1000; // Arrondir au 1000 supérieur
+
+        // === 2. TAUX D'OCCUPATION ===
+        $occupiedProperties = $activeLeases->pluck('property_id')->unique()->count();
+        $totalProperties = count($propertyIds);
+        $occupancyRate = $totalProperties > 0 ? ($occupiedProperties / $totalProperties) * 100 : 0;
+
+        $occupancyData = [
+            'occupied' => $occupiedProperties,
+            'vacant' => $totalProperties - $occupiedProperties,
+            'total' => $totalProperties,
+            'occupancy_rate' => round($occupancyRate, 1)
+        ];
+
+        // === 3. DOCUMENTS RÉCENTS ===
+        $recentDocuments = [];
+
+        // Contrats de bail récents
+        $recentLeases = Lease::whereIn('property_id', $propertyIds)
+            ->with(['property', 'tenant'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentLeases as $lease) {
+            $recentDocuments[] = [
+                'type' => 'contrat',
+                'title' => 'Contrat de bail' . ($lease->tenant ? ' - ' . $lease->tenant->last_name : ''),
+                'date' => $lease->created_at->format('d-F-Y'),
+                'document_id' => $lease->id,
+                'document_type' => 'lease'
+            ];
+        }
+
+        // Avis d'échéance récents (invoices)
+        $recentInvoices = Invoice::whereIn('lease_id', $activeLeases->pluck('id'))
+            ->where('status', 'pending')
+            ->with('lease.property')
+            ->orderBy('due_date', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentInvoices as $invoice) {
+            $monthName = \Carbon\Carbon::parse($invoice->due_date)->locale('fr')->monthName;
+            $recentDocuments[] = [
+                'type' => 'avis',
+                'title' => 'Avis d\'échéance - ' . $monthName,
+                'date' => \Carbon\Carbon::parse($invoice->due_date)->subDays(5)->format('d F Y'),
+                'document_id' => $invoice->id,
+                'document_type' => 'invoice'
+            ];
+        }
+
+        // États des lieux récents (notices de type inventory)
+        $recentInventories = Notice::whereIn('property_id', $propertyIds)
+            ->where('type', 'inventory')
+            ->with('property')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentInventories as $inventory) {
+            $recentDocuments[] = [
+                'type' => 'etat',
+                'title' => 'État des lieux' . ($inventory->property ? ' - ' . $inventory->property->name : ''),
+                'date' => $inventory->created_at->format('d-F-Y'),
+                'document_id' => $inventory->id,
+                'document_type' => 'inventory'
+            ];
+        }
+
+        // Factures travaux récentes
+        $recentMaintenance = Invoice::whereIn('lease_id', $activeLeases->pluck('id'))
+            ->where('type', 'maintenance')
+            ->with('lease.property')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentMaintenance as $maintenance) {
+            $recentDocuments[] = [
+                'type' => 'facture',
+                'title' => 'Facture travaux' . ($maintenance->lease->property ? ' - ' . $maintenance->lease->property->name : ''),
+                'date' => $maintenance->created_at->format('d-F-Y'),
+                'document_id' => $maintenance->id,
+                'document_type' => 'maintenance'
+            ];
+        }
+
+        // Quittances récentes
+        $recentReceipts = RentReceipt::whereIn('lease_id', $activeLeases->pluck('id'))
+            ->with(['lease.property', 'lease.tenant'])
+            ->orderBy('issued_date', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentReceipts as $receipt) {
+            $recentDocuments[] = [
+                'type' => 'quittance',
+                'title' => 'Quittance' . ($receipt->lease->tenant ? ' - ' . $receipt->lease->tenant->last_name : ''),
+                'date' => $receipt->issued_date->format('d-F-Y'),
+                'document_id' => $receipt->id,
+                'document_type' => 'receipt'
+            ];
+        }
+
+        // Trier par date et garder les 5 plus récents
+        usort($recentDocuments, function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+        $recentDocuments = array_slice($recentDocuments, 0, 5);
+
+        // === 4. KPIs EN TEMPS RÉEL ===
+
+        // Loyers attendus ce mois-ci
+        $currentMonthStart = now()->startOfMonth();
+        $currentMonthEnd = now()->endOfMonth();
+
+        $expectedRentCurrentMonth = $activeLeases->filter(function($lease) use ($currentMonthStart, $currentMonthEnd) {
+            $leaseStart = \Carbon\Carbon::parse($lease->start_date);
+            $leaseEnd = $lease->end_date ? \Carbon\Carbon::parse($lease->end_date) : null;
+
+            if ($leaseEnd) {
+                return $leaseStart <= $currentMonthEnd && $leaseEnd >= $currentMonthStart;
+            }
+            return $leaseStart <= $currentMonthEnd;
+        })->sum('rent_amount');
+
+        // Loyers reçus ce mois-ci
+        $receivedRentCurrentMonth = Payment::whereIn('lease_id', $activeLeases->pluck('id'))
+            ->where('status', 'approved')
+            ->whereBetween('paid_at', [$currentMonthStart, $currentMonthEnd])
+            ->sum('amount_total');
+
+        // Alertes en attente
+        $activeAlerts = Notice::whereIn('property_id', $propertyIds)
+            ->where('status', 'pending')
             ->count();
 
-        $activeLeasesCount = Lease::whereIn('property_id', function($query) use ($coOwner) {
-            $query->select('property_id')
-                ->from('property_delegations')
-                ->where('co_owner_id', $coOwner->id)
-                ->where('status', 'active');
-        })->where('status', 'active')->count();
-
-        $totalRentCollected = RentReceipt::whereIn('lease_id', function($query) use ($coOwner) {
-            $query->select('id')
-                ->from('leases')
-                ->whereIn('property_id', function($subQuery) use ($coOwner) {
-                    $subQuery->select('property_id')
-                        ->from('property_delegations')
-                        ->where('co_owner_id', $coOwner->id)
-                        ->where('status', 'active');
-                });
-        })->where('status', 'paid')->sum('amount_paid');
-
-        // Déterminer le type de co-propriétaire
-        $coOwnerType = $coOwner->co_owner_type;
-        if (!$coOwnerType) {
-            if ($coOwner->is_professional) {
-                $coOwnerType = !empty($coOwner->company_name) ? 'agency' : 'professional';
-            } else {
-                $coOwnerType = 'simple';
-            }
-        }
-
+        // === 5. PRÉPARER LA RÉPONSE ===
         $profileData = [
             'id' => $coOwner->id,
             'user_id' => $coOwner->user_id,
             'first_name' => $coOwner->first_name,
             'last_name' => $coOwner->last_name,
+            'full_name' => trim($coOwner->first_name . ' ' . $coOwner->last_name),
             'email' => $user->email,
             'phone' => $coOwner->phone ?? $user->phone,
-            'address' => $coOwner->address,
-            'date_of_birth' => $coOwner->date_of_birth,
-            'id_number' => $coOwner->id_number,
             'company_name' => $coOwner->company_name,
-            'address_billing' => $coOwner->address_billing,
-            'license_number' => $coOwner->license_number,
             'is_professional' => (bool) $coOwner->is_professional,
-            'co_owner_type' => $coOwnerType,
-            'ifu' => $coOwner->ifu,
-            'rccm' => $coOwner->rccm,
-            'vat_number' => $coOwner->vat_number,
+            'co_owner_type' => $coOwner->co_owner_type ?: 'simple',
             'status' => $coOwner->status,
-            'joined_at' => $coOwner->created_at,
-            'created_at' => $coOwner->created_at,
-            'updated_at' => $coOwner->updated_at,
-            'statistics' => [
-                'delegated_properties_count' => $delegatedPropertiesCount,
-                'active_leases_count' => $activeLeasesCount,
-                'total_rent_collected' => (float) $totalRentCollected,
+            'dashboard_data' => [
+                'subscription' => [
+                    'plan' => 'Permanent',
+                    'renewal_date' => '15 Mars 2026'
+                ],
+                'rent_data' => $rentData,
+                'graph_max' => $graphMax,
+                'occupancy_data' => $occupancyData,
+                'recent_documents' => $recentDocuments,
+                'quick_actions' => [
+                    ['id' => 1, 'title' => 'Créer un bien', 'description' => 'Créer la fiche de votre bien', 'icon' => 'home'],
+                    ['id' => 2, 'title' => 'Créer un locataire', 'description' => 'Créer la fiche de votre locataire', 'icon' => 'users'],
+                    ['id' => 3, 'title' => 'Créer une Location', 'description' => 'Lier le bien et le locataire dans une location', 'icon' => 'handshake'],
+                ],
+                'kpis' => [
+                    'expected_rent' => (float) $expectedRentCurrentMonth,
+                    'received_rent' => (float) $receivedRentCurrentMonth,
+                    'occupancy_rate' => $occupancyData['occupancy_rate'],
+                    'occupied_properties' => $occupancyData['occupied'],
+                    'total_properties' => $occupancyData['total'],
+                    'active_delegations' => $delegations->count(),
+                    'active_alerts' => $activeAlerts,
+                ]
             ],
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'email_verified_at' => $user->email_verified_at,
-                'created_at' => $user->created_at,
-                'last_login_at' => $user->last_login_at,
+            'statistics' => [
+                'delegated_properties_count' => $delegations->count(),
+                'active_leases_count' => $activeLeases->count(),
+                'total_rent_collected' => Payment::whereIn('lease_id', $activeLeases->pluck('id'))
+                    ->where('status', 'approved')
+                    ->sum('amount_total'),
             ]
         ];
-
-        Log::info('CoOwnerMeController::getProfile - Données retournées', [
-            'co_owner_id' => $coOwner->id,
-            'co_owner_type' => $profileData['co_owner_type'],
-            'phone' => $profileData['phone']
-        ]);
 
         return response()->json([
             'data' => $profileData
@@ -177,7 +322,6 @@ class CoOwnerMeController extends Controller
         $coOwner = CoOwner::where('user_id', $user->id)->first();
         if (!$coOwner) {
             Log::info('CoOwnerMeController::updateProfile - Création du profil co-owner');
-            // Créer le profil s'il n'existe pas
             $coOwner = CoOwner::create([
                 'user_id' => $user->id,
                 'first_name' => $user->first_name ?? '',
@@ -190,7 +334,6 @@ class CoOwnerMeController extends Controller
             ]);
         }
 
-        // Validation avec des règles plus flexibles
         try {
             $validated = $request->validate([
                 'first_name' => 'sometimes|nullable|string|max:255',
@@ -221,14 +364,12 @@ class CoOwnerMeController extends Controller
             ], 422);
         }
 
-        // Nettoyer les données : convertir les chaînes vides en null
         foreach ($validated as $key => $value) {
             if ($value === '' || $value === null) {
                 $validated[$key] = null;
             }
         }
 
-        // Mettre à jour le téléphone dans la table users si fourni
         if (isset($validated['phone']) && $validated['phone'] !== $user->phone) {
             $user->update(['phone' => $validated['phone']]);
             Log::info('CoOwnerMeController::updateProfile - Téléphone mis à jour dans users', [
@@ -237,7 +378,6 @@ class CoOwnerMeController extends Controller
             ]);
         }
 
-        // Vérifier et traiter le type de co-propriétaire
         if (isset($validated['is_professional'])) {
             $coOwner->is_professional = (bool) $validated['is_professional'];
             if ($validated['is_professional'] && !empty($validated['company_name'])) {
@@ -250,10 +390,8 @@ class CoOwnerMeController extends Controller
             unset($validated['is_professional']);
         }
 
-        // Mettre à jour le co-propriétaire
         $coOwner->update($validated);
 
-        // Mettre à jour l'email utilisateur si fourni
         if ($request->has('email') && $request->email !== $user->email) {
             try {
                 $request->validate(['email' => 'required|email|unique:users,email,' . $user->id]);
@@ -267,12 +405,10 @@ class CoOwnerMeController extends Controller
                 Log::error('CoOwnerMeController::updateProfile - Erreur validation email', [
                     'errors' => $e->errors()
                 ]);
-                // Revenir à l'email original
                 $validated['email'] = $user->email;
             }
         }
 
-        // Mettre à jour le nom de l'utilisateur si le prénom ou nom a changé
         $userUpdates = [];
         if (isset($validated['first_name']) && $validated['first_name'] !== $user->first_name) {
             $userUpdates['first_name'] = $validated['first_name'];
@@ -286,11 +422,9 @@ class CoOwnerMeController extends Controller
             Log::info('CoOwnerMeController::updateProfile - Nom utilisateur mis à jour', $userUpdates);
         }
 
-        // Rafraîchir les données
         $coOwner->refresh();
         $user->refresh();
 
-        // Déterminer le type final
         $coOwnerType = $coOwner->co_owner_type;
         if (!$coOwnerType) {
             if ($coOwner->is_professional) {
@@ -334,6 +468,7 @@ class CoOwnerMeController extends Controller
 
     /**
      * Récupérer les propriétés déléguées au co-propriétaire connecté
+     * CORRECTION: Récupération directe du statut depuis la base de données
      */
     public function getDelegatedProperties(Request $request): JsonResponse
     {
@@ -342,8 +477,6 @@ class CoOwnerMeController extends Controller
         Log::info('CoOwnerMeController::getDelegatedProperties', [
             'user_id' => $user?->id,
             'user_email' => $user?->email,
-            'user_phone' => $user?->phone,
-            'has_co_owner_role' => $user?->hasRole('co_owner'),
         ]);
 
         if (!$user) {
@@ -359,7 +492,7 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Récupérer les délégations actives pour ce co-propriétaire
+        // Récupérer les délégations actives
         $delegations = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->with('property')
@@ -370,24 +503,25 @@ class CoOwnerMeController extends Controller
             $property = $delegation->property;
             if (!$property) return null;
 
-            // Vérifier si la propriété est louée
-            $activeLease = Lease::where('property_id', $property->id)
-                ->where('status', 'active')
-                ->first();
+            // CORRECTION: Récupération DIRECTE du statut depuis la base de données
+            // Sans aucune logique de calcul ou déduction
+            $propertyStatus = $property->status; // available, rented, maintenance, off_market
 
             return [
                 'id' => $property->id,
                 'name' => $property->name,
                 'address' => $property->address,
                 'city' => $property->city,
-                'postal_code' => $property->postal_code,
+                'zip_code' => $property->zip_code,
                 'country' => $property->country,
                 'rent_amount' => $property->rent_amount,
+                'charges_amount' => $property->charges_amount,
+                'caution' => $property->caution, // AJOUT ICI
                 'surface' => $property->surface,
                 'property_type' => $property->property_type,
                 'description' => $property->description,
                 'photos' => $property->photos ?? [],
-                'status' => $activeLease ? 'rented' : 'available',
+                'status' => $propertyStatus, // DIRECT depuis DB
                 'created_at' => $property->created_at,
                 'updated_at' => $property->updated_at,
                 'landlord_id' => $property->landlord_id,
@@ -398,8 +532,31 @@ class CoOwnerMeController extends Controller
                     'permissions' => $delegation->permissions,
                     'expires_at' => $delegation->expires_at,
                 ],
+                'reference_code' => $property->reference_code,
+                'bedroom_count' => $property->bedroom_count,
+                'bathroom_count' => $property->bathroom_count,
+                'room_count' => $property->room_count,
+                'district' => $property->district,
+                'state' => $property->state,
+                'floor' => $property->floor,
+                'total_floors' => $property->total_floors,
+                'construction_year' => $property->construction_year,
+                'has_garage' => $property->has_garage,
+                'has_parking' => $property->has_parking,
+                'is_furnished' => $property->is_furnished,
+                'has_elevator' => $property->has_elevator,
+                'has_balcony' => $property->has_balcony,
+                'has_terrace' => $property->has_terrace,
+                'has_cellar' => $property->has_cellar,
+                'charges_amount' => $property->charges_amount,
+                'amenities' => $property->amenities ?? [],
             ];
         })->filter()->values();
+
+        Log::info('Properties retrieved with status', [
+            'count' => $properties->count(),
+            'statuses' => $properties->pluck('status')->toArray()
+        ]);
 
         return response()->json([
             'data' => $properties
@@ -422,12 +579,10 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Récupérer les propriétés déléguées
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id');
 
-        // Récupérer les baux pour ces propriétés
         $leases = Lease::whereIn('property_id', $delegatedPropertyIds)
             ->with(['property', 'tenant'])
             ->get();
@@ -470,12 +625,10 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Récupérer les propriétés déléguées
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id');
 
-        // Récupérer les quittances pour ces propriétés
         $receipts = RentReceipt::whereIn('property_id', $delegatedPropertyIds)
             ->with(['lease', 'property'])
             ->orderBy('issued_date', 'desc')
@@ -517,12 +670,10 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Récupérer les propriétés déléguées
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id');
 
-        // Récupérer les locataires pour ces propriétés
         $tenantIds = Lease::whereIn('property_id', $delegatedPropertyIds)
             ->where('status', 'active')
             ->pluck('tenant_id');
@@ -564,12 +715,10 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Récupérer les propriétés déléguées
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id');
 
-        // Récupérer les notifications pour ces propriétés
         $notices = Notice::whereIn('property_id', $delegatedPropertyIds)
             ->with(['property', 'tenant'])
             ->orderBy('created_at', 'desc')
@@ -657,7 +806,6 @@ class CoOwnerMeController extends Controller
             return response()->json(['message' => 'Co-owner profile missing'], 422);
         }
 
-        // Vérifier la délégation
         $delegation = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('property_id', $propertyId)
             ->where('status', 'active')
@@ -703,6 +851,7 @@ class CoOwnerMeController extends Controller
                 'construction_year' => 'sometimes|nullable|integer|min:1800|max:' . date('Y'),
                 'rent_amount' => 'sometimes|nullable|numeric|min:0',
                 'charges_amount' => 'sometimes|nullable|numeric|min:0',
+                'caution' => 'sometimes|nullable|numeric|min:0', // AJOUT ICI
                 'property_type' => 'sometimes|nullable|string|max:255',
                 'description' => 'sometimes|nullable|string|max:2000',
                 'has_garage' => 'sometimes|boolean',
@@ -713,7 +862,7 @@ class CoOwnerMeController extends Controller
                 'has_terrace' => 'sometimes|boolean',
                 'has_cellar' => 'sometimes|boolean',
                 'reference_code' => 'sometimes|string|max:100',
-                'status' => 'sometimes|nullable|string|in:available,rented,maintenance,renovation',
+                'status' => 'sometimes|nullable|string|in:available,rented,maintenance,off_market',
                 'amenities' => 'sometimes|nullable|array',
                 'amenities.*' => 'sometimes|string',
             ]);
@@ -732,7 +881,6 @@ class CoOwnerMeController extends Controller
             ], 422);
         }
 
-        // Nettoyer les données
         foreach ($validated as $key => $value) {
             if ($value === '' || $value === null) {
                 $validated[$key] = null;
@@ -821,6 +969,7 @@ class CoOwnerMeController extends Controller
             'longitude' => $property->longitude,
             'rent_amount' => $property->rent_amount,
             'charges_amount' => $property->charges_amount,
+            'caution' => $property->caution, // AJOUT ICI
             'surface' => $property->surface,
             'floor' => $property->floor,
             'total_floors' => $property->total_floors,

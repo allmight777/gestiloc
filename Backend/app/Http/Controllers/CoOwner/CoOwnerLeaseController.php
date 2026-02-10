@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Lease;
 use App\Models\CoOwner;
 use App\Models\PropertyDelegation;
+use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -13,7 +14,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 class CoOwnerLeaseController extends Controller
 {
     /**
-     * Afficher la liste des baux
+     * Afficher la liste des baux avec filtres
      */
     public function index(Request $request)
     {
@@ -45,18 +46,49 @@ class CoOwnerLeaseController extends Controller
             ->pluck('property_id')
             ->toArray();
 
-        // Récupérer les baux pour ces biens
-        $leases = Lease::whereIn('property_id', $delegatedPropertyIds)
-            ->with(['property', 'tenant.user'])
-            ->orderBy('created_at', 'desc')
+        // Récupérer les biens pour le filtre dropdown
+        $properties = Property::whereIn('id', $delegatedPropertyIds)
+            ->orderBy('name')
             ->get();
+
+        // Construire la requête des baux avec filtres
+        $query = Lease::whereIn('property_id', $delegatedPropertyIds)
+            ->with(['property', 'tenant.user']);
+
+        // Filtre par bien (property)
+        if ($request->filled('property_id') && $request->property_id !== 'all') {
+            $query->where('property_id', $request->property_id);
+        }
+
+        // Filtre de recherche (nom du locataire, nom du bien, etc.)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('tenant', function($subQ) use ($search) {
+                    $subQ->where('first_name', 'like', "%{$search}%")
+                         ->orWhere('last_name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('property', function($subQ) use ($search) {
+                    $subQ->where('name', 'like', "%{$search}%")
+                         ->orWhere('address', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Filtre par statut
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $leases = $query->orderBy('created_at', 'desc')->get();
 
         Log::info('Baux récupérés', [
             'delegated_properties_count' => count($delegatedPropertyIds),
             'leases_count' => $leases->count(),
+            'filters' => $request->only(['property_id', 'search', 'status'])
         ]);
 
-        return view('co-owner.leases.index', compact('leases', 'user'));
+        return view('co-owner.leases.index', compact('leases', 'properties', 'user'));
     }
 
     /**

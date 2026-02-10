@@ -28,7 +28,7 @@ class Property extends Model
         'uuid', 'landlord_id', 'user_id', 'type', 'name', 'description', 'reference_code',
         'address', 'district', 'city', 'state', 'zip_code', 'latitude', 'longitude',
         'surface', 'room_count', 'bedroom_count', 'bathroom_count',
-        'rent_amount', 'charges_amount', 'status', 'amenities', 'photos', 'meta'
+        'rent_amount', 'charges_amount', 'status', 'amenities', 'photos', 'meta', 'caution'
     ];
 
     protected $casts = [
@@ -38,6 +38,7 @@ class Property extends Model
         'surface' => 'decimal:2',
         'rent_amount' => 'decimal:2',
         'charges_amount' => 'decimal:2',
+        'caution' => 'decimal:2',
     ];
 
     // Génération automatique de l'UUID et du reference_code
@@ -198,5 +199,5 @@ class Property extends Model
     }
 
 
-    
+
 }

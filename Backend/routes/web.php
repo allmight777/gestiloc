@@ -8,6 +8,7 @@ use App\Http\Controllers\CoOwner\CoOwnerLeaseDocumentController;
 use App\Http\Controllers\CoOwner\CoOwnerMaintenanceController;
 use App\Http\Controllers\CoOwner\CoOwnerRentReceiptController;
 use App\Http\Controllers\CoOwner\CoOwnerNoticeController;
+use App\Http\Controllers\CoOwner\CoOwnerAccountingController;
 use App\Http\Controllers\ReactRedirectController;
 use App\Http\Controllers\Auth\LoginController;
 
@@ -123,9 +124,9 @@ Route::get('/redirect/{path?}', [ReactRedirectController::class, 'redirect'])
 |--------------------------------------------------------------------------
 */
 
-// ✅ **TOUTES LES ROUTES LARAVEL DOIVENT ÊTRE ICI**
 
-// Routes pour les locataires - Laravel
+
+// Routes pour les locataires
 Route::prefix('coproprietaire/tenants')->name('co-owner.tenants.')->group(function () {
     Route::get('/', [CoOwnerTenantController::class, 'index'])->name('index');
     Route::get('/create', [CoOwnerTenantController::class, 'create'])->name('create');
@@ -135,15 +136,22 @@ Route::prefix('coproprietaire/tenants')->name('co-owner.tenants.')->group(functi
     Route::post('/{tenant}/assign', [CoOwnerTenantController::class, 'assignProperty'])->name('assign');
     Route::delete('/{tenant}/unassign/{property}', [CoOwnerTenantController::class, 'unassignProperty'])->name('unassign');
     Route::post('/{tenant}/resend-invitation', [CoOwnerTenantController::class, 'resendInvitation'])->name('resend-invitation');
+
+    // Archiver/Restaurer un locataire
+    Route::put('/coproprietaire/locataires/{tenant}/archiver', [CoOwnerTenantController::class, 'archive'])
+        ->name('archive');
+
+    Route::put('/coproprietaire/locataires/{tenant}/restaurer', [CoOwnerTenantController::class, 'restore'])
+        ->name('restore');
 });
 
-// Routes pour assigner un bien - Laravel
+// Routes pour assigner un bien
 Route::prefix('coproprietaire/assign-property')->name('co-owner.assign-property.')->group(function () {
     Route::get('/create', [CoOwnerAssignPropertyController::class, 'create'])->name('create');
     Route::post('/store', [CoOwnerAssignPropertyController::class, 'store'])->name('store');
 });
 
-// Routes pour les quittances - Laravel (TRÈS IMPORTANT)
+// Routes pour les quittances
 Route::prefix('coproprietaire/quittances')->name('co-owner.quittances.')->group(function () {
     Route::get('/', [CoOwnerRentReceiptController::class, 'index'])->name('index');
     Route::get('/create', [CoOwnerRentReceiptController::class, 'create'])->name('create');
@@ -153,7 +161,7 @@ Route::prefix('coproprietaire/quittances')->name('co-owner.quittances.')->group(
     Route::delete('/{receipt}', [CoOwnerRentReceiptController::class, 'destroy'])->name('destroy');
 });
 
-// Routes pour les préavis - Laravel
+// Routes pour les préavis
 Route::prefix('coproprietaire/notices')->name('co-owner.notices.')->group(function () {
     Route::get('/', [CoOwnerNoticeController::class, 'index'])->name('index');
     Route::get('/create', [CoOwnerNoticeController::class, 'create'])->name('create');
@@ -165,25 +173,44 @@ Route::prefix('coproprietaire/notices')->name('co-owner.notices.')->group(functi
     Route::post('/{notice}/status', [CoOwnerNoticeController::class, 'updateStatus'])->name('update-status');
 });
 
-// Routes pour la maintenance - Laravel
+// Routes pour la maintenance
 Route::prefix('coproprietaire/maintenance')->name('co-owner.maintenance.')->group(function () {
-    Route::get('/', [CoOwnerMaintenanceController::class, 'index'])->name('index');
+
+    Route::post('/{maintenance}/start', [CoOwnerMaintenanceController::class, 'start'])->name('start');
+
+    Route::post('/{maintenance}/comment', [CoOwnerMaintenanceController::class, 'comment'])->name('comment');
+    Route::post('/{maintenance}/reply', [CoOwnerMaintenanceController::class, 'replyToTenant'])->name('reply');
+
+      Route::get('/', [CoOwnerMaintenanceController::class, 'index'])->name('index');
+    Route::get('/create', [CoOwnerMaintenanceController::class, 'create'])->name('create');
+    Route::post('/store', [CoOwnerMaintenanceController::class, 'store'])->name('store');
+        Route::get('/{maintenance}/edit', [CoOwnerMaintenanceController::class, 'edit'])->name('edit');
+    Route::put('/{maintenance}/update', [CoOwnerMaintenanceController::class, 'update'])->name('update');
     Route::get('/{maintenance}', [CoOwnerMaintenanceController::class, 'show'])->name('show');
+    Route::get('/{maintenance}/edit', [CoOwnerMaintenanceController::class, 'edit'])->name('edit');
+    Route::put('/{maintenance}/update', [CoOwnerMaintenanceController::class, 'update'])->name('update');
     Route::post('/{maintenance}/start', [CoOwnerMaintenanceController::class, 'start'])->name('start');
     Route::post('/{maintenance}/assign', [CoOwnerMaintenanceController::class, 'assign'])->name('assign');
     Route::post('/{maintenance}/resolve', [CoOwnerMaintenanceController::class, 'resolve'])->name('resolve');
     Route::post('/{maintenance}/cancel', [CoOwnerMaintenanceController::class, 'cancel'])->name('cancel');
-    Route::post('/{maintenance}/comment', [CoOwnerMaintenanceController::class, 'comment'])->name('comment');
-    Route::post('/{maintenance}/reply', [CoOwnerMaintenanceController::class, 'replyToTenant'])->name('reply');
 });
 
-// Routes pour les baux - Laravel
+// Routes pour les baux
 Route::prefix('coproprietaire/leases')->name('co-owner.leases.')->group(function () {
     Route::get('/', [CoOwnerLeaseController::class, 'index'])->name('index');
     Route::get('/{lease}/documents', [CoOwnerLeaseDocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/{lease}/download', [CoOwnerLeaseDocumentController::class, 'downloadPdf'])->name('documents.download');
     Route::delete('/{lease}/documents/{document}', [CoOwnerLeaseDocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/documents/{lease}/preview', [CoOwnerLeaseDocumentController::class, 'previewPdf'])->name('documents.preview');
+});
+
+
+//Route pour comptabilites et travaux
+
+Route::prefix('coproprietaire/comptabilite')->name('co-owner.accounting.')->group(function () {
+    Route::get('/', [CoOwnerAccountingController::class, 'index'])->name('index');
+    Route::get('/data', [CoOwnerAccountingController::class, 'getChartData'])->name('data');
+    Route::get('/transactions', [CoOwnerAccountingController::class, 'getTransactions'])->name('transactions');
 });
 
 /*

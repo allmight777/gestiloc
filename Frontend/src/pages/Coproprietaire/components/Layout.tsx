@@ -1,27 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Building,
   LayoutDashboard,
-  Home,
-  Users,
+  Building,
   FileSignature,
-  Bell,
   FileText,
-  FileCheck,
   Wrench,
-  UserPlus,
-  LogOut,
-  ChevronRight,
-  ChevronDown,
+  CreditCard,
+  Settings,
   Menu,
   X,
+  LogOut,
   Sun,
   Moon,
-  CreditCard,
-  DollarSign,
-  User,
-  Wallet,
-  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 
 import { Tab, ToastMessage } from '../types';
@@ -43,8 +34,7 @@ interface MenuItem {
   label: string;
   icon: React.ElementType;
   path?: string;
-  submenu?: MenuItem[];
-  badge?: number;
+  emoji?: string;
   isLaravel?: boolean;
 }
 
@@ -69,7 +59,6 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
-  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
 
   useEffect(() => {
     try {
@@ -135,160 +124,154 @@ export const Layout: React.FC<LayoutProps> = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ Menu mixte : Routes React ET Laravel
-  const menuItems: MenuItem[] = [
+  // ✅ Menu selon votre image - Réorganisé exactement comme sur l'image
+  const menuSections = [
     {
-      id: 'dashboard',
-      label: 'Tableau de bord',
-      icon: LayoutDashboard,
-      path: "/coproprietaire/dashboard",
+      title: "Menu principal",
+      items: [
+        {
+          id: 'dashboard',
+          label: 'Tableau de bord',
+          emoji: '📊',
+          path: "/coproprietaire/dashboard",
+        },
+      ]
     },
     {
-      id: "biens",
-      label: "Gestion des Biens",
-      icon: Building,
-      submenu: [
+      title: "GESTIONS DES BIENS",
+      items: [
         { 
-          id: "biens", 
-          label: "Mes biens délégués", 
-          icon: Home, 
-          path: "/coproprietaire/biens" 
+          id: "add-property", 
+          label: "Ajouter un bien", 
+          emoji: '+',
+          path: "/coproprietaire/biens" // À ajuster selon votre route
         },
         { 
-          id: "delegations", 
-          label: "Délégations reçues", 
-          icon: Building, 
-          path: "/coproprietaire/delegations" 
+          id: "my-properties", 
+          label: "Mes biens", 
+          emoji: '🏠',
+          path: "/coproprietaire/biens"
         },
-
-
-        
-      ],
+      ]
     },
     {
-      id: "gestion-locative",
-      label: "Gestion Locative",
-      icon: FileSignature,
-      submenu: [
+      title: "GESTION LOCATIVE",
+      items: [
         { 
-          id: "locataires", 
-          label: "Liste des locataires", 
-          icon: Users, 
-          path: "/coproprietaire/tenants",
-          isLaravel: true
+          id: "new-rental", 
+          label: "Nouvelle location", 
+          emoji: '🔑',
+          path: "/coproprietaire/baux"
         },
         { 
-          id: "create-tenant", 
-          label: "Créer un locataire", 
-          icon: UserPlus, 
+          id: "add-tenant", 
+          label: "Ajouter un locataire", 
+          emoji: '📍',
           path: "/coproprietaire/tenants/create",
           isLaravel: true
         },
         { 
-          id: "assign-property", 
-          label: "Assigner un bien", 
-          icon: Home, 
-          path: "/coproprietaire/assign-property/create",
+          id: "tenant-list", 
+          label: "Liste des locataires", 
+          emoji: '📄',
+          path: "/coproprietaire/tenants",
           isLaravel: true
         },
-
-{
-  id: "leases-index",
-  label: "Contrats de bail",
-  icon: FileSignature,   
-  path: "/coproprietaire/leases",
-  isLaravel: true
-},
-
-     {
-  id: "co-owner-quittances-index",
-  label: "Quittances de loyer",
-  icon: Bell,
-  path: "/coproprietaire/quittances",
-  isLaravel: true
-},
-
-{
-  id: "co-owner-notices-index",
-  label: "Préavis",
-  icon: Bell,          
-  path: "/coproprietaire/notices",
-  isLaravel: true
-},
-
-{
-  id: "co-owner-maintenance-index",
-  label: "Demandes de maintenance",
-  icon: Wrench, 
-  path: "/coproprietaire/maintenance",
-  isLaravel: true
-},
-  
         { 
-          id: "baux", 
-          label: "Baux en cours", 
-          icon: FileText, 
-          path: "/coproprietaire/baux" 
+          id: "payment-management", 
+          label: "Gestion des paiements", 
+          emoji: '📅',
+          path: "/coproprietaire/quittances",
+          isLaravel: true
         },
-
-      ],
+      ]
     },
     {
-      id: "documents",
-      label: "Documents",
-      icon: FileText,
-      submenu: [
+      title: "DOCUMENTS",
+      items: [
         { 
-          id: "documents", 
-          label: "Mes documents", 
-          icon: FileText, 
-          path: "/coproprietaire/documents" 
+          id: "lease-contracts", 
+          label: "Contrats de bail", 
+          emoji: '📄',
+          path: "/coproprietaire/leases",
+          isLaravel: true
         },
         { 
-          id: "finances", 
-          label: "Finances", 
-          icon: DollarSign, 
-          path: "/coproprietaire/finances" 
+          id: "condition-reports", 
+          label: "Etats de lieux", 
+          emoji: '📄',
+          path: "/coproprietaire/documents"
         },
-      ],
+        { 
+          id: "due-notices", 
+          label: "Avis d'échéance", 
+          emoji: '📄',
+          path: "/coproprietaire/documents"
+        },
+        { 
+          id: "rent-receipts", 
+          label: "Quittances de loyers", 
+          emoji: '📄',
+          path: "/coproprietaire/quittances",
+          isLaravel: true
+        },
+        { 
+          id: "invoices", 
+          label: "Factures et documents divers", 
+          emoji: '📄',
+          path: "/coproprietaire/documents"
+        },
+        { 
+          id: "document-archiving", 
+          label: "Archivage de documents", 
+          emoji: '📄',
+          path: "/coproprietaire/documents"
+        },
+      ]
     },
     {
-      id: "profile",
-      label: "Profil",
-      icon: User,
-      path: "/coproprietaire/profile",
+      title: "REPARATIONS ET TRAVAUX",
+      items: [
+        { 
+          id: "repairs", 
+          label: "Réparations et travaux", 
+          emoji: '✂️',
+          path: "/coproprietaire/maintenance",
+          isLaravel: true
+        },
+      ]
     },
-    
     {
-      id: "finances",
-      label: "Finances",
-      icon: CreditCard,
-      submenu: [
-        {
-          id: "emettre-paiement",
-          label: "Émettre un paiement",
-          icon: CreditCard,
-          path: "/coproprietaire/emettre-paiement",
+      title: "COMPTABILITE ET STATISTIQUES",
+      items: [
+        { 
+          id: "accounting", 
+          label: "Comptabilité et statistiques", 
+          emoji: '💼',
+          path: "/coproprietaire/finances"
         },
-        {
-          id: "retrait-methode",
-          label: "Méthode de retrait",
-          icon: Wallet,
-          path: "/coproprietaire/retrait-methode",
-        },
-      ],
+      ]
     },
+    {
+      title: "CONFIGURATION",
+      items: [
+        { 
+          id: "settings", 
+          label: "Paramètres", 
+          emoji: '📜',
+          path: "/coproprietaire/parametres"
+        },
+      ]
+    }
   ];
 
   const flatMenu = useMemo(() => {
     const items: MenuItem[] = [];
-    const walk = (arr: MenuItem[]) => {
-      arr.forEach((i) => {
-        items.push(i);
-        if (i.submenu?.length) walk(i.submenu);
+    menuSections.forEach(section => {
+      section.items.forEach(item => {
+        items.push(item);
       });
-    };
-    walk(menuItems);
+    });
     return items;
   }, []);
 
@@ -296,13 +279,6 @@ export const Layout: React.FC<LayoutProps> = ({
     const found = flatMenu.find((i) => i.path === activeTab || i.id === activeTab);
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
-
-  // ✅ Auto-open du menu parent du sous-menu actif
-  useEffect(() => {
-    const parent = menuItems.find((m) => m.submenu?.some((s) => s.path === activeTab || s.id === activeTab));
-    if (parent?.id) setExpandedMenu(String(parent.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
 
   const handleMenuItemClick = (item: MenuItem) => {
     console.log('Click menu:', item.label, 'path:', item.path, 'Laravel?', item.isLaravel);
@@ -312,103 +288,35 @@ export const Layout: React.FC<LayoutProps> = ({
     }
   };
 
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenu((prev) => (prev === menuId ? null : menuId));
-  };
-
   const renderMenuItem = (item: MenuItem) => {
     const Icon = item.icon;
+    const isActive = item.path === activeTab || item.id === activeTab;
 
-    const isActive =
-      (item.path && item.path === activeTab) ||
-      item.id === activeTab ||
-      (item.submenu?.some((s) => s.path === activeTab || s.id === activeTab) ?? false);
-
-    const hasSub = !!item.submenu?.length;
-    const isExpanded = expandedMenu === String(item.id);
-
-    const baseBtn =
-      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative";
-    const activeBtn = "bg-blue-600 text-white";
-    const idleBtn = "text-gray-700 hover:bg-blue-50 hover:text-blue-600";
-
-    if (hasSub) {
-      return (
-        <div key={String(item.id)} className="space-y-1">
-          <button
-            onClick={() => toggleMenu(String(item.id))}
-            className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
-            type="button"
-          >
-            <div className="flex items-center gap-3.5">
-              <Icon
-                size={20}
-                className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
-              />
-              {item.label}
-            </div>
-            <ChevronDown
-              size={18}
-              className={`transition-transform ${isExpanded ? "rotate-180" : ""} ${
-                isActive ? "text-white/90" : "text-gray-500 group-hover:text-blue-600"
-              }`}
-            />
-          </button>
-
-          {isExpanded && (
-            <div className="pl-2 space-y-1">
-              {item.submenu!.map((sub) => {
-                const SubIcon = sub.icon;
-                const subActive = sub.path === activeTab || sub.id === activeTab;
-                
-                return (
-                  <button
-                    key={String(sub.id)}
-                    onClick={() => handleMenuItemClick(sub)}
-                    className={`${baseBtn} ${
-                      subActive ? "bg-blue-600 text-white" : idleBtn
-                    } py-3`}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <SubIcon
-                        size={18}
-                        className={`${
-                          subActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"
-                        }`}
-                      />
-                      {sub.label}
-                      {/* SUPPRIMÉ : Le badge a été enlevé ici */}
-                    </div>
-                    {subActive && (
-                      <ChevronRight
-                        size={16}
-                        className="text-white/90 ml-auto"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    }
+    const baseBtn = "w-full flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group";
+    const activeBtn = "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg";
+    const idleBtn = "text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-100";
 
     return (
       <button
         key={String(item.id)}
         onClick={() => handleMenuItemClick(item)}
-        className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
+        className={`${baseBtn} ${isActive ? activeBtn : idleBtn} mb-1`}
         type="button"
       >
         <div className="flex items-center gap-3.5">
-          <Icon
-            size={20}
-            className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
-          />
-          {item.label}
-          {/* SUPPRIMÉ : Le badge "Laravel" a été enlevé ici aussi */}
+          {item.emoji ? (
+            <span className="text-lg" role="img" aria-label={item.label}>
+              {item.emoji}
+            </span>
+          ) : Icon ? (
+            <Icon
+              size={20}
+              className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
+            />
+          ) : null}
+          <span className="text-left whitespace-nowrap overflow-hidden text-ellipsis">
+            {item.label}
+          </span>
         </div>
         {isActive && (
           <ChevronRight
@@ -430,26 +338,42 @@ export const Layout: React.FC<LayoutProps> = ({
       
       <div className="min-h-screen bg-white">
         <div className="flex h-screen bg-white">
-          {/* Sidebar */}
+          {/* Sidebar - Desktop */}
           <aside className="hidden lg:flex lg:flex-shrink-0">
-            <div className="flex flex-col w-64">
-              <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto">
-                <div className="flex items-center flex-shrink-0 px-4 h-16 border-b border-gray-200">
-                  <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
-                </div>
-                <nav className="flex-1 px-4 py-6 space-y-2">
-                  {menuItems.map(renderMenuItem)}
-                </nav>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {ownerInitials}
+            <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
+              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  GestiLoc
+                </h1>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-6">
+                {menuSections.map((section) => (
+                  <div key={section.title} className="mb-6">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
+                      {section.title}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-gray-900">{ownerName}</div>
-                      <div className="text-xs text-gray-600">Co-propriétaire</div>
+                    <div className="space-y-1">
+                      {section.items.map(renderMenuItem)}
                     </div>
                   </div>
+                ))}
+              </div>
+              <div className="p-5 border-t border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {ownerInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{ownerName}</div>
+                    <div className="text-xs text-gray-600">Co-propriétaire</div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    title="Déconnexion"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -469,15 +393,24 @@ export const Layout: React.FC<LayoutProps> = ({
                 </button>
               </div>
               <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-                <div className="flex-shrink-0 flex items-center px-4">
+                <div className="flex-shrink-0 flex items-center px-6">
                   <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
                 </div>
-                <nav className="mt-5 px-2 space-y-1">
-                  {menuItems.map(renderMenuItem)}
-                </nav>
-                <div className="p-4 border-t border-gray-200">
+                <div className="mt-5 px-4">
+                  {menuSections.map((section) => (
+                    <div key={section.title} className="mb-6">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
+                        {section.title}
+                      </div>
+                      <div className="space-y-1">
+                        {section.items.map(renderMenuItem)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-5 border-t border-gray-200">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                       {ownerInitials}
                     </div>
                     <div className="flex-1">
@@ -491,7 +424,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           {/* Main content */}
-          <div className="flex flex-col w-0 flex-1 overflow-hidden bg-white">
+          <div className="flex flex-col flex-1 overflow-hidden bg-white">
             {/* Top bar */}
             <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 lg:border-none">
               <button
@@ -501,7 +434,7 @@ export const Layout: React.FC<LayoutProps> = ({
               >
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="flex-1 px-4 flex justify-between items-center sm:px-6 lg:px-8">
+              <div className="flex-1 px-6 flex justify-between items-center">
                 <div className="flex-1">
                   <div className="max-w-lg">
                     <h1 className="text-2xl font-bold text-gray-900">{activeTitle}</h1>
@@ -517,7 +450,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
                   <button
                     onClick={onLogout}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 lg:hidden"
                     title="Déconnexion"
                   >
                     <LogOut className="w-5 h-5" />
@@ -529,7 +462,7 @@ export const Layout: React.FC<LayoutProps> = ({
             {/* Page content */}
             <main className="flex-1 relative overflow-y-auto focus:outline-none bg-white">
               <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-6">
                   {children}
                 </div>
               </div>

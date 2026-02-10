@@ -77,6 +77,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
         construction_year: property.construction_year || '',
         rent_amount: property.rent_amount || '',
         charges_amount: property.charges_amount || '',
+        caution: property.caution || '', // AJOUT ICI
         description: property.description || '',
         property_type: property.property_type || 'apartment',
         reference_code: property.reference_code || '',
@@ -186,6 +187,8 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
     if (!formData.zip_code?.trim()) errors.zip_code = 'Le code postal est obligatoire';
     if (!formData.city?.trim()) errors.city = 'La ville est obligatoire';
     if (formData.rent_amount && Number(formData.rent_amount) < 0) errors.rent_amount = 'Le loyer doit être positif';
+    if (formData.charges_amount && Number(formData.charges_amount) < 0) errors.charges_amount = 'Les charges doivent être positives';
+    if (formData.caution && Number(formData.caution) < 0) errors.caution = 'La caution doit être positive';
     if (!formData.property_type) errors.property_type = 'Le type de bien est obligatoire';
     
     return errors;
@@ -223,7 +226,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
       const numberFields = [
         'surface', 'floor', 'total_floors', 'room_count', 'bedroom_count',
         'bathroom_count', 'wc_count', 'construction_year', 
-        'rent_amount', 'charges_amount'
+        'rent_amount', 'charges_amount', 'caution' // AJOUT ICI
       ];
       
       // Liste des champs booléens
@@ -1304,6 +1307,37 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
                               min="0"
                               step="0.01"
                             />
+                          </div>
+                          {formErrors.charges_amount && (
+                            <div className="modal-error">{formErrors.charges_amount}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Nouveau champ Caution */}
+                      <div className="modal-fields" style={{ marginTop: 12 }}>
+                        <div className="modal-field">
+                          <label className="modal-label">Caution (FCFA)</label>
+                          <div className="modal-icon-input">
+                            <span className="modal-icon-left">
+                              <DollarSign size={16} />
+                            </span>
+                            <input
+                              type="number"
+                              name="caution"
+                              value={formData.caution || ''}
+                              onChange={handleChange}
+                              placeholder="0,00"
+                              className="modal-control"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          {formErrors.caution && (
+                            <div className="modal-error">{formErrors.caution}</div>
+                          )}
+                          <div className="modal-help">
+                            Montant de la caution déposée par le locataire
                           </div>
                         </div>
                       </div>

@@ -12,14 +12,43 @@ class Tenant extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'first_name',
-        'last_name',
-        'status',
-        'solvency_score',
-        'meta'
-    ];
+protected $fillable = [
+    'user_id',
+    'first_name',
+    'last_name',
+    'email',
+    'phone',
+    'birth_date',
+    'birth_place',
+    'marital_status',
+    'profession',
+    'employer',
+    'annual_income',
+    'monthly_income',           // NOUVEAU
+    'contract_type',
+    'address',
+    'zip_code',
+    'city',
+    'country',
+    'emergency_contact_name',
+    'emergency_contact_phone',
+    'emergency_contact_email',   // NOUVEAU
+    'notes',
+    'status',
+    'tenant_type',               // NOUVEAU
+    'guarantor_name',
+    'guarantor_phone',
+    'guarantor_email',
+    'guarantor_profession',
+    'guarantor_income',
+    'guarantor_monthly_income',  // NOUVEAU
+    'guarantor_address',
+    'guarantor_birth_date',      // NOUVEAU
+    'guarantor_birth_place',     // NOUVEAU
+    'document_type',             // NOUVEAU
+    'document_path',             // NOUVEAU
+    'meta',
+];
 
     protected $casts = [
         'meta' => 'array',
