@@ -187,12 +187,55 @@
                                         <th>Email</th>
                                         <th>Solde</th>
                                         <th>Etat</th>
+                                        <th>Invitation</th>
                                         <th>Modèle</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($tenants as $tenant)
+                                        @php
+                                            // Récupérer email et téléphone depuis user ou meta
+                                            $tenantEmail =
+                                                $tenant->user->email ?? ($tenant->meta['email'] ?? 'Non renseigné');
+                                            $tenantPhone =
+                                                $tenant->user->phone ?? ($tenant->meta['phone'] ?? 'Non renseigné');
+
+                                            // Récupérer le type de locataire EXACT depuis la base
+                                            $tenantType = $tenant->tenant_type ?? 'Non renseigné';
+
+                                            // Récupérer le bien associé
+                                            $property = null;
+                                            if ($tenant->leases && $tenant->leases->count() > 0) {
+                                                $property = $tenant->leases->first()->property ?? null;
+                                            }
+
+                                            // Statut de l'invitation - vérifier dans tenant_invitations
+$invitation = null;
+$invitationStatus = 'unknown';
+
+if (isset($tenant->meta['invitation_id'])) {
+    $invitation = \App\Models\TenantInvitation::find(
+        $tenant->meta['invitation_id'],
+    );
+    if ($invitation) {
+        if ($invitation->accepted_at) {
+            $invitationStatus = 'accepted';
+        } elseif ($invitation->expires_at < now()) {
+            $invitationStatus = 'expired';
+        } else {
+            $invitationStatus = 'pending';
+        }
+    }
+}
+
+$invitationBadge = match ($invitationStatus) {
+    'accepted' => '<span class="status-badge active">✅ Acceptée</span>',
+    'pending' => '<span class="status-badge pending">⏳ En attente</span>',
+    'expired' => '<span class="status-badge expired">❌ Expirée</span>',
+    default => '<span class="status-badge unknown">❓ Inconnue</span>',
+                                            };
+                                        @endphp
                                         <tr>
                                             <td>
                                                 <div class="tenant-name">
@@ -201,38 +244,34 @@
                                             </td>
                                             <td>
                                                 <span class="badge type-badge">
-                                                    Personne Physique
+                                                    {{ ucfirst($tenantType) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                @if ($tenant->leases && $tenant->leases->count() > 0)
-                                                    @php
-                                                        $property = $tenant->leases->first()->property ?? null;
-                                                    @endphp
-                                                    {{ $property->name ?? 'Bien non spécifié' }}
+                                                @if ($property)
+                                                    {{ $property->name ?? 'Bien #' . $property->id }}
                                                 @else
-                                                    Aucun bien
+                                                    <span class="text-muted">Aucun bien</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                {{ $tenant->phone ?? 'Non renseigné' }}
+                                                {{ $tenantPhone }}
                                             </td>
                                             <td>
-                                                {{ $tenant->email }}
+                                                {{ $tenantEmail }}
                                             </td>
                                             <td>
                                                 <span class="balance">0 FCFA</span>
                                             </td>
                                             <td>
                                                 @if ($status === 'active')
-                                                    <span class="status-badge active">
-                                                        Actif
-                                                    </span>
+                                                    <span class="status-badge active">Actif</span>
                                                 @else
-                                                    <span class="status-badge archived">
-                                                        Archivé
-                                                    </span>
+                                                    <span class="status-badge archived">Archivé</span>
                                                 @endif
+                                            </td>
+                                            <td>
+                                                {!! $invitationBadge !!}
                                             </td>
                                             <td>
                                                 <span class="model-count">{{ $tenant->leases->count() }} Bail(s)</span>
@@ -244,25 +283,15 @@
                                                         Voir
                                                     </a>
                                                     @if ($status === 'active')
-                                                        <form action="{{ route('co-owner.tenants.archive', $tenant) }}"
-                                                            method="POST" style="display: inline;">
-                                                            @csrf
-                                                            @method('PUT')
-                                                            <button type="submit" class="btn-action btn-archive"
-                                                                onclick="return confirm('Archiver ce locataire ?')">
-                                                                Archiver
-                                                            </button>
-                                                        </form>
+                                                        <button type="button" class="btn-action btn-archive"
+                                                            onclick="showArchiveConfirmation('{{ $tenant->id }}', '{{ $tenant->first_name }} {{ $tenant->last_name }}')">
+                                                            Archiver
+                                                        </button>
                                                     @else
-                                                        <form action="{{ route('co-owner.tenants.restore', $tenant) }}"
-                                                            method="POST" style="display: inline;">
-                                                            @csrf
-                                                            @method('PUT')
-                                                            <button type="submit" class="btn-action btn-restore"
-                                                                onclick="return confirm('Restaurer ce locataire ?')">
-                                                                Restaurer
-                                                            </button>
-                                                        </form>
+                                                        <button type="button" class="btn-action btn-restore"
+                                                            onclick="showRestoreConfirmation('{{ $tenant->id }}', '{{ $tenant->first_name }} {{ $tenant->last_name }}')">
+                                                            Restaurer
+                                                        </button>
                                                     @endif
                                                 </div>
                                             </td>
@@ -322,6 +351,29 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirmation</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalIcon" class="modal-icon"></div>
+                <p id="modalMessage"></p>
+                <div id="modalDetails" class="modal-details"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Annuler</button>
+                <form id="actionForm" method="POST" style="display: inline;">
+                    @csrf
+                    @method('PUT')
+                    <button type="submit" class="modal-btn modal-btn-confirm" id="confirmBtn"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <style>
         /* Base styles */
         :root {
@@ -357,7 +409,6 @@
         .dashboard-container {
             min-height: 100vh;
             padding: 24px;
-
         }
 
         .dashboard-card {
@@ -369,7 +420,6 @@
 
         /* Header */
         .dashboard-header {
-
             color: rgb(0, 0, 0);
             padding: 32px 32px 0 32px;
             position: relative;
@@ -391,44 +441,6 @@
         /* Tabs */
         .tabs-container {
             margin-top: 24px;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 32px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .tab {
-            padding: 16px 0;
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            position: relative;
-            transition: color 0.2s;
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-family: inherit;
-        }
-
-        .tab:hover {
-            color: white;
-        }
-
-        .tab.active {
-            color: white;
-        }
-
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: white;
         }
 
         /* Body */
@@ -629,6 +641,11 @@
             background: #F9FAFB;
         }
 
+        .text-muted {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
         /* Badges */
         .badge {
             display: inline-block;
@@ -662,6 +679,18 @@
             background: #FEF3C7;
             color: #92400E;
             border: 1px solid #FDE68A;
+        }
+
+        .status-badge.pending {
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FDE68A;
+        }
+
+        .status-badge.expired {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #FECACA;
         }
 
         .status-badge.unknown {
@@ -821,6 +850,175 @@
             margin-right: auto;
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: slideIn 0.3s ease;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #F3F4F6;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+            text-align: center;
+        }
+
+        .modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+        }
+
+        .modal-icon.archive {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .modal-icon.restore {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .modal-body p {
+            font-size: 16px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .modal-details {
+            background: #F9FAFB;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .modal-details strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            padding: 16px 24px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .modal-btn-cancel {
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .modal-btn-cancel:hover {
+            background: #F3F4F6;
+        }
+
+        .modal-btn-confirm {
+            background: var(--primary);
+            color: white;
+            border: 1px solid var(--primary);
+        }
+
+        .modal-btn-confirm:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard-container {
@@ -869,6 +1067,19 @@
                 width: 100%;
                 text-align: center;
             }
+
+            .modal-container {
+                width: 95%;
+                margin: 20px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-btn {
+                width: 100%;
+            }
         }
     </style>
 
@@ -885,13 +1096,13 @@
             }
 
             // Clear search button
-            const clearSearchBtn = document.createElement('button');
-            clearSearchBtn.type = 'button';
-            clearSearchBtn.innerHTML = '×';
-            clearSearchBtn.style.cssText =
-                'background: none; border: none; cursor: pointer; font-size: 18px; color: #9CA3AF;';
-
             if (searchInput && searchInput.value) {
+                const clearSearchBtn = document.createElement('button');
+                clearSearchBtn.type = 'button';
+                clearSearchBtn.innerHTML = '×';
+                clearSearchBtn.style.cssText =
+                    'background: none; border: none; cursor: pointer; font-size: 18px; color: #9CA3AF;';
+
                 searchInput.parentNode.appendChild(clearSearchBtn);
 
                 clearSearchBtn.addEventListener('click', function() {
@@ -899,6 +1110,93 @@
                     searchInput.focus();
                     searchInput.form.submit();
                 });
+            }
+        });
+
+        // Modal functions
+        // Modal functions
+        let currentTenantId = null;
+
+        function showArchiveConfirmation(tenantId, tenantName) {
+            currentTenantId = tenantId;
+
+            document.getElementById('modalTitle').textContent = 'Archiver le locataire';
+            document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir archiver ce locataire ?`;
+
+            const details = document.getElementById('modalDetails');
+            details.innerHTML = `
+        <div style="text-align: left;">
+            <p><strong>Locataire :</strong> ${tenantName}</p>
+            <p><strong>ID :</strong> ${tenantId}</p>
+            <p style="color: #92400E; margin-top: 8px;">
+                ⚠️ Le locataire sera déplacé vers les archives et ne sera plus visible dans la liste active.
+            </p>
+        </div>
+    `;
+
+            const icon = document.getElementById('modalIcon');
+            icon.className = 'modal-icon archive';
+            icon.innerHTML = '📁';
+
+            const form = document.getElementById('actionForm');
+            // CORRECTION : Utiliser la route correcte
+            form.action = `/coproprietaire/tenants/${tenantId}/archive`;
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.textContent = 'Oui, archiver';
+            confirmBtn.className = 'modal-btn modal-btn-confirm';
+
+            document.getElementById('confirmationModal').style.display = 'flex';
+        }
+
+        function showRestoreConfirmation(tenantId, tenantName) {
+            currentTenantId = tenantId;
+
+            document.getElementById('modalTitle').textContent = 'Restaurer le locataire';
+            document.getElementById('modalMessage').textContent = `Êtes-vous sûr de vouloir restaurer ce locataire ?`;
+
+            const details = document.getElementById('modalDetails');
+            details.innerHTML = `
+        <div style="text-align: left;">
+            <p><strong>Locataire :</strong> ${tenantName}</p>
+            <p><strong>ID :</strong> ${tenantId}</p>
+            <p style="color: #065F46; margin-top: 8px;">
+                ✅ Le locataire sera déplacé vers la liste active et sera à nouveau visible.
+            </p>
+        </div>
+    `;
+
+            const icon = document.getElementById('modalIcon');
+            icon.className = 'modal-icon restore';
+            icon.innerHTML = '🔄';
+
+            const form = document.getElementById('actionForm');
+            // CORRECTION : Utiliser la route correcte
+            form.action = `/coproprietaire/tenants/${tenantId}/restore`;
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.textContent = 'Oui, restaurer';
+            confirmBtn.className = 'modal-btn modal-btn-confirm';
+
+            document.getElementById('confirmationModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('confirmationModal').style.display = 'none';
+            currentTenantId = null;
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('confirmationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
             }
         });
     </script>

@@ -209,4 +209,24 @@ class User extends Authenticatable
         $this->last_activity_at = now();
         $this->save();
     }
+
+
+     /**
+     * Biens délégués à ce copropriétaire
+     */
+    public function delegatedProperties(): BelongsToMany
+    {
+        return $this->belongsToMany(Property::class, 'property_delegations', 'co_owner_id', 'property_id')
+            ->wherePivot('status', 'accepted')
+            ->withPivot(['delegated_at', 'ended_at', 'permissions'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Vérifie si l'utilisateur est un copropriétaire avec biens délégués
+     */
+    public function isCoOwnerWithDelegations(): bool
+    {
+        return $this->role === 'co_owner' && $this->delegatedProperties()->exists();
+    }
 }

@@ -106,7 +106,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -183,10 +185,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                 )}
               </div>
               <div>
-              <h1 className="text-3xl font-bold text-white">
-  Mon Profil
-</h1>
-
+                <h1 className="text-3xl font-bold text-white">
+                  Mon Profil
+                </h1>
                 <p className="text-blue-100">
                   {isAgency ? 'Agence immobilière' : isProfessional ? 'Professionnel' : 'Copropriétaire'} • Gérez vos informations
                 </p>
@@ -221,51 +222,48 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </Button>
             ) : (
               <div className="flex gap-3 animate-slide-up">
-<Button
-  variant="secondary"
-  onClick={() => {
-    setIsEditing(false);
-    setFormData({
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      email: profile.email,
-      phone: profile.phone,
-      address: profile.address,
-      date_of_birth: profile.date_of_birth,
-      id_number: profile.id_number,
-      company_name: profile.company_name,
-      address_billing: profile.address_billing,
-      license_number: profile.license_number,
-      ifu: profile.ifu,
-      rccm: profile.rccm,
-      vat_number: profile.vat_number,
-    });
-  }}
-  disabled={saving}
-  className="text-white
-  bg-gradient-to-r from-pink-600 via-purple-800 to-blue-800
-  hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
-  border border-white/20 backdrop-blur-sm
-  transition-all duration-200"
->
-  <X className="w-4 h-4 mr-2" />
-  Annuler
-</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData({
+                      first_name: profile.first_name,
+                      last_name: profile.last_name,
+                      email: profile.email,
+                      phone: profile.phone,
+                      address: profile.address,
+                      date_of_birth: profile.date_of_birth,
+                      id_number: profile.id_number,
+                      company_name: profile.company_name,
+                      address_billing: profile.address_billing,
+                      license_number: profile.license_number,
+                      ifu: profile.ifu,
+                      rccm: profile.rccm,
+                      vat_number: profile.vat_number,
+                    });
+                  }}
+                  disabled={saving}
+                  className="text-white
+                    bg-gradient-to-r from-pink-600 via-purple-800 to-blue-800
+                    hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
+                    border border-white/20 backdrop-blur-sm
+                    transition-all duration-200"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Annuler
+                </Button>
 
-
-<Button
-  onClick={handleSave}
-  disabled={saving}
-  className="flex items-center gap-2 text-white 
-  bg-gradient-to-r from-pink-800 via-purple-800 to-blue-800 
-  hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
-  hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
->
-  <Save className="w-4 h-4" />
-  {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-</Button>
-
-
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 text-white 
+                    bg-gradient-to-r from-pink-800 via-purple-800 to-blue-800 
+                    hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
+                    hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                </Button>
               </div>
             )}
           </div>
@@ -581,7 +579,6 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         </p>
                         <p className="text-sm text-blue-700 mt-1">
                           En tant que copropriétaire simple, vous ne pouvez pas modifier les informations professionnelles.
-                       
                         </p>
                       </div>
                     </div>
@@ -812,7 +809,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3">
             <Edit2 className="w-5 h-5 animate-pulse" />
             <div>
-             <p className="font-medium text-white">Mode édition activé</p>
+              <p className="font-medium text-white">Mode édition activé</p>
               <p className="text-sm text-blue-100">N'oubliez pas d'enregistrer vos modifications</p>
             </div>
           </div>

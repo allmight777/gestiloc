@@ -8,7 +8,9 @@ use App\Http\Controllers\CoOwner\CoOwnerLeaseDocumentController;
 use App\Http\Controllers\CoOwner\CoOwnerMaintenanceController;
 use App\Http\Controllers\CoOwner\CoOwnerRentReceiptController;
 use App\Http\Controllers\CoOwner\CoOwnerNoticeController;
+use App\Http\Controllers\CoOwner\CoOwnerPaymentController;
 use App\Http\Controllers\CoOwner\CoOwnerAccountingController;
+use App\Http\Controllers\CoOwner\CoOwnerConditionReportController;
 use App\Http\Controllers\ReactRedirectController;
 use App\Http\Controllers\Auth\LoginController;
 
@@ -137,13 +139,42 @@ Route::prefix('coproprietaire/tenants')->name('co-owner.tenants.')->group(functi
     Route::delete('/{tenant}/unassign/{property}', [CoOwnerTenantController::class, 'unassignProperty'])->name('unassign');
     Route::post('/{tenant}/resend-invitation', [CoOwnerTenantController::class, 'resendInvitation'])->name('resend-invitation');
 
-    // Archiver/Restaurer un locataire
-    Route::put('/coproprietaire/locataires/{tenant}/archiver', [CoOwnerTenantController::class, 'archive'])
+    // CORRECTION : Utiliser la même structure de chemin
+    Route::put('/{tenant}/archive', [CoOwnerTenantController::class, 'archive'])
         ->name('archive');
 
-    Route::put('/coproprietaire/locataires/{tenant}/restaurer', [CoOwnerTenantController::class, 'restore'])
+    Route::put('/{tenant}/restore', [CoOwnerTenantController::class, 'restore'])
         ->name('restore');
 });
+
+
+// Routes pour la gestion des paiements
+Route::prefix('coproprietaire/paiements')->name('co-owner.payments.')->group(function () {
+    Route::get('/', [CoOwnerPaymentController::class, 'index'])->name('index');
+    Route::get('/create', [CoOwnerPaymentController::class, 'create'])->name('create');
+    Route::post('/', [CoOwnerPaymentController::class, 'store'])->name('store');
+    Route::get('/{payment}', [CoOwnerPaymentController::class, 'show'])->name('show');
+    Route::get('/export', [CoOwnerPaymentController::class, 'export'])->name('export');
+    Route::get('/rappels', [CoOwnerPaymentController::class, 'reminders'])->name('reminders');
+    Route::post('/{payment}/rappel', [CoOwnerPaymentController::class, 'sendReminder'])->name('send-reminder');
+    Route::put('/{payment}/archive', [CoOwnerPaymentController::class, 'archive'])->name('archive');
+});
+
+
+// Routes pour les états des lieux (copropriétaire)
+Route::prefix('coproprietaire/etats-des-lieux')->name('co-owner.condition-reports.')->group(function () {
+    Route::get('/', [CoOwnerConditionReportController::class, 'index'])->name('index');
+    Route::get('/create', [CoOwnerConditionReportController::class, 'create'])->name('create');
+    Route::post('/', [CoOwnerConditionReportController::class, 'store'])->name('store');
+    Route::get('/{id}', [CoOwnerConditionReportController::class, 'show'])->name('show');
+    Route::post('/{id}/photos', [CoOwnerConditionReportController::class, 'addPhotos'])->name('add-photos');
+    Route::delete('/{id}', [CoOwnerConditionReportController::class, 'destroy'])->name('destroy');
+    Route::get('/{id}/download', [CoOwnerConditionReportController::class, 'downloadPdf'])->name('download');
+
+    // Pour les états des lieux d'un bien spécifique
+    Route::get('/bien/{propertyId}', [CoOwnerConditionReportController::class, 'index'])->name('by-property');
+});
+
 
 // Routes pour assigner un bien
 Route::prefix('coproprietaire/assign-property')->name('co-owner.assign-property.')->group(function () {

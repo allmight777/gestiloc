@@ -22,6 +22,8 @@
             --line: rgba(15, 23, 42, .10);
             --line2: rgba(15, 23, 42, .08);
             --shadow: 0 22px 70px rgba(0, 0, 0, .18);
+            --green: #84cc16;
+            --green-hover: #65a30d;
         }
 
         * {
@@ -57,14 +59,13 @@
             padding: 1.5rem;
             height: 64px;
             border-bottom: 1px solid #e5e7eb;
+            background: #377DF4;
         }
 
         .sidebar-header h1 {
             font-size: 1.25rem;
             font-weight: bold;
-            background: linear-gradient(to right, #4f46e5, #7c3aed);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
         }
 
         .sidebar-nav {
@@ -150,8 +151,8 @@
 
         .top-bar {
             height: 64px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
+            background: #377DF4;
+            border-bottom: none;
             display: flex;
             align-items: center;
             padding: 0 1.5rem;
@@ -160,16 +161,41 @@
         .page-title {
             font-size: 1.5rem;
             font-weight: bold;
-            background: linear-gradient(to right, #111827, #374151);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
         }
 
         .top-bar-actions {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
             margin-left: auto;
+        }
+
+        .top-bar-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+
+        .top-bar-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .top-bar-btn i {
+            width: 18px;
+            height: 18px;
         }
 
         .logout-btn {
@@ -222,7 +248,22 @@
             }
 
             .mobile-menu-btn {
-                display: block;
+                display: block !important;
+                background: rgba(255, 255, 255, 0.2) !important;
+                color: white !important;
+                padding: 0.625rem !important;
+            }
+
+            .mobile-menu-btn:hover {
+                background: rgba(255, 255, 255, 0.3) !important;
+            }
+
+            .top-bar-btn span {
+                display: none;
+            }
+
+            .top-bar-btn {
+                padding: 0.625rem 0.875rem;
             }
         }
 
@@ -505,7 +546,6 @@
                             <span class="nav-emoji">📊</span>
                             <span>Tableau de bord</span>
                         </div>
-
                     </button>
                 </div>
 
@@ -517,14 +557,12 @@
                             <span class="nav-emoji">+</span>
                             <span>Ajouter un bien</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="goToReact('/coproprietaire/biens')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">🏠</span>
                             <span>Mes biens</span>
                         </div>
-
                     </button>
                 </div>
 
@@ -536,28 +574,24 @@
                             <span class="nav-emoji">🔑</span>
                             <span>Nouvelle location</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="navigateTo('/coproprietaire/tenants/create')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📍</span>
                             <span>Ajouter un locataire</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="navigateTo('/coproprietaire/tenants')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Liste des locataires</span>
                         </div>
-
                     </button>
-                    <button class="menu-item" onclick="navigateTo('/coproprietaire/quittances')">
+                    <button class="menu-item" onclick="navigateTo('/coproprietaire/paiements')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📅</span>
                             <span>Gestion des paiements</span>
                         </div>
-
                     </button>
                 </div>
 
@@ -569,42 +603,37 @@
                             <span class="nav-emoji">📄</span>
                             <span>Contrats de bail</span>
                         </div>
-
                     </button>
-                    <button class="menu-item" onclick="goToReact('/coproprietaire/documents')">
+                    <button class="menu-item" onclick="navigateTo('/coproprietaire/etats-des-lieux')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Etats de lieux</span>
                         </div>
-
                     </button>
+
                     <button class="menu-item" onclick="navigateTo('/coproprietaire/notices')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Avis d'échéance</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="navigateTo('/coproprietaire/quittances')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Quittances de loyers</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="goToReact('/coproprietaire/documents')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Factures et documents divers</span>
                         </div>
-
                     </button>
                     <button class="menu-item" onclick="goToReact('/coproprietaire/documents')">
                         <div class="menu-item-content">
                             <span class="nav-emoji">📄</span>
                             <span>Archivage de documents</span>
                         </div>
-
                     </button>
                 </div>
 
@@ -616,20 +645,20 @@
                             <span class="nav-emoji">✂️</span>
                             <span>Réparations et travaux</span>
                         </div>
-
                     </button>
                 </div>
 
-         <!-- COMPTABILITE ET STATISTIQUES -->
-<div class="menu-group">
-    <div class="menu-group-title">COMPTABILITE ET STATISTIQUES</div>
-    <button class="menu-item" onclick="navigateTo('/coproprietaire/comptabilite')">
-        <div class="menu-item-content">
-            <span class="nav-emoji">💼</span>
-            <span>Comptabilité et statistiques</span>
-        </div>
-    </button>
-</div>
+                <!-- COMPTABILITE ET STATISTIQUES -->
+                <div class="menu-group">
+                    <div class="menu-group-title">COMPTABILITE ET STATISTIQUES</div>
+                    <button class="menu-item" onclick="navigateTo('/coproprietaire/comptabilite')">
+                        <div class="menu-item-content">
+                            <span class="nav-emoji">💼</span>
+                            <span>Comptabilité et statistiques</span>
+                        </div>
+                    </button>
+                </div>
+
                 <!-- CONFIGURATION -->
                 <div class="menu-group">
                     <div class="menu-group-title">CONFIGURATION</div>
@@ -638,7 +667,13 @@
                             <span class="nav-emoji">📜</span>
                             <span>Paramètres</span>
                         </div>
+                    </button>
 
+                    <button class="menu-item" onclick="goToReact('/coproprietaire/parametres')">
+                        <div class="menu-item-content">
+                            <span class="nav-emoji">📜</span>
+                            <span>Mon compte</span>
+                        </div>
                     </button>
                 </div>
             </nav>
@@ -683,7 +718,26 @@
         <!-- Main content -->
         <div class="main-content">
             <!-- Top bar -->
-
+            <div class="top-bar">
+                <h1 class="page-title">@yield('title', 'Co-propriétaire')</h1>
+                <div class="top-bar-actions">
+                    <button class="top-bar-btn" onclick="goToReact('/coproprietaire/notifications')" title="Notifications">
+                        <i data-lucide="bell"></i>
+                        <span>Notifications</span>
+                    </button>
+                    <button class="top-bar-btn" onclick="goToReact('/coproprietaire/aide')" title="Aide">
+                        <i data-lucide="help-circle"></i>
+                        <span>Aide</span>
+                    </button>
+                    <button class="top-bar-btn" onclick="goToReact('/coproprietaire/parametres')" title="Mon compte">
+                        <i data-lucide="user"></i>
+                        <span>Mon compte</span>
+                    </button>
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none;">
+                        <i data-lucide="menu"></i>
+                    </button>
+                </div>
+            </div>
 
             <!-- Content spécifique à chaque page -->
             @yield('content')
@@ -702,40 +756,142 @@
         // Initialiser les icônes
         lucide.createIcons();
 
+        // Fonction pour récupérer le token depuis TOUTES les sources
+        function getTokenFromAllSources() {
+            console.log('🔍 Recherche du token dans toutes les sources...');
+
+            // 1. LocalStorage (principal)
+            let token = localStorage.getItem('token');
+            if (token) {
+                console.log('✅ Token trouvé dans localStorage');
+                return token;
+            }
+
+            // 2. URL (api_token)
+            const urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('api_token');
+            if (token) {
+                console.log('✅ Token trouvé dans URL');
+                localStorage.setItem('token', token); // Sauvegarder
+                return token;
+            }
+
+            // 3. Cookies
+            token = getCookie('laravel_token') || getCookie('token');
+            if (token) {
+                console.log('✅ Token trouvé dans cookies');
+                localStorage.setItem('token', token);
+                return token;
+            }
+
+            // 4. SessionStorage (fallback)
+            token = sessionStorage.getItem('token');
+            if (token) {
+                console.log('✅ Token trouvé dans sessionStorage');
+                return token;
+            }
+
+            console.log('❌ Aucun token trouvé');
+            return null;
+        }
+
+        // Fonction pour récupérer un cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Fonction pour extraire le token de l'URL et nettoyer
+        function extractTokenFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('api_token');
+
+            if (token) {
+                console.log('🔄 Extraction du token depuis URL');
+                localStorage.setItem('token', token);
+
+                // Nettoyer l'URL
+                urlParams.delete('api_token');
+                const newUrl = window.location.pathname +
+                    (urlParams.toString() ? '?' + urlParams.toString() : '') +
+                    window.location.hash;
+                window.history.replaceState({}, '', newUrl);
+
+                return token;
+            }
+            return null;
+        }
+
         // Fonction pour naviguer vers React
         function goToReact(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
+            console.log('🚀 Navigation vers React:', path);
+
+            let token = getTokenFromAllSources();
+
+            // Si pas de token, essayer d'extraire de l'URL actuelle
+            if (!token) {
+                token = extractTokenFromUrl();
+            }
 
             if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGIN_URL;
+                console.error('❌ ERREUR: Pas de token pour React');
+                alert('Session expirée. Redirection vers la page de connexion...');
+                setTimeout(() => {
+                    window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGIN_URL;
+                }, 500);
                 return;
             }
 
+            // Construire l'URL React avec token
             let fullUrl = CONFIG.REACT_URL + path;
             const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+            const timestamp = Date.now();
 
-            console.log('Navigation React vers:', fullUrl);
-            window.location.href = fullUrl;
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
+
+            console.log('✅ URL React générée:', fullUrl);
+
+            // Redirection
+            setTimeout(() => {
+                window.location.href = fullUrl;
+            }, 100);
         }
 
         // Fonction pour naviguer vers Laravel
         function navigateTo(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
+            console.log('🚀 Navigation vers Laravel:', path);
+
+            let token = getTokenFromAllSources();
+
+            // Si pas de token, essayer d'extraire de l'URL actuelle
+            if (!token) {
+                token = extractTokenFromUrl();
+            }
 
             if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGIN_URL;
+                console.error('❌ ERREUR: Pas de token pour Laravel');
+                alert('Session expirée. Redirection vers la page de connexion...');
+                setTimeout(() => {
+                    window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGIN_URL;
+                }, 500);
                 return;
             }
 
+            // Construire l'URL Laravel avec token
             let fullUrl = CONFIG.LARAVEL_URL + path;
             const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+            const timestamp = Date.now();
 
-            console.log('Navigation Laravel vers:', fullUrl);
-            window.location.href = fullUrl;
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
+
+            console.log('✅ URL Laravel générée:', fullUrl);
+
+            // Redirection
+            setTimeout(() => {
+                window.location.href = fullUrl;
+            }, 100);
         }
 
         // Helper pour récupérer un paramètre d'URL
@@ -758,13 +914,92 @@
         // Logout
         function logout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                // Nettoyer tous les stockages
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+
+                // Rediriger vers la déconnexion Laravel
                 window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGOUT_URL;
             }
         }
 
+        // Vérifier l'authentification au chargement
+        function checkAuthOnLoad() {
+            console.log('🔐 Vérification de l\'authentification...');
+
+            // Ne pas vérifier sur la page de login
+            if (window.location.href.includes('/login')) {
+                console.log('📋 Page de login, pas de vérification nécessaire');
+                return;
+            }
+
+            const token = getTokenFromAllSources();
+
+            if (!token) {
+                console.warn('⚠️ Aucun token trouvé, vérification de la session Laravel...');
+
+                // Essayer d'extraire le token de l'URL une dernière fois
+                const urlToken = extractTokenFromUrl();
+                if (!urlToken) {
+                    console.error('❌ ERREUR CRITIQUE: Aucune authentification trouvée');
+
+                    // Attendre un peu puis rediriger
+                    setTimeout(() => {
+                        if (!window.location.href.includes('/login')) {
+                            alert('Votre session a expiré. Veuillez vous reconnecter.');
+                            window.location.href = CONFIG.LARAVEL_URL + CONFIG.LOGIN_URL;
+                        }
+                    }, 1000);
+                }
+            } else {
+                console.log('✅ Authentification vérifiée avec succès');
+            }
+        }
+
+        // Marquer le menu actif
+        function markActiveMenu() {
+            const currentPath = window.location.pathname;
+
+            document.querySelectorAll('.menu-item').forEach(item => {
+                const onclick = item.getAttribute('onclick');
+                if (onclick) {
+                    const pathMatch = onclick.match(/navigateTo\('([^']+)'\)/) ||
+                                    onclick.match(/goToReact\('([^']+)'\)/);
+
+                    if (pathMatch && pathMatch[1]) {
+                        const menuPath = pathMatch[1];
+                        if (currentPath.includes(menuPath.replace('/coproprietaire/', ''))) {
+                            item.classList.add('active');
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    }
+                }
+            });
+        }
+
         // Au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 Layout Laravel chargé');
+
+            // Extraire le token de l'URL si présent
+            extractTokenFromUrl();
+
+            // Vérifier l'authentification
+            checkAuthOnLoad();
+
+            // Marquer le menu actif
+            markActiveMenu();
+
+            // Gestion responsive
+            checkMobile();
+
+            // Vérifier périodiquement
+            setInterval(checkAuthOnLoad, 60000); // Toutes les minutes
+        });
+
+        // Gestion responsive
         function checkMobile() {
             const mobileBtn = document.querySelector('.mobile-menu-btn');
             if (window.innerWidth <= 768) {
@@ -775,28 +1010,6 @@
         }
 
         window.addEventListener('resize', checkMobile);
-        checkMobile();
-
-        // Ajouter le token à la page actuelle si présent dans l'URL
-        const urlToken = getUrlParam('api_token');
-        if (urlToken) {
-            localStorage.setItem('token', urlToken);
-        }
-
-        // Marquer le menu actif en fonction de la page courante
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentPath = window.location.pathname;
-
-            // Marquer l'élément actif
-            document.querySelectorAll('.menu-item').forEach(item => {
-                const onclick = item.getAttribute('onclick');
-                if (onclick) {
-                    if (onclick.includes(currentPath)) {
-                        item.classList.add('active');
-                    }
-                }
-            });
-        });
     </script>
 </body>
 </html>
