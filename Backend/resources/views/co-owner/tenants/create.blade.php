@@ -1,17 +1,11 @@
 @extends('layouts.co-owner')
 
-@section('title', 'Créer un Locataire - Co-propriétaire')
+@section('title', 'Créer un Locataire')
 
 @section('content')
 <div class="form-container">
     <div class="form-card">
-        <div class="form-header">
-            <h1>
-                <i data-lucide="user-plus" style="width: 32px; height: 32px;"></i>
-                Nouveau locataire
-            </h1>
-            <p>Renseignez les informations du locataire pour l'ajouter à votre portefeuille</p>
-        </div>
+
 
         <div class="form-body">
             <div class="top-actions">

@@ -32,13 +32,13 @@
                font-size: 14px;
                text-decoration: none;
                transition: all 0.2s ease;
-               background-color: {{ $status === 'active' ? '#059669' : '#ECFDF5' }};
-               color: {{ $status === 'active' ? '#ffffff' : '#065F46' }};
-               border: 1px solid #059669;
+               background-color: #377df4;
+               color: #ffffff;
+               border: 1px solid #052096;
                box-shadow: {{ $status === 'active' ? '0 4px 10px rgba(5,150,105,0.3)' : 'none' }};
            "
-                            onmouseover="this.style.backgroundColor='#059669'; this.style.color='#fff'"
-                            onmouseout="this.style.backgroundColor='{{ $status === 'active' ? '#059669' : '#ECFDF5' }}'; this.style.color='{{ $status === 'active' ? '#fff' : '#065F46' }}'">
+                            onmouseover="this.style.backgroundColor='#377df4'; this.style.color='#fff'"
+                            onmouseout="this.style.backgroundColor='{{ $status === 'active' ? '#377df4' : '#ECFDF5' }}'; this.style.color='{{ $status === 'active' ? '#fff' : '#065F46' }}'">
                             Actifs
                         </a>
 
@@ -91,7 +91,7 @@
                         </svg>
                         Retour au tableau de bord
                     </a>
-                    <a href="{{ route('co-owner.tenants.create') }}" class="btn-primary">
+                    <a href="{{ route('co-owner.tenants.create') }}" class="btn-primary" style="background-color: #377df4;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M12 5v14M5 12h14" />

@@ -11,6 +11,7 @@ use App\Models\PropertyDelegation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Sanctum\PersonalAccessToken;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -21,11 +22,9 @@ class CoOwnerPaymentController extends Controller
      */
     private function getAuthenticatedUser(Request $request)
     {
-        // Vérifier l'authentification Sanctum (API)
         if ($request->bearerToken()) {
             $token = $request->bearerToken();
             $sanctumToken = PersonalAccessToken::findToken($token);
-
             if ($sanctumToken) {
                 $user = $sanctumToken->tokenable;
                 auth('web')->login($user);
@@ -33,11 +32,9 @@ class CoOwnerPaymentController extends Controller
             }
         }
 
-        // Vérifier le token en paramètre
         if ($request->has('api_token')) {
             $token = $request->get('api_token');
             $sanctumToken = PersonalAccessToken::findToken($token);
-
             if ($sanctumToken) {
                 $user = $sanctumToken->tokenable;
                 auth('web')->login($user);
@@ -45,7 +42,6 @@ class CoOwnerPaymentController extends Controller
             }
         }
 
-        // Vérifier l'authentification web
         if (auth()->check()) {
             return auth()->user();
         }
@@ -58,15 +54,12 @@ class CoOwnerPaymentController extends Controller
      */
     public function index(Request $request)
     {
-        // ✅ Utiliser la même méthode qui fonctionne dans l'autre contrôleur
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user) {
-            // Rediriger vers la page de connexion React
             return redirect('http://localhost:8080/login');
         }
 
-        // Vérifier que l'utilisateur est un co-propriétaire
         if (!$user->hasRole('co_owner')) {
             abort(403, 'Accès réservé aux copropriétaires.');
         }
@@ -76,13 +69,11 @@ class CoOwnerPaymentController extends Controller
             abort(403, 'Profil copropriétaire non trouvé.');
         }
 
-        // Récupérer les propriétés déléguées
         $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
             ->pluck('property_id')
             ->toArray();
 
-        // Base query pour les paiements
         $paymentsQuery = Payment::query()
             ->with(['lease.property', 'lease.tenant.user', 'invoice'])
             ->whereHas('lease.property', function($sq) use ($delegatedPropertyIds) {
@@ -98,7 +89,13 @@ class CoOwnerPaymentController extends Controller
 
         // Filtre par statut
         if ($request->filled('status')) {
-            $paymentsQuery->where('status', $request->status);
+            if ($request->status === 'active') {
+                $paymentsQuery->whereIn('status', ['initiated', 'pending', 'approved']);
+            } elseif ($request->status === 'archived') {
+                $paymentsQuery->whereIn('status', ['cancelled', 'failed', 'declined']);
+            } else {
+                $paymentsQuery->where('status', $request->status);
+            }
         }
 
         // Filtre par recherche (locataire ou bien)
@@ -106,7 +103,8 @@ class CoOwnerPaymentController extends Controller
             $search = $request->search;
             $paymentsQuery->where(function($q) use ($search) {
                 $q->whereHas('lease.tenant.user', function($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%")
+                    $sq->where('first_name', 'like', "%{$search}%")
+                       ->orWhere('last_name', 'like', "%{$search}%")
                        ->orWhere('email', 'like', "%{$search}%");
                 })
                 ->orWhereHas('lease.property', function($sq) use ($search) {
@@ -138,23 +136,17 @@ class CoOwnerPaymentController extends Controller
             'paid_count' => (clone $paymentsQuery)->where('status', 'approved')->count(),
         ];
 
-        // Taux de recouvrement
         $stats['recovery_rate'] = $stats['expected_rent'] > 0
             ? round(($stats['received_rent'] / $stats['expected_rent']) * 100, 0)
             : 0;
 
-        // Comptage pour les onglets
         $activeCount = (clone $paymentsQuery)->whereIn('status', ['initiated', 'pending', 'approved'])->count();
         $archivedCount = (clone $paymentsQuery)->whereIn('status', ['cancelled', 'failed', 'declined'])->count();
 
-        // Pagination
         $perPage = $request->input('per_page', 100);
         $payments = $paymentsQuery->latest('created_at')->paginate($perPage);
 
-        // Liste des biens pour le filtre
         $properties = Property::whereIn('id', $delegatedPropertyIds)->get();
-
-        // Données pour le graphique de tendance
         $trendData = $this->getRecoveryTrend($delegatedPropertyIds);
 
         return view('co-owner.payments.index', compact(
@@ -182,7 +174,6 @@ class CoOwnerPaymentController extends Controller
             $receivedQuery = Payment::where('status', 'approved')
                 ->whereBetween('paid_at', [$monthStart, $monthEnd]);
 
-            // Filtrer par propriétés déléguées
             if (!empty($delegatedPropertyIds)) {
                 $expectedQuery->whereHas('lease.property', function($q) use ($delegatedPropertyIds) {
                     $q->whereIn('id', $delegatedPropertyIds);
@@ -194,7 +185,6 @@ class CoOwnerPaymentController extends Controller
 
             $expected = $expectedQuery->sum('amount_total');
             $received = $receivedQuery->sum('amount_total');
-
             $rate = $expected > 0 ? round(($received / $expected) * 100, 0) : 0;
 
             $trend[] = [
@@ -231,7 +221,6 @@ class CoOwnerPaymentController extends Controller
             ->pluck('property_id')
             ->toArray();
 
-        // Récupérer les baux actifs pour les biens délégués
         $leases = Lease::with(['tenant.user', 'property'])
             ->where('status', 'active')
             ->whereHas('property', function($q) use ($delegatedPropertyIds) {
@@ -264,7 +253,6 @@ class CoOwnerPaymentController extends Controller
         $lease = Lease::with('tenant')->findOrFail($validated['lease_id']);
         $coOwner = $user->coOwner;
 
-        // Vérification des droits
         $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('property_id', $lease->property_id)
             ->where('status', 'active')
@@ -276,7 +264,6 @@ class CoOwnerPaymentController extends Controller
                 ->withInput();
         }
 
-        // Calcul des frais (exemple: 5%)
         $feeRate = 0.05;
         $feeAmount = $validated['amount_total'] * $feeRate;
         $amountNet = $validated['amount_total'] - $feeAmount;
@@ -301,14 +288,6 @@ class CoOwnerPaymentController extends Controller
                     'recorded_by_co_owner' => $coOwner->id,
                 ]),
             ]);
-
-            // Mettre à jour le statut de la facture si liée
-            if ($validated['invoice_id'] ?? null) {
-                $invoice = \App\Models\Invoice::find($validated['invoice_id']);
-                if ($invoice) {
-                    $invoice->update(['status' => 'paid', 'paid_at' => now()]);
-                }
-            }
         });
 
         return redirect()->route('co-owner.payments.index')
@@ -328,7 +307,6 @@ class CoOwnerPaymentController extends Controller
 
         $coOwner = $user->coOwner;
 
-        // Vérification des droits
         $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('property_id', $payment->lease->property_id)
             ->where('status', 'active')
@@ -341,6 +319,100 @@ class CoOwnerPaymentController extends Controller
         $payment->load(['lease.property', 'lease.tenant.user', 'invoice']);
 
         return view('co-owner.payments.show', compact('payment'));
+    }
+
+    /**
+     * Génère une quittance PDF
+     */
+    public function generateReceipt(Request $request, Payment $payment)
+    {
+        $user = $this->getAuthenticatedUser($request);
+
+        if (!$user) {
+            return redirect('http://localhost:8080/login');
+        }
+
+        $coOwner = $user->coOwner;
+
+        $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('property_id', $payment->lease->property_id)
+            ->where('status', 'active')
+            ->exists();
+
+        if (!$hasAccess) {
+            abort(403, 'Accès non autorisé.');
+        }
+
+        $payment->load(['lease.property', 'lease.tenant.user']);
+
+        $pdf = Pdf::loadView('co-owner.payments.receipt', [
+            'payment' => $payment,
+            'coOwner' => $coOwner,
+            'user' => $user,
+            'date' => now()->format('d/m/Y')
+        ]);
+
+        return $pdf->download('quittance_' . $payment->id . '_' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Envoie la quittance par email
+     */
+    public function sendReceipt(Request $request, Payment $payment)
+    {
+        $user = $this->getAuthenticatedUser($request);
+
+        if (!$user) {
+            return redirect('http://localhost:8080/login');
+        }
+
+        $coOwner = $user->coOwner;
+
+        $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('property_id', $payment->lease->property_id)
+            ->where('status', 'active')
+            ->exists();
+
+        if (!$hasAccess) {
+            return response()->json(['error' => 'Accès non autorisé.'], 403);
+        }
+
+        $tenant = $payment->lease->tenant;
+
+        if (!$tenant || !$tenant->user || !$tenant->user->email) {
+            return response()->json(['error' => 'Email du locataire non trouvé.'], 400);
+        }
+
+        try {
+            $payment->load(['lease.property', 'lease.tenant.user']);
+
+            $pdf = Pdf::loadView('co-owner.payments.receipt', [
+                'payment' => $payment,
+                'coOwner' => $coOwner,
+                'user' => $user,
+                'date' => now()->format('d/m/Y')
+            ]);
+
+            Mail::send([], [], function ($message) use ($tenant, $payment, $pdf) {
+                $message->to($tenant->user->email)
+                    ->subject('Quittance de loyer - ' . $payment->paid_at->format('F Y'))
+                    ->html("
+                        <h3>Bonjour {$tenant->user->first_name},</h3>
+                        <p>Veuillez trouver ci-joint votre quittance de loyer pour le mois de " . $payment->paid_at->format('F Y') . ".</p>
+                        <p>Montant réglé : " . number_format($payment->amount_total, 0, ',', ' ') . " FCFA</p>
+                        <p>Bien : {$payment->lease->property->name}</p>
+                        <br>
+                        <p>Cordialement,<br>L'équipe GestiLoc</p>
+                    ");
+                $message->attachData($pdf->output(), 'quittance_' . $payment->id . '.pdf', [
+                    'mime' => 'application/pdf',
+                ]);
+            });
+
+            return response()->json(['success' => 'Quittance envoyée avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erreur lors de l\'envoi de la quittance.'], 500);
+        }
     }
 
     /**
@@ -399,7 +471,7 @@ class CoOwnerPaymentController extends Controller
                     $payment->id,
                     $payment->created_at->format('d/m/Y'),
                     $payment->lease->property->name ?? 'N/A',
-                    $payment->lease->tenant->user->name ?? 'N/A',
+                    $payment->lease->tenant->user->full_name ?? 'N/A',
                     number_format($payment->amount_total, 0, ',', ' '),
                     number_format($payment->fee_amount, 0, ',', ' '),
                     number_format($payment->amount_net, 0, ',', ' '),
@@ -491,7 +563,6 @@ class CoOwnerPaymentController extends Controller
 
         $coOwner = $user->coOwner;
 
-        // Vérification des droits
         $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('property_id', $payment->lease->property_id)
             ->where('status', 'active')
@@ -505,7 +576,7 @@ class CoOwnerPaymentController extends Controller
 
         if ($tenant && $tenant->user && $tenant->user->email) {
             try {
-                \Illuminate\Support\Facades\Mail::to($tenant->user->email)
+                Mail::to($tenant->user->email)
                     ->queue(new \App\Mail\PaymentReminderMail($payment));
 
                 return back()->with('success', 'Rappel envoyé avec succès.');
@@ -530,7 +601,6 @@ class CoOwnerPaymentController extends Controller
 
         $coOwner = $user->coOwner;
 
-        // Vérification des droits
         $hasAccess = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('property_id', $payment->lease->property_id)
             ->where('status', 'active')

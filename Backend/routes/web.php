@@ -143,16 +143,23 @@ Route::prefix('coproprietaire/tenants')->name('co-owner.tenants.')->group(functi
     Route::put('/{tenant}/restore', [CoOwnerTenantController::class, 'restore'])->name('restore');
 });
 
-// Routes pour la gestion des paiements
+
+// Routes pour la gestion des paiements (COPROPRIÉTAIRE)
 Route::prefix('coproprietaire/paiements')->name('co-owner.payments.')->group(function () {
     Route::get('/', [CoOwnerPaymentController::class, 'index'])->name('index');
     Route::get('/create', [CoOwnerPaymentController::class, 'create'])->name('create');
     Route::post('/', [CoOwnerPaymentController::class, 'store'])->name('store');
-    Route::get('/{payment}', [CoOwnerPaymentController::class, 'show'])->name('show');
     Route::get('/export', [CoOwnerPaymentController::class, 'export'])->name('export');
     Route::get('/rappels', [CoOwnerPaymentController::class, 'reminders'])->name('reminders');
+
+    // Routes pour un paiement spécifique
+    Route::get('/{payment}', [CoOwnerPaymentController::class, 'show'])->name('show');
     Route::post('/{payment}/rappel', [CoOwnerPaymentController::class, 'sendReminder'])->name('send-reminder');
     Route::put('/{payment}/archive', [CoOwnerPaymentController::class, 'archive'])->name('archive');
+
+    // ✅ NOUVELLES ROUTES POUR LES QUITTANCES
+    Route::get('/{payment}/receipt', [CoOwnerPaymentController::class, 'generateReceipt'])->name('receipt');
+    Route::post('/{payment}/send-receipt', [CoOwnerPaymentController::class, 'sendReceipt'])->name('send-receipt');
 });
 
 //Route etat des lieux
@@ -215,13 +222,13 @@ Route::prefix('coproprietaire/factures')->name('co-owner.invoices.')->group(func
 */
 
 Route::prefix('coproprietaire/biens')->name('co-owner.properties.')->group(function () {
-    // UNIQUEMENT create et store - PAS de index
+
     Route::get('/create', [CoOwnerPropertyController::class, 'create'])->name('create');
     Route::post('/store', [CoOwnerPropertyController::class, 'store'])->name('store');
 });
 
 
-//Routes pour les preavis 
+
 // Routes pour les préavis
 Route::prefix('coproprietaire/notices')->name('co-owner.notices.')->group(function () {
     Route::get('/', [CoOwnerNoticeController::class, 'index'])->name('index');
