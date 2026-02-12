@@ -5,13 +5,7 @@
 @section('content')
 <div class="content-container">
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="edit" style="width: 32px; height: 32px;"></i>
-                Modifier le préavis
-            </h1>
-            <p>Préavis #NOTICE-{{ str_pad($notice->id, 6, '0', STR_PAD_LEFT) }}</p>
-        </div>
+
 
         <div class="content-body">
             <div class="top-actions">
@@ -45,7 +39,10 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Locataire</div>
-                        <div class="detail-value">{{ $notice->tenant->user->name ?? 'Non spécifié' }}</div>
+                      <div class="detail-value">
+    {{ trim(($notice->tenant->first_name ?? '') . ' ' . ($notice->tenant->last_name ?? '')) ?: 'Non spécifié' }}
+</div>
+
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Statut</div>
@@ -115,15 +112,33 @@
                               placeholder="Informations complémentaires...">{{ old('notes', $notice->notes) }}</textarea>
                 </div>
 
-                <!-- Boutons -->
-                <div class="form-group" style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="button button-primary">
-                        <i data-lucide="save" style="width: 16px; height: 16px;"></i> Enregistrer les modifications
-                    </button>
-                    <a href="{{ route('co-owner.notices.show', $notice) }}" class="button button-secondary">
-                        <i data-lucide="x" style="width: 16px; height: 16px;"></i> Annuler
-                    </a>
-                </div>
+               <!-- Boutons -->
+<div class="form-group"
+     style="display: flex !important;
+            flex-direction: row !important;
+            justify-content: flex-end !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            gap: 1rem !important;
+            width: 100% !important;
+            margin-top: 2rem !important;">
+
+    <button type="submit"
+            class="button button-primary"
+            style="width: auto !important; flex: 0 0 auto !important; display: inline-flex !important; align-items: center; gap: 6px;">
+        <i data-lucide="save" style="width:16px;height:16px;"></i>
+        Enregistrer les modifications
+    </button>
+
+    <a href="{{ route('co-owner.notices.show', $notice) }}"
+       class="button button-secondary"
+       style="width: auto !important; flex: 0 0 auto !important; display: inline-flex !important; align-items: center; gap: 6px;">
+        <i data-lucide="x" style="width:16px;height:16px;"></i>
+        Annuler
+    </a>
+
+</div>
+
             </form>
         </div>
     </div>

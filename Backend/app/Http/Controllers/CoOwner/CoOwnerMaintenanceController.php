@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class CoOwnerMaintenanceController extends Controller
 {
@@ -304,12 +305,10 @@ class CoOwnerMaintenanceController extends Controller
                 'created_by_co_owner' => $coOwner->id,
             ]);
 
-            // Si le statut est "in_progress", définir started_at
             if ($validated['status'] === 'in_progress') {
                 $maintenance->update(['started_at' => now()]);
             }
 
-            // Si le statut est "resolved", définir resolved_at
             if ($validated['status'] === 'resolved') {
                 $maintenance->update(['resolved_at' => now()]);
             }
@@ -349,15 +348,12 @@ class CoOwnerMaintenanceController extends Controller
             $coOwner = $this->getCoOwner();
             $delegatedPropertyIds = $this->getDelegatedProperties();
 
-            // Vérifier que la maintenance appartient à un bien délégué
             if (!in_array($maintenance->property_id, $delegatedPropertyIds)) {
                 abort(403, 'Vous n\'avez pas accès à cette demande');
             }
 
-            // Charger les relations
             $maintenance->load(['property', 'tenant']);
 
-            // Récupérer les biens délégués avec leurs locataires
             $properties = Property::whereIn('id', $delegatedPropertyIds)
                 ->with(['leases' => function($query) {
                     $query->where('status', 'active')
@@ -378,7 +374,6 @@ class CoOwnerMaintenanceController extends Controller
                     ];
                 });
 
-            // Récupérer tous les locataires des biens délégués
             $tenantIds = Lease::whereIn('property_id', $delegatedPropertyIds)
                 ->where('status', 'active')
                 ->pluck('tenant_id')
@@ -396,7 +391,6 @@ class CoOwnerMaintenanceController extends Controller
                     ];
                 });
 
-            // Extraire la date préférée si elle existe
             $preferredDate = null;
             if ($maintenance->preferred_slots && is_array($maintenance->preferred_slots) && count($maintenance->preferred_slots) > 0) {
                 $preferredDate = $maintenance->preferred_slots[0]['date'] ?? null;
@@ -470,15 +464,12 @@ class CoOwnerMaintenanceController extends Controller
 
             DB::beginTransaction();
 
-            // Gérer les photos existantes
             $photoPaths = $maintenance->photos ?? [];
 
-            // Supprimer les photos marquées pour suppression
             if ($request->filled('remove_photos')) {
                 $photoPaths = array_diff($photoPaths, $request->remove_photos);
             }
 
-            // Ajouter les nouvelles photos
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
                     $path = $photo->store('maintenance/' . date('Y/m'), 'public');
@@ -486,7 +477,6 @@ class CoOwnerMaintenanceController extends Controller
                 }
             }
 
-            // Préparer les données de mise à jour
             $updateData = [
                 'property_id' => $validated['property_id'],
                 'tenant_id' => $validated['tenant_id'],
@@ -504,7 +494,6 @@ class CoOwnerMaintenanceController extends Controller
                 'photos' => array_values($photoPaths),
             ];
 
-            // Gérer les dates de statut
             if ($validated['status'] === 'in_progress' && $maintenance->status !== 'in_progress') {
                 $updateData['started_at'] = now();
             }
@@ -563,5 +552,90 @@ class CoOwnerMaintenanceController extends Controller
             'maintenance' => $maintenance,
             'coOwner' => $coOwner,
         ]);
+    }
+
+    /**
+     * Répondre au locataire et envoyer un email
+     */
+    public function replyToTenant(Request $request, MaintenanceRequest $maintenance)
+    {
+        try {
+            $coOwner = $this->getCoOwner();
+            $delegatedProperties = $this->getDelegatedProperties();
+
+            if (!in_array($maintenance->property_id, $delegatedProperties)) {
+                abort(403, 'Vous n\'avez pas accès à cette demande');
+            }
+
+            $validated = $request->validate([
+                'reply_message' => 'required|string|max:2000',
+            ]);
+
+            // Charger les relations nécessaires
+            $maintenance->load(['tenant.user', 'property', 'landlord.user']);
+            $coOwner->load('user');
+
+            // Préparer les données pour l'email
+            $tenant = $maintenance->tenant;
+            $tenantUser = $tenant->user;
+            $property = $maintenance->property;
+
+            // Formatage des créneaux préférés
+            $preferredSlotsFormatted = '';
+            if (!empty($maintenance->preferred_slots) && is_array($maintenance->preferred_slots)) {
+                foreach ($maintenance->preferred_slots as $slot) {
+                    if (is_array($slot) && isset($slot['date'])) {
+                        $preferredSlotsFormatted .= $slot['date'];
+                        if (isset($slot['from']) && isset($slot['to'])) {
+                            $preferredSlotsFormatted .= ' de ' . $slot['from'] . ' à ' . $slot['to'];
+                        }
+                        $preferredSlotsFormatted .= "\n";
+                    }
+                }
+            }
+
+            // Envoyer l'email au locataire - CORRECTION : changement du nom de variable
+            Mail::send('emails.maintenance-reply', [
+                'maintenance' => $maintenance,
+                'tenant' => $tenant,
+                'tenantUser' => $tenantUser,
+                'property' => $property,
+                'coOwner' => $coOwner,
+                'coOwnerUser' => $coOwner->user,
+                'replyMessage' => $validated['reply_message'], // Changé de 'message' à 'replyMessage'
+                'preferredSlotsFormatted' => $preferredSlotsFormatted,
+                'status' => $maintenance->status,
+                'priority' => $maintenance->priority,
+                'category' => $maintenance->category,
+                'estimated_cost' => $maintenance->estimated_cost,
+                'assigned_provider' => $maintenance->assigned_provider,
+                'started_at' => $maintenance->started_at,
+                'resolved_at' => $maintenance->resolved_at,
+            ], function ($mailer) use ($tenantUser, $maintenance, $coOwner) { // Changé de '$mail' à '$mailer'
+                $mailer->to($tenantUser->email, $tenantUser->name ?? 'Locataire')
+                       ->subject('Réponse à votre demande de maintenance #' . $maintenance->id);
+            });
+
+            Log::info('Réponse envoyée au locataire', [
+                'maintenance_id' => $maintenance->id,
+                'co_owner_id' => $coOwner->id,
+                'tenant_id' => $maintenance->tenant_id,
+                'email' => $tenantUser->email
+            ]);
+
+            return redirect()->route('co-owner.maintenance.show', $maintenance)
+                ->with('success', 'Votre réponse a été envoyée au locataire par email avec succès !');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', 'Veuillez corriger les erreurs dans le formulaire.');
+        } catch (\Exception $e) {
+            Log::error('Erreur envoi réponse au locataire: ' . $e->getMessage());
+            return back()
+                ->with('error', 'Erreur lors de l\'envoi de l\'email: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 }

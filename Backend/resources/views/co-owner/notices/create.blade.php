@@ -5,13 +5,7 @@
 @section('content')
 <div class="content-container">
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="file-plus" style="width: 32px; height: 32px;"></i>
-                Créer un préavis
-            </h1>
-            <p>Créez un préavis de départ pour un locataire</p>
-        </div>
+
 
         <div class="content-body">
             <div class="top-actions">
@@ -109,15 +103,32 @@
                               placeholder="Informations complémentaires...">{{ old('notes') }}</textarea>
                 </div>
 
-                <!-- Boutons -->
-                <div class="form-group" style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="submit" class="button button-primary">
-                        <i data-lucide="check" style="width: 16px; height: 16px;"></i> Créer le préavis
-                    </button>
-                    <a href="{{ route('co-owner.notices.index') }}" class="button button-secondary">
-                        <i data-lucide="x" style="width: 16px; height: 16px;"></i> Annuler
-                    </a>
-                </div>
+               <div class="form-group"
+     style="display: flex !important;
+            flex-direction: row !important;
+            justify-content: flex-end !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            gap: 1rem !important;
+            width: 100% !important;
+            margin-top: 2rem !important;">
+
+    <button type="submit"
+            class="button button-primary"
+            style="width: auto !important; flex: 0 0 auto !important;">
+        <i data-lucide="check" style="width:16px;height:16px;"></i>
+        Créer le préavis
+    </button>
+
+    <a href="{{ route('co-owner.notices.index') }}"
+       class="button button-secondary"
+       style="width: auto !important; flex: 0 0 auto !important;">
+        <i data-lucide="x" style="width:16px;height:16px;"></i>
+        Annuler
+    </a>
+
+</div>
+
             </form>
         </div>
     </div>
@@ -386,10 +397,14 @@
             // Formater la date de début
             const startDate = lease.start_date ? new Date(lease.start_date).toLocaleDateString('fr-FR') : 'Non spécifié';
 
-            // Formater le loyer
-            const monthlyRent = lease.monthly_rent ?
-                new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(lease.monthly_rent) :
-                'Non spécifié';
+          const monthlyRent = !isNaN(lease?.rent_amount)
+    ? new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'XOF',
+        minimumFractionDigits: 0
+      }).format(Number(lease.rent_amount))
+    : 'Non spécifié';
+
 
             detailsDiv.innerHTML = `
                 <div class="detail-item">
@@ -398,7 +413,12 @@
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Locataire</div>
-                    <div class="detail-value">${lease.tenant?.user?.name || 'Non spécifié'}</div>
+                    <div class="detail-value">
+  ${lease.tenant
+      ? `${lease.tenant.first_name ?? ''} ${lease.tenant.last_name ?? ''}`.trim()
+      : 'Non spécifié'}
+</div>
+
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Loyer mensuel</div>

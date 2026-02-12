@@ -5,13 +5,7 @@
 @section('content')
 <div class="content-container">
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="file-plus" style="width: 32px; height: 32px;"></i>
-                Créer une nouvelle quittance
-            </h1>
-            <p>Remplissez le formulaire pour créer une quittance de loyer</p>
-        </div>
+  
 
         <div class="content-body">
             <div class="top-actions">

@@ -318,13 +318,7 @@ export const Layout: React.FC<LayoutProps> = ({
           path: "/coproprietaire/parametres",
           isReact: true
         },
-        { 
-          id: "profile", 
-          label: "Mon compte", 
-          emoji: '📜',
-          path: "/coproprietaire/parametres",
-          isReact: true
-        },
+        
       ]
     }
   ];

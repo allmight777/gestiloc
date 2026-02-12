@@ -5,13 +5,7 @@
 @section('content')
 <div class="content-container">
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
-                Détail de la demande
-            </h1>
-            <p>Référence : MAINT-{{ str_pad($maintenance->id, 6, '0', STR_PAD_LEFT) }}</p>
-        </div>
+
 
         <div class="content-body">
             <a href="{{ route('co-owner.maintenance.index') }}" class="back-button">
@@ -299,19 +293,24 @@
                         <i data-lucide="message-square"></i>
                         Répondre au locataire
                     </h3>
-                    <form action="{{ route('co-owner.maintenance.reply', $maintenance) }}" method="POST" class="reply-form">
-                        @csrf
-                        <div class="form-group">
-                            <label class="form-label">Votre message</label>
-                            <textarea name="message" class="form-textarea"
-                                      placeholder="Envoyez un message au locataire pour l'informer de l'avancement..."
-                                      required></textarea>
-                        </div>
-                        <button type="submit" class="button button-primary">
-                            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
-                            Envoyer au locataire
-                        </button>
-                    </form>
+                   <form action="{{ route('co-owner.maintenance.reply', $maintenance) }}" method="POST" class="reply-form">
+    @csrf
+    <div class="form-group">
+        <label class="form-label">Votre message</label>
+    <textarea name="reply_message" class="form-textarea"  placeholder="Envoyez un message au locataire pour l'informer de l'avancement..." required></textarea> 
+
+    </div>
+
+
+    <!-- Conteneur pour bouton aligné à droite -->
+    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button type="submit" class="button button-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+            Envoyer au locataire
+        </button>
+    </div>
+</form>
+
                 </div>
             </div>
         </div>
@@ -344,12 +343,14 @@
         --shadow: 0 22px 70px rgba(0,0,0,.18);
     }
 
-    .content-container {
-        min-height: 100vh;
-        background: #ffffff;
-        padding: 2rem;
-        position: relative;
-    }
+  .content-container {
+    min-height: 100vh;
+    background: #ffffff;
+    padding: 2rem;
+    width: 70%;
+    margin: 0 auto; /* centre horizontalement */
+}
+
 
     .content-container::before {
         content: "";

@@ -22,7 +22,7 @@
                 <i data-lucide="download" style="width: 18px; height: 18px;"></i>
                 Exporter
             </button>
-            <a href="#" class="btn-add" onclick="alert('Fonctionnalité à venir')">
+            <a href="{{ route('co-owner.payments.create') }}" class="btn-add">
                 <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
                 Ajouter une transaction
             </a>

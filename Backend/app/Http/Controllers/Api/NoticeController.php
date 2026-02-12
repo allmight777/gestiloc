@@ -92,7 +92,7 @@ class NoticeController extends Controller
 
     private function resolveLandlordEmailFromNotice(Notice $notice): ?string
     {
-        // ici tu charges landlord (user id) via Notice::with(... 'landlord')
+        
         // si landlord est un User directement -> email dispo
         $email = $notice->landlord?->email ?? null;
 

@@ -4,14 +4,9 @@
 
 @section('content')
 <div class="content-container">
+    <br><br>
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="folder-open" style="width: 32px; height: 32px;"></i>
-                Documents du bail
-            </h1>
-            <p>Contrat de location pour {{ $lease->property->name ?? 'Bien sans nom' }}</p>
-        </div>
+
 
         <div class="content-body">
             <div class="top-actions">

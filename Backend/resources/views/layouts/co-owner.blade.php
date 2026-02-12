@@ -669,12 +669,7 @@
                         </div>
                     </button>
 
-                    <button class="menu-item" onclick="goToReact('/coproprietaire/parametres')">
-                        <div class="menu-item-content">
-                            <span class="nav-emoji">📜</span>
-                            <span>Mon compte</span>
-                        </div>
-                    </button>
+                   
                 </div>
             </nav>
 

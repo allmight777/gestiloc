@@ -426,7 +426,7 @@
             <div class="stat-value">{{ $stats['count_pending'] + $stats['count_paid'] }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Dépenses 2025</div>
+            <div class="stat-label">Montant</div>
             <div class="stat-value orange">{{ number_format($stats['total_pending'] + $stats['total_paid'], 0, ',', ' ') }} FCFA</div>
         </div>
         <div class="stat-card">
@@ -548,7 +548,7 @@
 
                 <div class="detail-item">
                     <div class="detail-label">Montant TTC</div>
-                    <div class="detail-value amount">{{ number_format($invoice->amount_total, 0, ',', ' ') }} €</div>
+                    <div class="detail-value amount">{{ number_format($invoice->amount_total, 0, ',', ' ') }} FCFA</div>
                 </div>
             </div>
 
