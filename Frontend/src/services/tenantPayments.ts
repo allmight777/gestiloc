@@ -16,14 +16,12 @@ export interface Invoice {
   invoice_number?: string;
 
   currency?: string;
-  meta?: { currency?: string; [key: string]: any };
+  meta?: Record<string, string | number | boolean | null> & { currency?: string };
 
   paid_at?: string | null;
   paidAt?: string | null;
   updated_at?: string | null;
   created_at?: string | null;
-
-  [key: string]: any;
 }
 
 export interface LeaseLite {
@@ -31,7 +29,7 @@ export interface LeaseLite {
   uuid: string;
   status?: string;
   is_active?: boolean;
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export type NormalizedInvoice = Invoice & {
@@ -42,16 +40,18 @@ export type NormalizedInvoice = Invoice & {
   _paidAt: string | null;
 };
 
-const normalizeArray = (data: any): any[] => {
+const normalizeArray = (data: unknown): unknown[] => {
   if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
+  if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data: unknown }).data)) {
+    return (data as { data: unknown[] }).data;
+  }
   return [];
 };
 
-const safeString = (v: any) => (v == null ? "" : String(v));
+const safeString = (v: unknown) => (v == null ? "" : String(v));
 const isNonEmpty = (s?: string) => typeof s === "string" && s.trim().length > 0;
 
-const safeNumber = (v: any) => {
+const safeNumber = (v: unknown) => {
   const n = Number(v ?? 0);
   return Number.isFinite(n) ? n : 0;
 };
@@ -60,28 +60,28 @@ export const tenantPayments = {
   /* =========================
      HELPERS (used by UI)
   ========================= */
-  pickCurrency(inv: Partial<Invoice> | any, fallback = "XOF"): string {
+  pickCurrency(inv: Partial<Invoice> | Record<string, unknown>, fallback = "XOF"): string {
     const cur =
       safeString(inv?.currency) ||
-      safeString(inv?.meta?.currency) ||
-      safeString(inv?.lease?.currency) ||
-      safeString(inv?.payment?.currency) ||
+      safeString((inv as { meta?: { currency?: string } })?.meta?.currency) ||
+      safeString((inv as { lease?: { currency?: string } })?.lease?.currency) ||
+      safeString((inv as { payment?: { currency?: string } })?.payment?.currency) ||
       "";
 
     const normalized = cur.trim().toUpperCase();
     return isNonEmpty(normalized) ? normalized : fallback;
   },
 
-  pickPaidAmount(inv: Partial<Invoice> | any): number {
+  pickPaidAmount(inv: Partial<Invoice> | Record<string, unknown>): number {
     return safeNumber(inv?.amount_paid ?? inv?.paid_amount ?? 0);
   },
 
-  pickTotalAmount(inv: Partial<Invoice> | any): number {
-    return safeNumber(inv?.amount_total ?? inv?.amount ?? 0);
+  pickTotalAmount(inv: Partial<Invoice> | Record<string, unknown>): number {
+    return safeNumber(inv?.amount_total ?? (inv as { amount?: number })?.amount ?? 0);
   },
 
-  pickPaidAt(inv: Partial<Invoice> | any): string | null {
-    return (inv?.paid_at as any) ?? (inv?.paidAt as any) ?? (inv?.updated_at as any) ?? null;
+  pickPaidAt(inv: Partial<Invoice> | Record<string, unknown>): string | null {
+    return (inv?.paid_at as string | undefined) ?? (inv?.paidAt as string | undefined) ?? (inv?.updated_at as string | undefined) ?? null;
   },
 
   normalizeInvoice(inv: Invoice): NormalizedInvoice {

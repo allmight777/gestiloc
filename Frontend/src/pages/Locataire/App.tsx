@@ -6,18 +6,24 @@ import { Payments } from './components/Payments';
 import { Messages } from './components/Messages';
 import { Interventions } from './components/Interventions';
 import { Documents } from './components/Documents';
-import Property from './components/Property'; // ✅ FIX ICI
+import Property from './components/Property';
 import { Lease } from './components/Lease';
 import { Profile } from './components/Profile';
-import { Tab, ToastMessage } from './types';
+import { Tab, ToastMessage } from '@/pages/Locataire/types';
 import { Toaster } from '@/components/ui/toaster';
 import TenantPreavisPage from './components/TenantPreavisPage';
 import RentReceiptsPage from './components/RentReceiptsPage';
 import PaymentPage from './components/PaymentPage';
 import PaymentConfirmationPage from './components/PaymentConfirmationPage';
 import PayLinkPage from './components/PayLinkPage';
-import TenantInvoicesPage from './components/TenantInvoicesPage'; // ✅ ajoute
-import PaymentReturnPage from './components/PaymentReturnPage'; // ✅ ajoute
+import TenantInvoicesPage from './components/TenantInvoicesPage';
+import PaymentReturnPage from './components/PaymentReturnPage';
+import { Location } from './components/Location';
+import { Tasks } from './components/Tasks';
+import { Notes } from './components/Notes';
+import { Settings } from './components/Settings';
+import { Landlord } from './components/Landlord';
+import { mockUserData } from '@/services';
 
 // Wrapper pour gérer la navigation et les états partagés
 interface UserData {
@@ -41,11 +47,20 @@ const AppContent = () => {
   const getActiveTab = useCallback((): Tab => {
     const segments = location.pathname.split('/').filter(segment => segment);
     const locataireIndex = segments.indexOf('locataire');
-    const lastSegment =
-      locataireIndex >= 0 && locataireIndex < segments.length - 1
-        ? segments[locataireIndex + 1]
-        : 'home';
-
+    
+    // Si pas de 'locataire' dans l'URL ou URL malformée, retourner 'home'
+    if (locataireIndex === -1 || locataireIndex >= segments.length - 1) {
+      return 'home';
+    }
+    
+    const nextSegment = segments[locataireIndex + 1];
+    
+    // Ignorer les segments qui sont des routes valides mais pas des onglets
+    const ignoredSegments = ['dashboard', 'payer', 'paiement'];
+    if (ignoredSegments.includes(nextSegment)) {
+      return 'home';
+    }
+    
     const validTabs: Tab[] = [
       'home',
       'payments',
@@ -57,35 +72,42 @@ const AppContent = () => {
       'profile',
       'factures',
       'paiement',
+      'landlord',
+      'help',
+      'receipts',
+      'notice',
+      'location',
+      'tasks',
+      'notes',
+      'settings',
     ];
 
-    return validTabs.includes(lastSegment as Tab) ? (lastSegment as Tab) : 'home';
+    return validTabs.includes(nextSegment as Tab) ? (nextSegment as Tab) : 'home';
   }, [location.pathname]);
 
-  const [activeTab, setActiveTab] = useState<Tab>(getActiveTab());
+  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const newActiveTab = getActiveTab();
     if (newActiveTab !== activeTab) setActiveTab(newActiveTab);
-  }, [getActiveTab, activeTab]);
+  }, [getActiveTab]); // Supprimé activeTab pour éviter la boucle
 
   const handleNavigation = useCallback(
     (tab: Tab) => {
-      navigate(`/locataire/${tab}`);
+      const currentTabFromUrl = getActiveTab();
+      // Si on clique sur le même onglet (déterminé par l'URL), forcer le re-render
+      if (tab === currentTabFromUrl) {
+        setRefreshKey(prev => prev + 1);
+      }
+      navigate(`/locataire/${tab}`, { replace: true });
     },
-    [navigate]
+    [navigate, getActiveTab]
   );
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) return;
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-    } catch (error) {
-      console.error('Erreur lors de la lecture des données utilisateur:', error);
-    }
+    // Utiliser les données mockées au lieu de localStorage
+    setUser(mockUserData);
   }, []);
 
   // Theme Management
@@ -129,13 +151,12 @@ const AppContent = () => {
 
   const handleLogout = () => {
     notify('Déconnexion en cours...', 'info');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    // En mode standalone, on ne fait que réinitialiser l'état
     setUser(null);
-
+    
     setTimeout(() => {
-      navigate('/login');
-      notify('Vous êtes maintenant déconnecté', 'success');
+      notify('Vous êtes maintenant déconnecté', 'info');
+      // En mode standalone, on reste sur la page actuelle
     }, 1000);
   };
 
@@ -149,16 +170,17 @@ const AppContent = () => {
       isDarkMode={isDarkMode}
       toggleTheme={toggleTheme}
       user={user}
+      notify={notify}
     >
       <Routes>
-        <Route index element={<Dashboard onNavigate={handleNavigation} notify={notify} />} />
-        <Route path="home" element={<Dashboard onNavigate={handleNavigation} notify={notify} />} />
+        <Route index element={<Dashboard key={refreshKey} activeTab="home" notify={notify} />} />
+        <Route path="home" element={<Dashboard key={refreshKey} activeTab="home" notify={notify} />} />
         <Route path="payments" element={<Payments notify={notify} />} />
         <Route path="messages" element={<Messages notify={notify} />} />
         <Route path="interventions" element={<Interventions notify={notify} />} />
         <Route path="documents" element={<Documents notify={notify} />} />
-        <Route path="receipts" element={<RentReceiptsPage />} />
-        <Route path="lease" element={<Lease notify={notify} />} />
+        <Route path="receipts" element={<Dashboard activeTab="receipts" notify={notify} />} />
+        <Route path="landlord" element={<Landlord notify={notify} />} />
         <Route path="property" element={<Property notify={notify} />} />
         <Route path="notice" element={<TenantPreavisPage notify={notify} />} />
         <Route path="profile" element={<Profile notify={notify} onLogout={handleLogout} />} />
@@ -166,7 +188,11 @@ const AppContent = () => {
         <Route path="payer/:invoiceId" element={<PaymentPage />} />
         <Route path="paiement/retour" element={<PaymentReturnPage />} />
         <Route path="paiement/confirmation/:invoiceId/:transactionId" element={<PaymentConfirmationPage />} />
-        <Route path="*" element={<Navigate to="home" replace />} />
+        <Route path="help" element={<Dashboard activeTab="help" notify={notify} />} />
+        <Route path="location" element={<Location notify={notify} />} />
+        <Route path="tasks" element={<Tasks notify={notify} />} />
+        <Route path="notes" element={<Notes notify={notify} />} />
+        <Route path="settings" element={<Settings notify={notify} />} />
       </Routes>
 
       {/* Si tu utilises shadcn toaster, garde-le ici */}

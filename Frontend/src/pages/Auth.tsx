@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -127,6 +127,51 @@ type ApiErr = {
   message?: string;
 };
 
+interface User {
+  id?: string | number;
+  email: string;
+  roles?: string[];
+  role?: string;
+  [key: string]: unknown;
+}
+
+interface AuthResponse {
+  access_token?: string;
+  token?: string;
+  user?: User;
+  status?: string;
+  data?: {
+    access_token?: string;
+    user?: User;
+    token?: string;
+  } & Record<string, unknown>;
+  message?: string;
+  [key: string]: unknown;
+}
+
+interface FieldError {
+  type: string;
+  message: string;
+}
+
+interface RegisterPayload {
+  email: string;
+  phone: string;
+  password: string;
+  password_confirmation: string;
+  is_professional: boolean;
+  address: string;
+  id_type: string;
+  id_number: string | null;
+  first_name: string;
+  last_name: string;
+  company_name: string | null;
+  ifu: string | null;
+  rccm: string | null;
+  role: string;
+  accept_terms: boolean;
+}
+
 function normalizeBackendMessage(err: ApiErr, fallback: string) {
   const status = err.response?.status;
 
@@ -154,9 +199,9 @@ function normalizeBackendMessage(err: ApiErr, fallback: string) {
   return fallback;
 }
 
-function applyBackendFieldErrors<T extends Record<string, any>>(
+function applyBackendFieldErrors<T extends Record<string, unknown>>(
   err: ApiErr,
-  setError: (name: any, error: any) => void,
+  setError: (name: keyof T, error: FieldError) => void,
   map: Record<string, keyof T>
 ) {
   const errors = err.response?.data?.errors;
@@ -169,7 +214,7 @@ function applyBackendFieldErrors<T extends Record<string, any>>(
     if (!formKey) return;
 
     const msg = Array.isArray(messages) ? messages[0] : "Champ invalide";
-    setError(formKey as any, { type: "server", message: msg });
+    setError(formKey, { type: "server", message: msg });
     applied = true;
   });
 
@@ -248,8 +293,9 @@ export default function Auth() {
     registerForm.clearErrors();
   }, [isLogin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const notifyClientValidation = (formErrors: Record<string, any>) => {
-    const first = Object.values(formErrors)?.[0];
+  const notifyClientValidation = <T extends Record<string, unknown>>(formErrors: FieldErrors<T>) => {
+    const errorValues = Object.values(formErrors).filter((err) => err != null && typeof err === 'object' && 'message' in err) as Array<{message?: string}>;
+    const first = errorValues[0];
     const msg = first?.message || "Vérifiez les champs du formulaire.";
     toast.error(msg);
   };
@@ -260,26 +306,26 @@ export default function Auth() {
     try {
       setIsLoading(true);
 
-      const response = await authService.login(data.email, data.password);
+      const response = (await authService.login(data.email, data.password)) as unknown as AuthResponse;
 
-      const responseData = (response as any).data;
+      const responseData = response.data;
 
       // Gérer les deux formats possibles de réponse
-      let user: any = null;
+      let user: User | null = null;
       let token: string | null = null;
 
       if (responseData?.access_token && responseData?.user) {
         // Format : { data: { access_token, user } }
         token = responseData.access_token;
-        user = responseData.user;
+        user = responseData.user || null;
       } else if (responseData?.access_token) {
         // Format : { access_token, user } à la racine
         token = responseData.access_token;
-        user = responseData.user;
-      } else if ((response as any)?.access_token && (response as any)?.user) {
+        user = responseData.user || null;
+      } else if (response?.access_token && response?.user) {
         // Format : { access_token, user } à la racine
-        token = (response as any).access_token;
-        user = (response as any).user;
+        token = response.access_token;
+        user = response.user || null;
       }
 
       if (token) localStorage.setItem("token", token);
@@ -338,7 +384,7 @@ export default function Auth() {
       const isPro = !!data.isProfessional;
 
       // ✅ On envoie first_name/last_name TOUJOURS (représentant)
-      const userData: any = {
+      const userData: RegisterPayload = {
         email: data.email.toLowerCase().trim(),
         phone: data.phone,
         password: data.password,
@@ -362,9 +408,9 @@ export default function Auth() {
         accept_terms: data.acceptTerms,
       };
 
-      const response = await authService.register(userData);
+      const response = (await authService.register(userData)) as unknown as AuthResponse;
 
-      if (response?.status === "success" || response?.data?.token || (response as any)?.token) {
+      if (response?.status === "success" || response?.data?.token || response?.token) {
         toast.success("Compte créé avec succès ! Vous allez être redirigé vers la page de connexion.");
 
         setTimeout(() => {
@@ -559,11 +605,95 @@ export default function Auth() {
                       </motion.div>
                     </form>
 
+                    {/* Section de démo */}
+                    <motion.div
+                      className="mt-8 pt-6 border-t border-slate-200"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.7 }}
+                    >
+                      <p className="text-xs text-slate-500 text-center mb-3 font-medium uppercase">Accès démo</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <motion.button
+                          onClick={() => {
+                            localStorage.setItem("token", "demo-token");
+                            localStorage.setItem("user", JSON.stringify({ 
+                              id: 1, 
+                              email: "admin@demo.fr", 
+                              roles: ["admin"], 
+                              role: "admin" 
+                            }));
+                            navigate("/admin", { replace: true });
+                          }}
+                          className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-xs font-medium transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          Admin
+                        </motion.button>
+                        <motion.button
+                          onClick={() => {
+                            localStorage.setItem("token", "demo-token");
+                            localStorage.setItem("user", JSON.stringify({ 
+                              id: 2, 
+                              email: "proprietaire@demo.fr", 
+                              roles: ["proprietaire"], 
+                              role: "proprietaire" 
+                            }));
+                            navigate("/proprietaire", { replace: true });
+                          }}
+                          className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md text-xs font-medium transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          Propriétaire
+                        </motion.button>
+                        <motion.button
+                          onClick={() => {
+                            localStorage.setItem("token", "demo-token");
+                            localStorage.setItem("user", JSON.stringify({ 
+                              id: 3, 
+                              email: "locataire@demo.fr", 
+                              roles: ["locataire"], 
+                              role: "locataire" 
+                            }));
+                            navigate("/locataire", { replace: true });
+                          }}
+                          className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-md text-xs font-medium transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          Locataire
+                        </motion.button>
+                        <motion.button
+                          onClick={() => {
+                            localStorage.setItem("token", "demo-token");
+                            localStorage.setItem("user", JSON.stringify({ 
+                              id: 4, 
+                              email: "coproprietaire@demo.fr", 
+                              roles: ["coproprietaire"], 
+                              role: "coproprietaire" 
+                            }));
+                            navigate("/coproprietaire", { replace: true });
+                          }}
+                          className="py-2 px-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-md text-xs font-medium transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          type="button"
+                        >
+                          Copropriétaire
+                        </motion.button>
+                      </div>
+                    </motion.div>
+
                     <motion.div
                       className="mt-6 text-center"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: 0.6 }}
+                      transition={{ duration: 0.4, delay: 0.8 }}
                     >
                       <a href="/forgot-password" className="text-primary hover:underline text-sm">
                         Mot de passe oublié ?
@@ -670,7 +800,7 @@ export default function Auth() {
                               />
                               {registerForm.formState.errors.firstName && (
                                 <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.firstName.message as any}
+                                  {registerForm.formState.errors.firstName.message}
                                 </p>
                               )}
                             </div>
@@ -687,7 +817,7 @@ export default function Auth() {
                               />
                               {registerForm.formState.errors.lastName && (
                                 <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.lastName.message as any}
+                                  {registerForm.formState.errors.lastName.message}
                                 </p>
                               )}
                             </div>
@@ -714,7 +844,7 @@ export default function Auth() {
                                 </div>
                                 {registerForm.formState.errors.companyName && (
                                   <p className="text-sm text-red-600">
-                                    {registerForm.formState.errors.companyName.message as any}
+                                    {registerForm.formState.errors.companyName.message}
                                   </p>
                                 )}
                               </div>
@@ -732,7 +862,7 @@ export default function Auth() {
                                   />
                                   {registerForm.formState.errors.ifu && (
                                     <p className="text-sm text-red-600">
-                                      {registerForm.formState.errors.ifu.message as any}
+                                      {registerForm.formState.errors.ifu.message}
                                     </p>
                                   )}
                                 </div>
@@ -749,7 +879,7 @@ export default function Auth() {
                                   />
                                   {registerForm.formState.errors.rccm && (
                                     <p className="text-sm text-red-600">
-                                      {registerForm.formState.errors.rccm.message as any}
+                                      {registerForm.formState.errors.rccm.message}
                                     </p>
                                   )}
                                 </div>
@@ -819,7 +949,7 @@ export default function Auth() {
                             </div>
                             {registerForm.formState.errors.address && (
                               <p className="text-sm text-red-600">
-                                {registerForm.formState.errors.address.message as any}
+                                {registerForm.formState.errors.address.message}
                               </p>
                             )}
                           </motion.div>
@@ -846,7 +976,7 @@ export default function Auth() {
                               </div>
                               {registerForm.formState.errors.idType && (
                                 <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.idType.message as any}
+                                  {registerForm.formState.errors.idType.message}
                                 </p>
                               )}
                             </div>
@@ -863,7 +993,7 @@ export default function Auth() {
                               />
                               {registerForm.formState.errors.idNumber && (
                                 <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.idNumber.message as any}
+                                  {registerForm.formState.errors.idNumber.message}
                                 </p>
                               )}
                             </div>
@@ -912,7 +1042,7 @@ export default function Auth() {
                             />
                             {registerForm.formState.errors.confirmPassword && (
                               <p className="text-sm text-red-600">
-                                {registerForm.formState.errors.confirmPassword.message as any}
+                                {registerForm.formState.errors.confirmPassword.message ?? "Champ invalide"}
                               </p>
                             )}
                           </motion.div>

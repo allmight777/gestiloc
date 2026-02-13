@@ -1,6 +1,6 @@
 export function HeroIllustration() {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -125,6 +125,20 @@ export function HeroIllustration() {
         <text x="30" y="34" textAnchor="middle" fill="#1E3A8A" fontSize="16" fontWeight="bold">F</text>
       </g>
     </svg>
+    
+    {/* Available on AppStore | Google Play Badge */}
+    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg border border-gray-200">
+      <p className="text-xs font-semibold text-gray-700 mb-1">Disponible sur</p>
+      <div className="flex gap-3 items-center">
+        <a href="#" className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-blue-600 transition">
+          <span>App Store</span>
+        </a>
+        <span className="text-gray-300">|</span>
+        <a href="#" className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-blue-600 transition">
+          <span>Google Play</span>
+        </a>
+      </div>
+    </div>
     </div>
   );
 }

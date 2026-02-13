@@ -85,7 +85,7 @@ const footerNavigation = {
 export function Footer() {
   return (
     <footer className="relative bg-white pt-32 md:pt-40 pb-12 overflow-hidden">
-      {/* Fond bleu en forme de maison avec cheminée */}
+      {/* Fond vert en forme de maison */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 top-12 md:top-16">
         {/* Toit de la maison */}
         <div
@@ -94,23 +94,22 @@ export function Footer() {
             zIndex: 0,
             borderLeft: "50vw solid transparent",
             borderRight: "50vw solid transparent",
-            borderBottom: "200px solid #E0EBFF",
+            borderBottom: "200px solid #D4E4CC",
           }}
         />
 
         {/* Corps de la maison */}
         <div
-          className="absolute inset-x-0 top-[180px] md:top-[200px] bottom-0 bg-[#E0EBFF]"
+          className="absolute inset-x-0 top-[180px] md:top-[200px] bottom-0 bg-[#D4E4CC]"
           style={{
             zIndex: 0,
-            backgroundColor: "#E0EBFF"
+            backgroundColor: "#D4E4CC"
           }}
         />
 
-
         {/* Cheminée */}
         <div
-          className="absolute right-[15%] md:right-[20%] w-8 h-20 md:w-10 md:h-24 bg-[#E0EBFF]"
+          className="absolute right-[15%] md:right-[20%] w-8 h-20 md:w-10 md:h-24 bg-[#D4E4CC]"
           style={{
             top: "80px",
             clipPath: "polygon(0 0, 100% 0, 80% 100%, 20% 100%)",
@@ -131,7 +130,7 @@ export function Footer() {
             pointerEvents: "none",
           }}
         >
-          {/* Particules de fumée noire bien visibles */}
+          {/* Particules de fumée */}
           <div className="smoke-particle smoke-1" style={{ width: "20px", height: "20px", left: "6px", top: "0px" }} />
           <div className="smoke-particle smoke-2" style={{ width: "24px", height: "24px", left: "4px", top: "5px" }} />
           <div className="smoke-particle smoke-3" style={{ width: "18px", height: "18px", left: "8px", top: "10px" }} />
@@ -139,170 +138,249 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Contenu par-dessus le fond bleu */}
+      {/* Contenu par-dessus le fond vert */}
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 z-10">
-        {/* CTA intégrée, sans cadre */}
-       <section className="max-w-3xl mx-auto my-auto px-4 sm:px-6 text-center mt-20 sm:mt-28 md:mt-20">
-  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 tracking-tight text-slate-900">
+        {/* Image Footer */}
+        <div className="flex justify-center mb-8 -mt-8">
+          <img
+            src="/Ressource_gestiloc/footer.png"
+            alt="Footer illustration"
+            className="h-40 w-auto object-contain"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+
+        {/* CTA intégrée avec illustration */}
+        <section className="max-w-3xl mx-auto my-auto px-4 sm:px-6 text-center mt-20 sm:mt-28 md:mt-20">
+  {/* Illustration des bâtiments */}
+  <div className="mb-8">
+    <img
+      src="/Ressource_gestiloc/footer_buildings.png"
+      alt="Bâtiments et maisons"
+      className="mx-auto h-32 w-auto object-contain"
+      onError={(e) => {
+        // Fallback si l'image n'existe pas
+        e.currentTarget.style.display = 'none';
+      }}
+    />
+  </div>
+
+  <h2 
+    className="text-2xl sm:text-3xl md:text-4xl mb-4 tracking-tight text-slate-900"
+    style={{
+      fontFamily: 'Merriweather',
+      fontWeight: 700,
+      fontStyle: 'italic',
+      fontSize: '24px',
+      lineHeight: '100%',
+      letterSpacing: '-0.17px',
+      verticalAlign: 'middle'
+    }}
+  >
     Gérer vos biens en location n&apos;a jamais été aussi facile&nbsp;!
   </h2>
 
-  <p className="text-base sm:text-lg text-slate-700 mb-6 sm:mb-8 max-w-2xl mx-auto">
-    Rejoignez des milliers de propriétaires qui simplifient leur
+  <p 
+    className="text-base sm:text-lg text-slate-700 mb-6 sm:mb-8 max-w-2xl mx-auto"
+    style={{
+      fontFamily: 'Manrope',
+      fontWeight: 400,
+      fontStyle: 'normal',
+      fontSize: '14px',
+      lineHeight: '100%',
+      letterSpacing: '-0.17px',
+      textAlign: 'center',
+      verticalAlign: 'middle'
+    }}
+  >
+    Rejoignez des milliers de propriétaires et agences qui simplifient leur
     gestion locative avec GestiLoc.
   </p>
 
-  <div className="flex flex-row flex-nowrap justify-center gap-4 md:gap-8 mb-6 sm:mb-8 text-sm sm:text-base">
-    {benefits.map((benefit, index) => (
-      <div key={index} className="flex items-center justify-center gap-2 whitespace-nowrap">
-        <Check className="h-4 w-4 sm:h-5 sm:w-5 text-[#2563EB] shrink-0" />
-        <span className="font-medium text-slate-800">
-          {benefit}
-        </span>
-      </div>
-    ))}
+  <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-8 mb-6 sm:mb-8 text-sm sm:text-base">
+    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+      <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-700 shrink-0" />
+      <span className="font-medium text-slate-800">
+        Sans engagement
+      </span>
+    </div>
+    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+      <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-700 shrink-0" />
+      <span className="font-medium text-slate-800">
+        Gratuit pour commencer
+      </span>
+    </div>
   </div>
 
   <div className="px-2">
     <Button
       asChild
       size="lg"
-      className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 bg-[#2563EB] hover:bg-[#1D4ED8]"
+      className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 bg-[#A8E063] hover:bg-[#92C753] text-gray-900 font-bold"
     >
       <Link to="/register">Ouvrir un compte gratuit</Link>
     </Button>
   </div>
 
- 
 </section>
 
         {/* Contenu du footer */}
-        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4 mb-12 animate-float">
-          {/* Brand Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#111827] flex items-center justify-center">
-                <span className="text-xl font-bold text-[#E0EBFF]">GL</span>
-              </div>
-              <span className="text-xl font-bold tracking-tight text-[#111827]">
-                GestiLoc
-              </span>
-            </div>
-            <p className="text-sm text-slate-700 leading-relaxed">
-              La solution béninoise de gestion locative pour propriétaires
-              et locataires. Gagnez du temps sur la gestion, concentrez-vous
-              sur vos biens.
-            </p>
-            <div className="flex gap-3 pt-2">
-              {footerNavigation.social.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="h-9 w-9 rounded-full bg-white/80 text-slate-600 flex items-center justify-center shadow-sm hover:bg-white hover:text-[#2563EB] transition-colors"
-                    aria-label={item.name}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Product Links */}
+        <div className="grid gap-8 md:grid-cols-3 mb-12">
+          {/* Section Gestiloc */}
           <div>
-            <h3 className="font-semibold mb-4 text-[#111827]">Produit</h3>
-            <ul className="space-y-3">
-              {footerNavigation.product.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    to={item.href}
-                    className="text-sm text-slate-700 hover:text-[#111827] transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+            <h3 
+            className="font-bold text-lg mb-4 text-green-700"
+            style={{
+              fontFamily: 'Merriweather',
+              fontWeight: 700,
+              fontStyle: 'italic',
+              fontSize: '16px',
+              lineHeight: '30px',
+              letterSpacing: '-0.17px',
+              verticalAlign: 'middle'
+            }}
+          >
+            Gestiloc
+          </h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/about" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  Qui sommes nous ?
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  Nous contacter
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  Confidentialités et cookies
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Help + Legal Links */}
+          {/* Section Aide & support */}
           <div>
-            <h3 className="font-semibold mb-4 text-[#111827]">
-              Aide &amp; Support
-            </h3>
-            <ul className="space-y-3">
-              {footerNavigation.help.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    to={item.href}
-                    className="text-sm text-slate-700 hover:text-[#111827] transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-              {footerNavigation.legal.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    to={item.href}
-                    className="text-sm text-slate-700 hover:text-[#111827] transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+            <h3 
+            className="font-bold text-lg mb-4 text-green-700"
+            style={{
+              fontFamily: 'Merriweather',
+              fontWeight: 700,
+              fontStyle: 'italic',
+              fontSize: '16px',
+              lineHeight: '30px',
+              letterSpacing: '-0.17px',
+              verticalAlign: 'middle'
+            }}
+          >
+            Aide & support
+          </h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/help" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  Centre d'aide
+                </Link>
+              </li>
+              <li>
+                <Link to="/faq" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                  Conditions d'utilisation
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Section Contacts */}
           <div>
-            <h3 className="font-semibold mb-4 text-[#111827]">Contact</h3>
-            <ul className="space-y-3 text-sm text-slate-700">
-              <li className="flex items-start gap-2">
-                <Mail className="h-4 w-4 mt-0.5 text-[#2563EB] shrink-0" />
+            <h3 
+            className="font-bold text-lg mb-4 text-green-700"
+            style={{
+              fontFamily: 'Merriweather',
+              fontWeight: 700,
+              fontStyle: 'italic',
+              fontSize: '16px',
+              lineHeight: '30px',
+              letterSpacing: '-0.17px',
+              verticalAlign: 'middle'
+            }}
+          >
+            Contacts
+          </h3>
+            <ul className="space-y-3 text-sm text-gray-700">
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-green-700 shrink-0" />
                 <a
                   href="mailto:contact@gestiloc.bj"
-                  className="hover:text-[#111827] transition-colors"
+                  className="hover:text-gray-900 transition-colors"
                 >
                   contact@gestiloc.bj
                 </a>
               </li>
-              <li className="flex items-start gap-2">
-                <Phone className="h-4 w-4 mt-0.5 text-[#2563EB] shrink-0" />
-                <div className="space-y-1">
-                  <a
-                    href="tel:0756868570"
-                    className="hover:text-[#111827] transition-colors block"
-                  >
-                    07 56 86 85 70
-                  </a>
-                  <span className="text-xs text-slate-500">
-                    Disponible aussi sur WhatsApp pour vos questions
-                  </span>
-                </div>
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-green-700 shrink-0" />
+                <a
+                  href="tel:+2290156868570"
+                  className="hover:text-gray-900 transition-colors"
+                >
+                  +229 01 56 86 85 70
+                </a>
               </li>
-              <li className="flex items-start gap-2">
-                
+              <li className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors">
+                <span>
+                  Disponible aussi sur WhatsApp pour vos questions
+                </span>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bas de page */}
-        <div className="border-t border-[#BFCEF8] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-slate-700 text-center md:text-left">
-            © {new Date().getFullYear()} GestiLoc. Tous droits réservés.
-            Développé par{" "}
-            <Link
-              to="/about"
-              className="text-[#1D4ED8] hover:underline font-medium"
+        <div className="border-t border-gray-300 pt-8 flex flex-col items-center gap-6">
+          {/* Réseaux sociaux - centrés */}
+          <div className="flex gap-4">
+            <a
+              href="#"
+              className="h-8 w-8 rounded-full border-2 border-gray-400 bg-white text-green-700 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label="Facebook"
             >
-              Innovtech
-            </Link>
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a
+              href="#"
+              className="h-8 w-8 rounded-full border-2 border-gray-400 bg-white text-green-700 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter className="h-4 w-4" />
+            </a>
+            <a
+              href="#"
+              className="h-8 w-8 rounded-full border-2 border-gray-400 bg-white text-green-700 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="h-4 w-4" />
+            </a>
+            <a
+              href="#"
+              className="h-8 w-8 rounded-full border-2 border-gray-400 bg-white text-green-700 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
+          </div>
+
+          {/* Copyright - centré */}
+          <p className="text-sm text-gray-600 text-center">
+            ©2026 GestiLoc. Tous droits réservés. Designé et Développé par{" "}
+            <span className="text-green-700 font-medium">Innovtech</span>
           </p>
-        
         </div>
       </div>
     </footer>

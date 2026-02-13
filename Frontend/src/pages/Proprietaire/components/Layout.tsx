@@ -17,7 +17,18 @@ import {
   X,
   Sun,
   Moon,
-  CreditCard, // ✅ NEW
+  CreditCard,
+  Plus,
+  BarChart3,
+  List,
+  Wallet,
+  ClipboardList,
+  AlertTriangle,
+  FolderOpen,
+  Archive,
+  Wrench,
+  Calculator,
+  Settings,
 } from "lucide-react";
 
 import { Tab, Notification, ToastMessage } from "../types";
@@ -119,90 +130,57 @@ export const Layout: React.FC<LayoutProps> = ({
     return initials || (user.email?.[0] || "P").toUpperCase();
   }, [user]);
 
-  // ===================== MENUS =====================
-  const menuItems: MenuItem[] = [
+  // ===================== MENUS ORGANISÉS PAR CATÉGORIES =====================
+  const menuSections = [
     {
-      id: "dashboard",
-      label: "Tableau de bord",
-      icon: LayoutDashboard,
-      path: "/proprietaire/dashboard",
-    },
-
-    {
-      id: "biens",
-      label: "Gestion des Biens",
-      icon: Building,
-      path: "/proprietaire/biens",
-      submenu: [
-        { id: "ajouter-bien", label: "Ajouter un bien", icon: Home, path: "/proprietaire/ajouter-bien" },
-        { id: "mes-biens", label: "Mes biens", icon: Building, path: "/proprietaire/mes-biens" },
-        {
-          id: "incidents",
-          label: "Réparations",
-          icon: FileCheck,
-          path: "/proprietaire/incidents",
-        },
-        // { id: "coproprietaires", label: "Copropriétaires", icon: Users, path: "/proprietaire/coproprietaires" },
+      title: "MENU PRINCIPAL",
+      items: [
+        { id: "dashboard", label: "Tableau de bord", icon: BarChart3, path: "/proprietaire/dashboard" },
       ],
     },
-
     {
-      id: "gestion-locative",
-      label: "Gestion Locative",
-      icon: FileSignature,
-      path: "/proprietaire/gestion-locative",
-      submenu: [
-        { id: "nouvelle-location", label: "Nouvelle location", icon: FilePlus, path: "/proprietaire/nouvelle-location" },
-        { id: "liste-locations", label: "Locations en cours", icon: FileText, path: "/proprietaire/liste-locations" },
+      title: "GESTIONS DES BIENS",
+      items: [
+        { id: "ajouter-bien", label: "Ajouter un bien", icon: Plus, path: "/proprietaire/ajouter-bien" },
+        { id: "mes-biens", label: "Mes biens", icon: Home, path: "/proprietaire/mes-biens" },
+      ],
+    },
+    {
+      title: "GESTION LOCATIVE",
+      items: [
+        { id: "nouvelle-location", label: "Nouvelle location", icon: FileSignature, path: "/proprietaire/nouvelle-location" },
         { id: "ajouter-locataire", label: "Ajouter un locataire", icon: UserPlus, path: "/proprietaire/ajouter-locataire" },
-        { id: "locataires", label: "Liste des locataires", icon: Users, path: "/proprietaire/locataires" },
-        { id: "preavis", label: "Gestion des préavis", icon: FileText, path: "/proprietaire/preavis" },
-        { id: "etat-des-lieux", label: "États des lieux", icon: FileCheck, path: "/proprietaire/etats-des-lieux" },
+        { id: "locataires", label: "Liste des locataires", icon: List, path: "/proprietaire/locataires" },
+        { id: "paiements", label: "Gestion des paiements", icon: Wallet, path: "/proprietaire/paiements" },
       ],
     },
-
-    
-
     {
-      id: "documents",
-      label: "Documents",
-      icon: FileText,
-      path: "/proprietaire/documents",
-      submenu: [
-        { id: "baux", label: "Contrats de bail", icon: FileSignature, path: "/proprietaire/documents/baux" },
-        { id: "quittances", label: "Quittances", icon: FileText, path: "/proprietaire/quittances" },
-        { id: "factures", label: "Factures", icon: FileText, path: "/proprietaire/factures" },
+      title: "DOCUMENTS",
+      items: [
+        { id: "baux", label: "Contrats de bails", icon: FileText, path: "/proprietaire/documents/baux" },
+        { id: "etats-lieux", label: "États de lieux", icon: ClipboardList, path: "/proprietaire/etats-lieux" },
+        { id: "avis-echeance", label: "Avis d'échéance", icon: AlertTriangle, path: "/proprietaire/avis-echeance" },
+        { id: "quittances", label: "Quittances de loyers", icon: Bell, path: "/proprietaire/quittances" },
+        { id: "factures", label: "Factures et documents divers", icon: FolderOpen, path: "/proprietaire/factures" },
+        { id: "archives", label: "Archivage de documents", icon: Archive, path: "/proprietaire/archives" },
       ],
     },
-
     {
-      id: "coproprietaires",
-      label: "Co-propriétaires",
-      icon: Users,
-      submenu: [
-        { id: "coproprietaires", label: "Liste des co-propriétaires", icon: Users },
-        { id: "inviter-coproprietaire", label: "Inviter un co-propriétaire", icon: UserPlus },
+      title: "RÉPARATIONS ET TRAVAUX",
+      items: [
+        { id: "reparations", label: "Répartitions et travaux", icon: Wrench, path: "/proprietaire/reparations" },
       ],
     },
-
     {
-      id: "finances",
-      label: "Finances",
-      icon: CreditCard,
-      path: "/proprietaire/finances",
-      submenu: [
-        {
-          id: "emettre-paiement",
-          label: "Émettre un paiement",
-          icon: CreditCard,
-          path: "/proprietaire/emettre-paiement",
-        },
-        {
-          id: "retrait-methode",
-          label: "Méthode de retrait",
-          icon: CreditCard,
-          path: "/proprietaire/retrait-methode",
-        },
+      title: "COMPTABILITÉ ET STATISTIQUES",
+      items: [
+        { id: "comptabilite", label: "Comptabilité et statistiques", icon: Calculator, path: "/proprietaire/comptabilite" },
+      ],
+    },
+    {
+      title: "CONFIGURATION",
+      items: [
+        { id: "parametres", label: "Paramètres", icon: Settings, path: "/proprietaire/parametres" },
       ],
     },
   ];
@@ -424,9 +402,42 @@ export const Layout: React.FC<LayoutProps> = ({
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-2 sidebar-scroll">
-          {menuItems.map((item) => renderMenuItem(item))}
+        {/* Nav avec catégories */}
+        <nav className="flex-1 px-4 overflow-y-auto py-2 sidebar-scroll">
+          {menuSections.map((section) => (
+            <div key={section.title} className="mb-6">
+              {/* Section Title */}
+              <h3 className="px-4 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                {section.title}
+              </h3>
+              {/* Section Items */}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id || activeTab === item.path;
+                  return (
+                    <button
+                      key={String(item.id)}
+                      onClick={() => handleNavigate(item.path ?? item.id)}
+                      className={`w-full flex items-center gap-3.5 px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                        isActive
+                          ? "bg-gradient-to-r from-[#529D21] to-[#7CB342] text-white shadow-lg shadow-green-500/30"
+                          : "text-gray-600 hover:bg-green-50 hover:text-[#529D21]"
+                      }`}
+                      type="button"
+                    >
+                      <Icon
+                        size={18}
+                        className={`flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           <div className="my-4 mx-4 border-t border-blue-100" />
 
