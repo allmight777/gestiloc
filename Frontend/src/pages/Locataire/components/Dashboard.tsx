@@ -66,6 +66,7 @@ const safeDate = (v?: string | null) => {
 interface DashboardProps {
   activeTab?: string;
   notify: (message: string, type: 'success' | 'error' | 'info') => void;
+  onNavigate?: (tab: Tab) => void;
 }
 
 interface UserData {
@@ -78,7 +79,7 @@ interface UserData {
   default_role: string | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify, onNavigate }) => {
   // Récupérer les données utilisateur depuis localStorage
   const [user, setUser] = useState<UserData | null>(null);
 
@@ -337,35 +338,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
             {/* Quick Actions */}
             <div className="grid grid-cols-5 gap-4 mb-6">
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('receipts')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/quittances.png" alt="Mes quittances" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Mes quittances</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('interventions')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Tools.png" alt="Nouvelle intervention" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle intervention</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('tasks')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/rappels.png" alt="Nouvelle tâche" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle tâche</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('notes')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Signing A Document.png" alt="Nouvelle note" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle note</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('documents')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Document In Folder.png" alt="Nouveau document" className="w-8 h-8 object-contain" />
                 </div>
@@ -391,7 +392,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('location')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -413,7 +414,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('payments')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -443,7 +444,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('interventions')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -469,7 +470,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('tasks')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -746,35 +747,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
             {/* Quick Actions */}
             <div className="grid grid-cols-5 gap-4 mb-6">
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('receipts')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/quittances.png" alt="Mes quittances" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Mes quittances</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('interventions')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Tools.png" alt="Nouvelle intervention" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle intervention</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('tasks')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/rappels.png" alt="Nouvelle tâche" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle tâche</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('notes')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Signing A Document.png" alt="Nouvelle note" className="w-8 h-8 object-contain" />
                 </div>
                 <span className="text-sm font-medium text-gray-900 text-center">Nouvelle note</span>
               </button>
 
-              <button className="flex flex-col items-center gap-2 group">
+              <button onClick={() => onNavigate?.('documents')} className="flex flex-col items-center gap-2 group cursor-pointer">
                 <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                   <img src="/Ressource_gestiloc/Document In Folder.png" alt="Nouveau document" className="w-8 h-8 object-contain" />
                 </div>
@@ -800,7 +801,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('location')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -822,7 +823,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('payments')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -852,7 +853,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('interventions')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>
@@ -878,7 +879,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                 </div>
                 <div className="mt-4 text-right">
-                  <button className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200">
+                  <button onClick={() => onNavigate?.('tasks')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
                     Tout afficher
                   </button>
                 </div>

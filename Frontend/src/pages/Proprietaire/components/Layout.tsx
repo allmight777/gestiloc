@@ -29,6 +29,7 @@ import {
   Wrench,
   Calculator,
   Settings,
+  HelpCircle,
 } from "lucide-react";
 
 import { Tab, Notification, ToastMessage } from "../types";
@@ -92,6 +93,7 @@ export const Layout: React.FC<LayoutProps> = ({
   toggleTheme,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -539,6 +541,15 @@ export const Layout: React.FC<LayoutProps> = ({
                 )}
               </button>
 
+              <button
+                className="relative p-2.5 bg-blue-50 text-gray-600 hover:text-blue-600 rounded-full transition-all shadow-sm hover:shadow-md focus:outline-none border border-blue-200"
+                onClick={() => setShowHelp(!showHelp)}
+                aria-label="Afficher l'aide"
+                type="button"
+              >
+                <HelpCircle size={20} />
+              </button>
+
               {showNotifications && (
                 <div className="absolute right-0 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-blue-200 overflow-hidden animate-zoom-in ring-1 ring-black/5">
                   <div className="p-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
@@ -576,6 +587,70 @@ export const Layout: React.FC<LayoutProps> = ({
 
                     <button className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" type="button">
                       Voir toutes les notifications
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {showHelp && (
+                <div className="absolute right-0 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-blue-200 overflow-hidden animate-zoom-in ring-1 ring-black/5">
+                  <div className="p-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
+                    <h3 className="font-bold text-sm text-black">Aide</h3>
+                    <button 
+                      onClick={() => setShowHelp(false)}
+                      className="text-xs text-blue-600 font-medium hover:underline" 
+                      type="button"
+                    >
+                      Fermer
+                    </button>
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto sidebar-scroll">
+                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
+                      <div className="flex gap-3">
+                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-green-500 shadow-lg shadow-green-500/40" />
+                        <div>
+                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
+                            Guide de démarrage
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">Apprenez les bases de GestiLoc</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
+                      <div className="flex gap-3">
+                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-blue-600 shadow-lg shadow-blue-600/40" />
+                        <div>
+                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
+                            Centre d'aide complet
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">Accédez à tous nos guides</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
+                      <div className="flex gap-3">
+                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-purple-600 shadow-lg shadow-purple-600/40" />
+                        <div>
+                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
+                            Contactez le support
+                          </p>
+                          <p className="text-xs text-gray-600 mt-0.5">Notre équipe est là pour vous aider</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setShowHelp(false);
+                        onNavigate("/help");
+                      }}
+                      className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" 
+                      type="button"
+                    >
+                      Voir toute l'aide
                     </button>
                   </div>
                 </div>

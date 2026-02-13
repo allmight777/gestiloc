@@ -93,7 +93,7 @@ export function Header() {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#83C757";
               }}
             >
-              Inscription
+              Ouvrir un compte gratuit
             </button>
           </div>
         </div>
@@ -153,7 +153,7 @@ export function Header() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#75b045"}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#83C757"}
             >
-              Inscription
+              Ouvrir un compte gratuit
             </button>
           </div>
         </div>

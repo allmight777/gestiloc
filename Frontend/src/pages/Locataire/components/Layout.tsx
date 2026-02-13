@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Sparkles,
   Mail,
+  HelpCircle,
 } from 'lucide-react';
 import { Tab, Notification, ToastMessage } from '../types';
 import { Toast } from './ui/Toast';
@@ -70,6 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -170,6 +172,15 @@ export const Layout: React.FC<LayoutProps> = ({
             
             <button
               className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+              onClick={() => setShowHelp(!showHelp)}
+              aria-label="Aide"
+            >
+              <HelpCircle size={18} />
+              <span className="hidden sm:inline text-sm">Aide</span>
+            </button>
+            
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
               onClick={() => handlePageChange('profile')}
               aria-label="Mon compte"
             >
@@ -259,7 +270,10 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <button
-            onClick={onLogout}
+            onClick={() => {
+              handleNavigate('home');
+              window.location.href = '/login';
+            }}
             className="w-full mt-2 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
             <LogOut size={16} />
@@ -346,6 +360,67 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="p-4 border-t border-gray-200">
             <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
               Voir toutes les notifications
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Help Dropdown */}
+      {showHelp && (
+        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Aide</h3>
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Guide de démarrage</p>
+                  <p className="text-sm text-gray-600 mt-1">Apprenez les bases de GestiLoc</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Centre d'aide complet</p>
+                  <p className="text-sm text-gray-600 mt-1">Accédez à tous nos guides</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Contactez le support</p>
+                  <p className="text-sm text-gray-600 mt-1">Notre équipe est là pour vous aider</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200">
+            <button 
+              onClick={() => {
+                setShowHelp(false);
+                window.location.href = '/help';
+              }}
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              Voir toute l'aide
             </button>
           </div>
         </div>

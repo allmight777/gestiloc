@@ -173,8 +173,8 @@ const AppContent = () => {
       notify={notify}
     >
       <Routes>
-        <Route index element={<Dashboard key={refreshKey} activeTab="home" notify={notify} />} />
-        <Route path="home" element={<Dashboard key={refreshKey} activeTab="home" notify={notify} />} />
+        <Route index element={<Dashboard key={refreshKey} activeTab="home" notify={notify} onNavigate={handleNavigation} />} />
+        <Route path="home" element={<Dashboard key={refreshKey} activeTab="home" notify={notify} onNavigate={handleNavigation} />} />
         <Route path="payments" element={<Payments notify={notify} />} />
         <Route path="messages" element={<Messages notify={notify} />} />
         <Route path="interventions" element={<Interventions notify={notify} />} />

@@ -22,6 +22,7 @@ import {
   User,
   Wallet,
   ExternalLink,
+  HelpCircle,
 } from "lucide-react";
 
 import { Tab, ToastMessage } from '../types';
@@ -70,6 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     try {
@@ -508,6 +510,14 @@ export const Layout: React.FC<LayoutProps> = ({
                   </div>
                 </div>
                 <div className="ml-4 flex items-center md:ml-6 space-x-4">
+                  <button
+                    onClick={() => setShowHelp(!showHelp)}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    title="Aide"
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+
                   <button
                     onClick={toggleTheme}
                     className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
