@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { AtSign,ArrowLeft, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { AtSign,ArrowLeft, Lock, Eye, EyeOff, AlertCircle, User, Building2, Users, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +101,60 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDemoLogin = (role: string) => {
+    const demoUsers: Record<string, any> = {
+      locataire: {
+        id: 1,
+        email: "demo.locataire@gestiloc.com",
+        first_name: "Jean",
+        last_name: "Dupont",
+        roles: ["tenant", "locataire"],
+        role: "locataire",
+      },
+      proprietaire: {
+        id: 2,
+        email: "demo.proprietaire@gestiloc.com",
+        first_name: "Marie",
+        last_name: "Martin",
+        roles: ["landlord", "proprietaire"],
+        role: "proprietaire",
+      },
+      coproprietaire: {
+        id: 3,
+        email: "demo.copro@gestiloc.com",
+        first_name: "Paul",
+        last_name: "Bernard",
+        roles: ["co_owner", "coproprietaire"],
+        role: "coproprietaire",
+      },
+      admin: {
+        id: 4,
+        email: "demo.admin@gestiloc.com",
+        first_name: "Admin",
+        last_name: "System",
+        roles: ["admin"],
+        role: "admin",
+      },
+    };
+
+    const user = demoUsers[role];
+    const token = `demo_token_${role}_${Date.now()}`;
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    toast.success(`Connexion démo ${role} réussie !`);
+
+    const redirects: Record<string, string> = {
+      locataire: "/locataire",
+      proprietaire: "/proprietaire",
+      coproprietaire: "/coproprietaire",
+      admin: "/admin",
+    };
+
+    navigate(redirects[role], { replace: true });
   };
 
   return (
@@ -229,6 +283,51 @@ export default function Login() {
             >
               {isLoading ? "Connexion en cours..." : "Connexion"}
             </Button>
+
+            {/* Section Démo */}
+            <div className="w-full pt-4 border-t border-gray-200">
+              <p className="text-center text-xs text-gray-500 mb-3 uppercase tracking-wider font-semibold">
+                Accès rapide démo
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDemoLogin("locataire")}
+                  className="flex items-center gap-2 text-xs h-9 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  Locataire
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDemoLogin("proprietaire")}
+                  className="flex items-center gap-2 text-xs h-9 border-green-200 hover:bg-green-50 hover:text-green-700"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Propriétaire
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDemoLogin("coproprietaire")}
+                  className="flex items-center gap-2 text-xs h-9 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Copropriétaire
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDemoLogin("admin")}
+                  className="flex items-center gap-2 text-xs h-9 border-red-200 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  Admin
+                </Button>
+              </div>
+            </div>
 
             <p className="text-center text-sm text-muted-foreground">
               Pas de compte ?{" "}
