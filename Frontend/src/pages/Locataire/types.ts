@@ -1,4 +1,4 @@
-export type Tab = 'home' | 'payments' | 'messages' | 'interventions' | 'documents' | 'lease' | 'property' | 'profile'  | "factures" | "paiement";
+export type Tab = 'home' | 'payments' | 'messages' | 'interventions' | 'documents' | 'lease' | 'property' | 'profile' | "factures" | "paiement" | 'location' | 'receipts' | 'tasks' | 'notes' | 'notice' | 'settings' | 'landlord' | 'help';
 
 export enum PaymentStatus {
   PAID = 'Payé',

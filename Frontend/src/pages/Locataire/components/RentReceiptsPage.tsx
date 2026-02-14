@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, RefreshCw, Search, FileText } from "lucide-react";
+import { Download, Loader2, RefreshCw, Search, FileText, ChevronDown, MoreVertical } from "lucide-react";
 import { tenantRentReceiptService, RentReceipt } from "../services/tenantRentReceiptService";
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -18,8 +18,11 @@ export default function RentReceiptsPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<RentReceipt[]>([]);
-
   const [q, setQ] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState('100');
+  const [periode, setPeriode] = useState('');
+  const [showItemsDropdown, setShowItemsDropdown] = useState(false);
+  const [showPeriodeDropdown, setShowPeriodeDropdown] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -72,125 +75,199 @@ export default function RentReceiptsPage() {
   };
 
   return (
-    <div className="py-8">
-      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-            <FileText size={14} />
-            Quittances
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-900">
-            Mes quittances
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-gray-600">
-            Consulte et télécharge les quittances délivrées par ton propriétaire.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      {/* Header with Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Filtrer les paiements</h2>
+        
+        <div className="flex flex-col gap-4">
+          {/* First row - Dropdowns */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Items per page */}
+            <div className="relative sm:w-48">
+              <button
+                onClick={() => setShowItemsDropdown(!showItemsDropdown)}
+                className="w-full flex items-center justify-between px-4 py-2.5 border border-[#529D21] rounded-lg text-gray-700 hover:border-[#529D21]/80 transition-colors bg-white"
+              >
+                <span>{itemsPerPage} lignes</span>
+                <ChevronDown size={18} className="text-gray-500" />
+              </button>
+              {showItemsDropdown && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  {['10', '25', '50', '100'].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => { setItemsPerPage(n); setShowItemsDropdown(false); }}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {n} lignes
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        <button
-          onClick={fetchAll}
-          className="mt-4 md:mt-0 inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-extrabold text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition"
-          type="button"
-        >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-          Actualiser
-        </button>
-      </div>
-
-      <div className="mt-6">
-        <div className="text-xs font-extrabold tracking-wide text-gray-600 uppercase">
-          Recherche
-        </div>
-        <div className="mt-2 relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <Search size={18} />
-          </div>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Référence, mois, adresse…"
-            className="w-full rounded-2xl bg-white text-gray-900 border border-blue-200 pl-12 pr-4 py-3 text-sm font-semibold placeholder:text-gray-400 outline-none focus:ring-4 focus:ring-blue-200/60 focus:border-blue-400 transition"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        {loading ? (
-          <div className="rounded-3xl border border-blue-200 bg-white p-8">
-            <div className="flex items-center gap-3 text-gray-700 font-bold">
-              <Loader2 className="animate-spin" /> Chargement…
+            {/* Period */}
+            <div className="relative sm:w-48">
+              <button
+                onClick={() => setShowPeriodeDropdown(!showPeriodeDropdown)}
+                className="w-full flex items-center justify-between px-4 py-2.5 border border-[#529D21] rounded-lg text-gray-700 hover:border-[#529D21]/80 transition-colors bg-white"
+              >
+                <span>{periode || 'Période'}</span>
+                <ChevronDown size={18} className="text-gray-500" />
+              </button>
+              {showPeriodeDropdown && (
+                <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  {['Tous', 'Janvier 2024', 'Février 2024', 'Mars 2024', 'Avril 2024', 'Mai 2024'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => { setPeriode(p === 'Tous' ? '' : p); setShowPeriodeDropdown(false); }}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Second row - Search and Total */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            {/* Search */}
+            <div className="flex-1 relative w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-[#529D21]" />
+              </div>
+              <input
+                type="text"
+                placeholder="Rechercher"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-[#529D21] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#529D21]/20 focus:border-[#529D21] bg-white"
+              />
+            </div>
+
+            {/* Total */}
+            <div className="flex items-center text-sm text-gray-600 whitespace-nowrap">
+              Total: {filtered.length} Paiement{filtered.length > 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center">
+            <Loader2 className="animate-spin mx-auto mb-4 text-[#529D21]" size={32} />
+            <p className="text-gray-600">Chargement…</p>
+          </div>
         ) : error ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700 font-bold">
+          <div className="p-8 text-center text-red-600 bg-red-50">
             {error}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-blue-200 bg-white p-8">
-            <div className="text-gray-900 font-extrabold">Aucune quittance</div>
-            <div className="mt-1 text-sm font-semibold text-gray-600">
-              Si tu viens de payer, elle apparaîtra ici dès qu’elle est générée.
+          /* Empty State with Illustration */
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            {/* Illustration */}
+            <div className="mb-8">
+              <svg width="280" height="200" viewBox="0 0 280 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Calendar */}
+                <rect x="100" y="30" width="80" height="70" rx="8" fill="#E8F4FD" stroke="#2196F3" strokeWidth="2"/>
+                <rect x="110" y="42" width="60" height="8" rx="2" fill="#2196F3"/>
+                <rect x="118" y="58" width="12" height="12" rx="2" fill="#64B5F6"/>
+                <rect x="134" y="58" width="12" height="12" rx="2" fill="#64B5F6"/>
+                <rect x="150" y="58" width="12" height="12" rx="2" fill="#64B5F6"/>
+                <rect x="118" y="76" width="12" height="12" rx="2" fill="#64B5F6"/>
+                <rect x="134" y="76" width="12" height="12" rx="2" fill="#64B5F6"/>
+                
+                {/* People */}
+                <circle cx="60" cy="130" r="20" fill="#FFCCBC"/>
+                <ellipse cx="60" cy="165" rx="25" ry="30" fill="#FFCCBC"/>
+                
+                <circle cx="220" cy="130" r="20" fill="#C8E6C9"/>
+                <ellipse cx="220" cy="165" rx="25" ry="30" fill="#C8E6C9"/>
+                
+                {/* Money/Dollar */}
+                <circle cx="230" cy="60" r="25" fill="#FFF3E0" stroke="#FF9800" strokeWidth="2"/>
+                <text x="230" y="68" textAnchor="middle" fill="#FF9800" fontSize="24" fontWeight="bold">$</text>
+                
+                {/* Decorative elements */}
+                <circle cx="40" cy="50" r="8" fill="#E1BEE7"/>
+                <circle cx="250" cy="150" r="10" fill="#B2DFDB"/>
+                <rect x="30" y="90" width="20" height="20" rx="4" fill="#FFEBEE" transform="rotate(15 40 100)"/>
+              </svg>
             </div>
+            
+            <p className="text-gray-500 text-center max-w-md">
+              Aucune quittance disponible pour le moment.
+            </p>
+            <button
+              onClick={fetchAll}
+              className="mt-4 px-4 py-2 text-[#529D21] hover:bg-[#529D21]/10 rounded-lg transition-colors"
+            >
+              Actualiser
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filtered.map((r) => {
-              const propLine = [r.property?.address, r.property?.city].filter(Boolean).join(" • ");
-              const labelMonth = r.paid_month ? r.paid_month : "—";
-
-              return (
-                <div
-                  key={r.id}
-                  className="rounded-3xl border border-blue-200 bg-white shadow-sm hover:shadow-md transition p-5 md:p-6"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                      <div className="text-lg md:text-xl font-extrabold text-gray-900 truncate">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Date</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Bien</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Montant</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Description</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Etat</th>
+                  <th className="text-center px-6 py-4 text-sm font-semibold text-gray-900">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((r) => {
+                  const propLine = [r.property?.address, r.property?.city].filter(Boolean).join(", ");
+                  
+                  return (
+                    <tr key={r.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {r.issued_date ? String(r.issued_date).slice(0, 10) : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {propLine || <span className="text-gray-400">Non renseigné</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[#529D21]">
+                        {r.amount_paid != null ? `${r.amount_paid} €` : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
                         {r.reference || `Quittance #${r.id}`}
-                      </div>
-
-                      <div className="mt-2 text-sm font-semibold text-gray-600">
-                        {propLine ? propLine : <span className="text-gray-400">Bien non renseigné</span>}
-                      </div>
-
-                      <div className="mt-1 text-sm font-semibold text-gray-600">
-                        Mois payé : <span className="text-gray-900 font-extrabold">{labelMonth}</span>
-                        {r.amount_paid != null ? (
-                          <span className="text-gray-500"> • Montant : {String(r.amount_paid)}</span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="w-full md:w-[260px]">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(r)}
-                        disabled={busyId === r.id}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-extrabold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
-                      >
-                        {busyId === r.id ? (
-                          <>
-                            <Loader2 size={18} className="animate-spin" />
-                            Téléchargement…
-                          </>
-                        ) : (
-                          <>
-                            <Download size={18} />
-                            Télécharger PDF
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 text-xs font-bold text-gray-500">
-                    ID #{r.id}
-                    {r.issued_date ? <span> • Émise le {String(r.issued_date).slice(0, 10)}</span> : null}
-                    {r.type ? <span> • Type: {r.type}</span> : null}
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          r.status === 'paid' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {r.status === 'paid' ? 'Payé' : 'En attente'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleDownload(r)}
+                          disabled={busyId === r.id}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {busyId === r.id ? (
+                            <Loader2 size={18} className="animate-spin text-[#529D21]" />
+                          ) : (
+                            <Download size={18} className="text-[#529D21]" />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -234,7 +234,7 @@ const AppContent = () => {
       {/* Tableau de bord Locataire */}
       <Route path="/locataire" element={
         <ProtectedRoute roles={['locataire']}>
-          <Navigate to="/locataire/dashboard" replace />
+          <Navigate to="/locataire/home" replace />
         </ProtectedRoute>
       } />
       <Route path="/locataire/*" element={

@@ -34,9 +34,9 @@ export type Notice = {
   } | null;
 };
 
-function unwrap<T>(payload: any): T {
+function unwrap<T>(payload: T | { data: T }): T {
   // Ton controller renvoie un tableau brut et un objet brut
-  return (payload?.data ?? payload) as T;
+  return (payload as { data?: T }).data ?? payload as T;
 }
 
 export const noticeService = {
@@ -47,7 +47,15 @@ export const noticeService = {
 
   // ✅ Locataire: { lease_id, end_date, reason, notes? }
   // ✅ Bailleur: { property_id, lease_id?, tenant_id?, reason, notice_date, end_date, notes? }
-  async create(payload: any): Promise<Notice> {
+  async create(payload: {
+    lease_id?: number;
+    property_id?: number;
+    tenant_id?: number;
+    end_date: string;
+    reason: string;
+    notes?: string;
+    notice_date?: string;
+  }): Promise<Notice> {
     const res = await api.post("/notices", payload);
     return unwrap<Notice>(res.data);
   },

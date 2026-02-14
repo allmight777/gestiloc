@@ -1,28 +1,39 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   FileText,
-  ArrowUpRight,
-  CheckCircle,
-  Calendar,
+  Plus,
   Wrench,
-  Clock,
-  Activity,
-  Loader2,
-  AlertTriangle,
+  ClipboardList,
+  File,
+  Key,
+  DollarSign,
+  Settings,
+  Bell,
+  HelpCircle,
+  User,
   Home,
-  TrendingUp,
+  ChevronRight,
+  Eye,
+  X,
+  MessageCircle,
+  Building,
 } from "lucide-react";
 
 import { Button } from "./ui/Button";
 import { Skeleton } from "./ui/Skeleton";
 import { Tab } from "../types";
 import { PaymentModal } from "./PaymentModal";
-import { TenantInvoicesCard } from "./TenantInvoicesCard";
 
-import tenantApi, { TenantLease, TenantIncident } from "../services/tenantApi";
-import { tenantRentReceiptService, RentReceipt } from "../services/tenantRentReceiptService";
-import tenantInvoiceService, { TenantInvoice } from "../services/tenantInvoiceService";
-import { noticeService } from "@/services/noticeService";
+import { 
+  mockTenantApi, 
+  TenantLease, 
+  TenantIncident,
+  mockRentReceiptService, 
+  RentReceipt,
+  mockInvoiceService, 
+  TenantInvoice,
+  mockNoticeService 
+} from "@/services";
 
 // ---------- helpers ----------
 const monthKey = (d: Date) =>
@@ -53,25 +64,50 @@ const safeDate = (v?: string | null) => {
 };
 
 interface DashboardProps {
-  onNavigate: (tab: Tab) => void;
-  notify: (msg: string, type: "success" | "info" | "error") => void;
+  activeTab?: string;
+  notify: (message: string, type: 'success' | 'error' | 'info') => void;
+  onNavigate?: (tab: Tab) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+interface UserData {
+  id: number;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  roles: string[];
+  default_role: string | null;
+}
 
+export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify, onNavigate }) => {
+  // Récupérer les données utilisateur depuis localStorage
+  const [user, setUser] = useState<UserData | null>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error('Erreur lors de la lecture des données utilisateur:', error);
+      }
+    }
+  }, []);
+
+  const [leases, setLeases] = useState<TenantLease[]>([]);
   const [lease, setLease] = useState<TenantLease | null>(null);
   const [receipts, setReceipts] = useState<RentReceipt[]>([]);
   const [invoices, setInvoices] = useState<TenantInvoice[]>([]);
   const [incidents, setIncidents] = useState<TenantIncident[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
-
+  const [loading, setLoading] = useState(true);
   const [errLeases, setErrLeases] = useState<string | null>(null);
   const [errReceipts, setErrReceipts] = useState<string | null>(null);
   const [errInvoices, setErrInvoices] = useState<string | null>(null);
   const [errIncidents, setErrIncidents] = useState<string | null>(null);
   const [errNotices, setErrNotices] = useState<string | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const currentYM = useMemo(() => monthKey(new Date()), []);
   const ytdStartYM = useMemo(() => `${new Date().getFullYear()}-01`, []);
@@ -89,11 +125,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
 
       // Lancer toutes les requêtes en parallèle puis traiter les résultats
       const promises = {
-        leases: tenantApi.getLeases(),
-        receipts: tenantRentReceiptService.list({ type: "independent" }),
-        invoices: tenantInvoiceService.list(),
-        incidents: tenantApi.getIncidents(),
-        notices: noticeService.list(),
+        leases: mockTenantApi.getLeases(),
+        receipts: mockRentReceiptService.list({ type: "independent" }),
+        invoices: mockInvoiceService.list(),
+        incidents: mockTenantApi.getIncidents(),
+        notices: mockNoticeService.list(),
       } as const;
 
       const entries = Object.entries(promises) as [keyof typeof promises, Promise<any>][];
@@ -272,6 +308,588 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
 
   const hasAnyError = errLeases || errReceipts || errIncidents || errNotices;
 
+  // Afficher le contenu selon l'onglet actif
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        // Contenu du tableau de bord principal
+        return (
+          <>
+            {/* Welcome Card */}
+            <div className="bg-gradient-to-r from-[#529D21] to-[#7CB342] rounded-xl shadow-lg p-6 mb-6 relative overflow-hidden">
+              <div className="flex justify-between items-center">
+                <div className="z-10">
+                  <h1 className="text-2xl font-bold text-white mb-2">
+                    Bienvenue sur Gestiloc !
+                  </h1>
+                  <p className="text-white/90 text-sm max-w-md">
+                    Retrouvez ici toutes les informations de location. Gérez vos quittances, contactez votre propriétaire et suivez l'état de votre logement en toute simplicité.
+                  </p>
+                </div>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <img 
+                    src="/Ressource_gestiloc/hand.png" 
+                    alt="Welcome" 
+                    className="w-32 h-32 object-contain opacity-90"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <button onClick={() => onNavigate?.('receipts')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/quittances.png" alt="Mes quittances" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Mes quittances</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('interventions')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Tools.png" alt="Nouvelle intervention" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle intervention</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('tasks')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/rappels.png" alt="Nouvelle tâche" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle tâche</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('notes')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Signing A Document.png" alt="Nouvelle note" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle note</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('documents')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Document In Folder.png" alt="Nouveau document" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouveau document</span>
+              </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              {/* Locations */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Locations</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src="/Ressource_gestiloc/Key Security.png" alt="Locations" className="w-12 h-12 object-contain" />
+                    <div>
+                      <p className="text-3xl font-bold text-gray-900">1</p>
+                      <p className="text-sm text-gray-600">Location</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('location')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Loyers en retard */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Loyers en retard</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src="/Ressource_gestiloc/Dollar Bag.png" alt="Loyers" className="w-12 h-12 object-contain" />
+                    <div>
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">Loyers en retard</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('payments')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Interventions */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Interventions</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <img src="/Ressource_gestiloc/Tools.png" alt="Interventions" className="w-12 h-12 object-contain" />
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">{openIncidents}</p>
+                      <p className="text-sm text-gray-600">Ouverte</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En retard</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En cours</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('interventions')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Tâches */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Tâches</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <img src="/Ressource_gestiloc/Inspection.png" alt="Tâches" className="w-12 h-12 object-contain" />
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">Ouverte</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En retard</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('tasks')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      case 'location':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Ma Location</h2>
+            {lease && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold mb-4">{lease.property?.name || 'Détails du logement'}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Adresse</p>
+                    <p className="font-medium">{lease.property?.address || 'Non spécifiée'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Loyer mensuel</p>
+                    <p className="font-medium">{fmtMoney(totalMonthly)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Date de début</p>
+                    <p className="font-medium">{lease.start_date || 'Non spécifiée'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Date de fin</p>
+                    <p className="font-medium">{lease.end_date || 'Non spécifiée'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 'landlord':
+        return (
+          <div className="space-y-6">
+            <p className="text-gray-500">Ce contenu a été déplacé vers le composant Landlord.</p>
+          </div>
+        );
+      case 'receipts':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mes Quittances</h2>
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Historique des quittances</h3>
+                {receipts.length > 0 ? (
+                  <div className="space-y-3">
+                    {receipts.map((receipt) => (
+                      <div key={receipt.id} className="flex justify-between items-center p-3 border rounded">
+                        <div>
+                          <p className="font-medium">Mois: {receipt.paid_month}</p>
+                          <p className="text-sm text-gray-500">Payé le: {receipt.payment_date}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{fmtMoney(receipt.amount_paid)}</p>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            receipt.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {receipt.status === 'paid' ? 'Payé' : 'En attente'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Aucune quittance disponible</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      case 'documents':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Mes Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <FileText className="w-8 h-8 text-blue-600 mb-2" />
+                  <h4 className="font-medium">Contrat de location</h4>
+                  <p className="text-sm text-gray-500">PDF • 2.3 MB</p>
+                </div>
+                <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <FileText className="w-8 h-8 text-green-600 mb-2" />
+                  <h4 className="font-medium">Quittances de loyer</h4>
+                  <p className="text-sm text-gray-500">PDF • 1.1 MB</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'interventions':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mes Interventions</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Historique des interventions</h3>
+              {incidents.length > 0 ? (
+                <div className="space-y-3">
+                  {incidents.map((incident) => (
+                    <div key={incident.id} className="flex justify-between items-center p-3 border rounded">
+                      <div>
+                        <p className="font-medium">{incident.title}</p>
+                        <p className="text-sm text-gray-500">{incident.description}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        incident.status === 'open' ? 'bg-red-100 text-red-800' : 
+                        incident.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : 
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {incident.status === 'open' ? 'Ouvert' : 
+                         incident.status === 'in_progress' ? 'En cours' : 
+                         'Résolu'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucune intervention en cours</p>
+              )}
+            </div>
+          </div>
+        );
+      case 'tasks':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mes Tâches</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Liste des tâches</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 border rounded">
+                  <input type="checkbox" className="w-4 h-4" />
+                  <span className="flex-1">Signer le contrat de location</span>
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">En attente</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 border rounded">
+                  <input type="checkbox" className="w-4 h-4" defaultChecked />
+                  <span className="flex-1 line-through text-gray-500">Fournir les documents justificatifs</span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Terminé</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'notes':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mes Notes</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Notes personnelles</h3>
+              <div className="space-y-3">
+                <div className="border rounded-lg p-4">
+                  <p className="font-medium mb-2">Important : Date de paiement</p>
+                  <p className="text-sm text-gray-600">Le loyer doit être payé avant le 5 de chaque mois</p>
+                </div>
+                <div className="border rounded-lg p-4">
+                  <p className="font-medium mb-2">Contact propriétaire</p>
+                  <p className="text-sm text-gray-600">Email: contact@proprietaire.fr - Tel: 01 23 45 67 89</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'notice':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Préavis</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Gestion du préavis</h3>
+              {notices.length > 0 ? (
+                <div className="space-y-3">
+                  {notices.map((notice) => (
+                    <div key={notice.id} className="flex justify-between items-center p-3 border rounded">
+                      <div>
+                        <p className="font-medium">Préavis de départ</p>
+                        <p className="text-sm text-gray-500">Date: {notice.notice_date}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        notice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {notice.status === 'pending' ? 'En attente' : 'Confirmé'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucun préavis en cours</p>
+              )}
+            </div>
+          </div>
+        );
+      case 'payments':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Paiements</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Historique des paiements</h3>
+              {invoices.length > 0 ? (
+                <div className="space-y-3">
+                  {invoices.map((invoice) => (
+                    <div key={invoice.id} className="flex justify-between items-center p-3 border rounded">
+                      <div>
+                        <p className="font-medium">{invoice.type === 'rent' ? 'Loyer mensuel' : 'Facture'}</p>
+                        <p className="text-sm text-gray-500">Échéance: {invoice.due_date}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{fmtMoney(invoice.amount)}</p>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {invoice.status === 'paid' ? 'Payé' : 'En attente'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucun paiement en cours</p>
+              )}
+            </div>
+          </div>
+        );
+      case 'settings':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Paramètres</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Préférences</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span>Notifications par email</span>
+                  <button className="w-12 h-6 bg-green-600 rounded-full relative">
+                    <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Mode sombre</span>
+                  <button className="w-12 h-6 bg-gray-300 rounded-full relative">
+                    <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        // Par défaut, afficher le tableau de bord
+        return (
+          <>
+            {/* Welcome Card */}
+            <div className="bg-gradient-to-r from-[#529D21] to-[#F5A623] rounded-xl shadow-lg p-6 mb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-2">
+                    Bienvenue, {user?.first_name || 'Locataire'} 👋
+                  </h1>
+                  <p className="text-white/90">
+                    Gérez votre location en toute simplicité
+                  </p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4">
+                    <p className="text-white/80 text-sm">Loyer mensuel</p>
+                    <p className="text-2xl font-bold text-white">{fmtMoney(totalMonthly)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <button onClick={() => onNavigate?.('receipts')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/quittances.png" alt="Mes quittances" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Mes quittances</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('interventions')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Tools.png" alt="Nouvelle intervention" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle intervention</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('tasks')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/rappels.png" alt="Nouvelle tâche" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle tâche</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('notes')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Signing A Document.png" alt="Nouvelle note" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouvelle note</span>
+              </button>
+
+              <button onClick={() => onNavigate?.('documents')} className="flex flex-col items-center gap-2 group cursor-pointer">
+                <div className="w-16 h-16 rounded-full bg-orange-100 border-2 border-orange-300 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <img src="/Ressource_gestiloc/Document In Folder.png" alt="Nouveau document" className="w-8 h-8 object-contain" />
+                </div>
+                <span className="text-sm font-medium text-gray-900 text-center">Nouveau document</span>
+              </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              {/* Locations */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Locations</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src="/Ressource_gestiloc/Key Security.png" alt="Locations" className="w-12 h-12 object-contain" />
+                    <div>
+                      <p className="text-3xl font-bold text-gray-900">1</p>
+                      <p className="text-sm text-gray-600">Location</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('location')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Loyers en retard */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Loyers en retard</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src="/Ressource_gestiloc/Dollar Bag.png" alt="Loyers" className="w-12 h-12 object-contain" />
+                    <div>
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">Loyers en retard</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('payments')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Interventions */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Interventions</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <img src="/Ressource_gestiloc/Tools.png" alt="Interventions" className="w-12 h-12 object-contain" />
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">{openIncidents}</p>
+                      <p className="text-sm text-gray-600">Ouverte</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En retard</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En cours</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('interventions')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+
+              {/* Tâches */}
+              <div className="bg-white rounded-lg shadow p-6 border border-orange-200 hover:shadow-lg transition-all duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Tâches</h3>
+                  <Settings className="w-5 h-5 text-orange-500" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <img src="/Ressource_gestiloc/Inspection.png" alt="Tâches" className="w-12 h-12 object-contain" />
+                  <div className="flex gap-6">
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">Ouverte</p>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <p className="text-3xl font-bold text-gray-900">0</p>
+                      <p className="text-sm text-gray-600">En retard</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button onClick={() => onNavigate?.('tasks')} className="text-xs text-orange-400 hover:text-orange-500 transition-colors duration-200 cursor-pointer">
+                    Tout afficher
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+    }
+  };
+
   // ---------- UI ----------
   if (loading) {
     return (
@@ -314,8 +932,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
       />
 
       {hasAnyError ? (
-        <div className="mb-6 rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-800 font-bold">
-          Certaines données n’ont pas pu être chargées (le dashboard reste utilisable).
+        <div className="mt-20 mb-6 rounded-3xl border border-rose-200 bg-rose-50 p-5 text-rose-800 font-bold relative z-0">
+          Certaines données n'ont pas pu être chargées (le dashboard reste utilisable).
           <div className="mt-2 text-sm font-semibold">
             {errLeases ? <div>• Bail: {errLeases}</div> : null}
             {errReceipts ? <div>• Quittances: {errReceipts}</div> : null}            {errInvoices ? <div>• Factures: {errInvoices}</div> : null}            {errIncidents ? <div>• Incidents: {errIncidents}</div> : null}
@@ -324,269 +942,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
         </div>
       ) : null}
 
-      <div className="space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-black">Bonjour 👋</h1>
-            <p className="text-gray-700 mt-2 font-medium">
-              {lease?.property?.address ? (
-                <>
-                  Logement :{" "}
-                  <span className="text-blue-600 font-bold">{lease.property.address}</span>
-                  {lease.property.city ? ` • ${lease.property.city}` : ""}
-                </>
-              ) : (
-                "Bienvenue dans votre espace locataire."
-              )}
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              icon={<FileText size={18} />}
-              onClick={() => onNavigate("documents")}
-            >
-              Quittances ({receipts.length})
-            </Button>
-            <Button
-              variant="primary"
-              icon={<ArrowUpRight size={18} />}
-              onClick={() => setIsPaymentModalOpen(true)}
-            >
-              Payer maintenant
-            </Button>
-          </div>
-        </div>
-
-        {/* Top cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Status */}
-          <div className="bg-white rounded-3xl p-6 shadow-md border border-blue-200 relative overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-              <div
-                className={`p-3 rounded-2xl ${
-                  isUpToDate ? "bg-green-100 text-green-600" : "bg-orange-100 text-orange-600"
-                }`}
-              >
-                {isUpToDate ? <CheckCircle size={28} /> : <AlertTriangle size={28} />}
-              </div>
-              <span
-                className={`${
-                  isUpToDate ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
-                } text-xs font-bold px-3 py-1.5 rounded-full`}
-              >
-                {isUpToDate ? "À jour" : "En attente"}
-              </span>
-            </div>
-
-            <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest">
-              Statut quittance (mois courant)
-            </h3>
-
-            <div className="mt-2 text-2xl font-bold text-black">
-              {isUpToDate ? `Quittance dispo (${currentYM})` : `Pas encore (${currentYM})`}
-            </div>
-
-            <p className="text-xs font-medium text-gray-600 mt-4 flex items-center gap-1">
-              <Activity size={12} /> Série : {paidStreak} mois consécutif(s)
-            </p>
-          </div>
-
-          {/* Amounts */}
-          <div className="bg-white rounded-3xl p-6 shadow-md border border-blue-200 relative overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-              <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
-                <TrendingUp size={28} />
-              </div>
-              <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full">
-                Bail
-              </span>
-            </div>
-
-            <h3 className="text-gray-500 text-xs font-bold uppercase tracking-widest">
-              Montant mensuel
-            </h3>
-
-            <div className="mt-2 text-4xl font-bold text-black tracking-tight">
-              {fmtMoney(totalMonthly)}
-            </div>
-
-            <p className="text-xs font-medium text-gray-600 mt-4">
-              Loyer: {fmtMoney(rentMonthly)} • Charges: {fmtMoney(chargesMonthly)}
-            </p>
-          </div>
-
-          {/* Maintenance */}
-          <div
-            className="bg-blue-700 rounded-3xl p-6 shadow-lg text-white relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform border border-blue-600"
-            onClick={() => onNavigate("interventions")}
-          >
-            <div className="flex justify-between items-start">
-              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20">
-                <Wrench size={28} className="text-orange-400" />
-              </div>
-              <span className="bg-orange-400 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg shadow-orange-400/30">
-                {openIncidents + inProgressIncidents} actif(s)
-              </span>
-            </div>
-
-            <div className="mt-6">
-              <h3 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">
-                Incidents
-              </h3>
-              <p className="text-xl font-bold leading-tight">
-                Ouverts: {openIncidents} • En cours: {inProgressIncidents}
-              </p>
-              <div className="flex items-center gap-2 mt-3 text-xs font-medium text-white/60 bg-black/20 w-fit px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                <Clock size={12} />
-                <span>Accéder</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: invoices + receipts analytics */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Invoices Card */}
-            <TenantInvoicesCard 
-              invoices={invoices}
-              isLoading={loading}
-              error={errInvoices}
-              onDownload={(id) => {
-                // TODO: Implémenter le téléchargement du PDF
-                notify('Téléchargement en cours...', 'info');
-              }}
-            />
-
-            <div className="bg-white rounded-3xl border border-blue-200 shadow-md p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
-                    <FileText size={22} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-black">Statistiques quittances</h3>
-                    <p className="text-sm font-semibold text-gray-600">
-                      Basé sur les quittances réellement disponibles.
-                    </p>
-                  </div>
-                </div>
-
-                <Button variant="ghost" size="sm" onClick={() => onNavigate("documents")}>
-                  Voir tout
-                </Button>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                  <div className="text-xs font-extrabold text-gray-600 uppercase">Total quittances</div>
-                  <div className="mt-2 text-3xl font-black text-gray-900">{receipts.length}</div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                  <div className="text-xs font-extrabold text-gray-600 uppercase">Payé (YTD)</div>
-                  <div className="mt-2 text-3xl font-black text-gray-900">{fmtMoney(totalPaidYTD)}</div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                  <div className="text-xs font-extrabold text-gray-600 uppercase">Moyenne quittance</div>
-                  <div className="mt-2 text-3xl font-black text-gray-900">{fmtMoney(avgPaid)}</div>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 text-blue-700">
-                    <Calendar size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-extrabold text-gray-900">Dernière quittance</div>
-                    <div className="text-sm font-semibold text-gray-700">
-                      {lastReceipt
-                        ? `${lastReceipt.reference || `#${lastReceipt.id}`} • Mois: ${
-                            lastReceipt.paid_month || "—"
-                          } • Émise: ${
-                            lastReceipt.issued_date
-                              ? String(lastReceipt.issued_date).slice(0, 10)
-                              : "—"
-                          }`
-                        : "Aucune quittance disponible pour le moment."}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div className="bg-gradient-to-r from-blue-50 to-white rounded-3xl p-6 border border-blue-200 shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-700">
-                  <Home size={22} />
-                </div>
-                <div>
-                  <div className="font-bold text-lg text-black">Mon logement</div>
-                  <div className="text-sm font-semibold text-gray-700">
-                    Voir les infos, photos, contact propriétaire, bail.
-                  </div>
-                </div>
-              </div>
-              <Button variant="primary" onClick={() => onNavigate("property")}>
-                Accéder
-              </Button>
-            </div>
-          </div>
-
-          {/* Right: notices + incidents recap */}
-          <div className="bg-white rounded-3xl border border-blue-200 shadow-md p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700">
-                <AlertTriangle size={22} />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-black">Suivi</h3>
-                <p className="text-sm font-semibold text-gray-600">Préavis & incidents</p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-extrabold text-gray-600 uppercase">Préavis en attente</div>
-                  <div className="mt-1 text-2xl font-black text-gray-900">{pendingNotices}</div>
-                </div>
-                <Button variant="secondary" onClick={() => onNavigate("preavis" as any)}>
-                  Voir
-                </Button>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-extrabold text-gray-600 uppercase">Incidents actifs</div>
-                  <div className="mt-1 text-2xl font-black text-gray-900">
-                    {openIncidents + inProgressIncidents}
-                  </div>
-                </div>
-                <Button variant="secondary" onClick={() => onNavigate("interventions")}>
-                  Suivre
-                </Button>
-              </div>
-
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                <div className="text-xs font-extrabold text-blue-700 uppercase">Astuce</div>
-                <div className="mt-1 text-sm font-semibold text-gray-800">
-                  Si une quittance manque, elle apparaît dès que le propriétaire la génère.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {renderContent()}
     </>
   );
 };
-
-export default Dashboard;

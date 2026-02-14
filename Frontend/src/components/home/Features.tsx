@@ -778,6 +778,86 @@ export function Features() {
           ))}
         </div>
       </AnimatedItem>
+
+      {/* Testimonials & Stats Section with Overlapping Cards */}
+      <div className="mt-32 mb-32 px-4">
+        <div className="text-center mb-20">
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Nous aidons les bailleurs à gérer sereinement leurs emplacements
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
+            Nous sommes accessibles, modernes et pensées pour les propriétaires béninois.
+          </p>
+        </div>
+
+        {/* Overlapping Cards Container */}
+        <div className="relative w-full max-w-5xl mx-auto h-auto md:min-h-[600px]">
+          
+          {/* Row 1: Left Testimonial with overlapping 67% card */}
+          <div className="relative mb-20 md:mb-32">
+            {/* Testimonial Card 1 */}
+            <div className="w-full md:w-80 mx-auto md:mx-0">
+              <div className="border-2 border-green-200 dark:border-green-800 rounded-xl p-5 bg-white dark:bg-slate-900 relative z-10">
+                <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+                  "Ce site est un véritable outil pour les particuliers bailleurs et créée personnellement ! À recommander"
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Jean, Cotonou</p>
+              </div>
+            </div>
+
+            {/* 67% Stat Card - Overlapping */}
+            <div className="w-full md:w-72 md:absolute md:top-20 md:right-0 md:z-20 mt-6 md:mt-0">
+              <div className="bg-green-500 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-4xl md:text-5xl font-bold mb-2">67%</div>
+                <p className="text-xs md:text-sm leading-tight">des clients recommandent GestiLoc à leur entourage</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Center-left Testimonial with overlapping 97% card */}
+          <div className="relative mb-20 md:mb-32 md:ml-32">
+            {/* Testimonial Card 2 */}
+            <div className="w-full md:w-80 mx-auto md:mx-0">
+              <div className="border-2 border-green-200 dark:border-green-800 rounded-xl p-5 bg-white dark:bg-slate-900 relative z-10">
+                <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+                  "Ce site est un vrai outil pou les particuliers bailleurs et moÿl personellemet ! À recommander"
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Pierre, Cotonou, Benin</p>
+              </div>
+            </div>
+
+            {/* 97% Stat Card - Overlapping */}
+            <div className="w-full md:w-72 md:absolute md:top-20 md:right-0 md:z-20 mt-6 md:mt-0">
+              <div className="bg-green-500 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-4xl md:text-5xl font-bold mb-2">97%</div>
+                <p className="text-xs md:text-sm leading-tight">de nos clients affirment gagner en efficacité et productivité</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Right Testimonial with overlapping 83% card */}
+          <div className="relative md:ml-64">
+            {/* Testimonial Card 3 */}
+            <div className="w-full md:w-80 mx-auto md:mx-0">
+              <div className="border-2 border-green-200 dark:border-green-800 rounded-xl p-5 bg-white dark:bg-slate-900 relative z-10">
+                <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+                  "J'ai bien à être une grangad motivation verbale vrai. Facile, super applicaion !"
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Francais, Par béninois, Benin</p>
+              </div>
+            </div>
+
+            {/* 83% Stat Card - Overlapping */}
+            <div className="w-full md:w-72 md:absolute md:top-20 md:right-0 md:z-20 mt-6 md:mt-0">
+              <div className="bg-blue-500 text-white rounded-xl p-6 text-center shadow-lg">
+                <div className="text-4xl md:text-5xl font-bold mb-2">83%</div>
+                <p className="text-xs md:text-sm leading-tight">de nos clients en sont satisfaits au quotidien pour loger et rémunérer</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </section>
   );
 }

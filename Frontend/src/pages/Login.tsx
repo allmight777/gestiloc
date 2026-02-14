@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +19,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -107,291 +104,119 @@ export default function Login() {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Image */}
-      <motion.div
-        className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary-light items-center justify-center p-12 relative overflow-hidden"
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        {/* Animated background elements */}
-        <motion.div
-          className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full"
-          animate={{
-            y: [0, -20, 0],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-16 h-16 bg-white/10 rounded-full"
-          animate={{
-            y: [0, 20, 0],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1,
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/4 w-12 h-12 bg-white/10 rounded-full"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
-          }}
-        />
-
-        <motion.div
-          className="max-w-md relative z-10"
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-        >
-          <motion.img
-            src="/src/assets/p.jpeg"
-            alt="GestiLoc Illustration"
-            className="w-full h-auto rounded-2xl shadow-2xl"
-            animate={{
-              y: [0, -10, 0],
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 
+            className="text-center"
+            style={{
+              fontFamily: 'Merriweather',
+              fontWeight: 700,
+              fontStyle: 'Bold',
+              fontSize: '36px',
+              lineHeight: '100%',
+              letterSpacing: '-0.17px',
+              verticalAlign: 'middle',
+              color: '#529D21'
             }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="mt-8 text-center"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <motion.h1
-              className="text-4xl font-bold text-white mb-4"
-              animate={{
-                textShadow: [
-                  "0 0 0px rgba(255,255,255,0)",
-                  "0 0 20px rgba(255,255,255,0.5)",
-                  "0 0 0px rgba(255,255,255,0)",
-                ],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              GestiLoc
-            </motion.h1>
-            <motion.p
-              className="text-blue-100 text-lg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
-            >
-              Gestion Immobilière Intelligente
-            </motion.p>
-            <motion.p
-              className="text-blue-100 mt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.9 }}
-            >
-              Simplifiez la gestion de vos biens immobiliers avec notre plateforme moderne.
-            </motion.p>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+            GestiLoc
+          </h1>
+          <p className="text-gray-600">Gestion Immobilière Intelligente</p>
+        </div>
 
-      {/* Right side - Forms */}
-      <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100 lg:bg-gradient-to-br lg:from-white lg:to-slate-50/50">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <motion.div
-            className="text-center mb-8 lg:hidden"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <motion.h1
-              className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent mb-2"
-              animate={{
-                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              GestiLoc
-            </motion.h1>
-            <p className="text-slate-600 font-medium">
-              Gestion Immobilière Intelligente
-            </p>
-          </motion.div>
+        {/* Formulaire de connexion */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+            Connexion
+          </h2>
 
-          {/* Login Form */}
-          <motion.div
-            className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-slate-200/50"
-            initial={{ y: 20, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-            whileHover={{ y: -2, transition: { duration: 0.2 } }}
-          >
-            <motion.h2
-              className="text-2xl font-bold text-slate-800 mb-6"
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-            >
-              Connexion à votre compte
-            </motion.h2>
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-600" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
 
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200/50 rounded-xl p-4 mb-6 flex items-center gap-3 shadow-lg"
-                  initial={{ opacity: 0, scale: 0.9, y: -20, rotateX: -15 }}
-                  animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: -20, rotateX: -15 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-                  <motion.div
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                  >
-                    <AlertCircle size={20} className="text-red-600" />
-                  </motion.div>
-                  <p className="text-sm text-red-700 font-medium">{error}</p>
-                </motion.div>
+          <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+            <div>
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Adresse email
+              </Label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre@email.fr"
+                  {...loginForm.register("email")}
+                  className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              {loginForm.formState.errors.email && (
+                <p className="text-sm text-red-600 mt-1">
+                  {loginForm.formState.errors.email.message}
+                </p>
               )}
-            </AnimatePresence>
+            </div>
 
-            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-6">
-              <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
-              >
-                <Label htmlFor="login-email" className="text-slate-700 font-medium">
-                  Adresse email
-                </Label>
-                <div className="relative mt-2">
-                  <Mail size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="votre@email.fr"
-                    {...loginForm.register("email")}
-                    className="pl-10 h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                  />
-                </div>
-                {loginForm.formState.errors.email && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {loginForm.formState.errors.email.message}
-                  </p>
-                )}
-              </motion.div>
+            <div>
+              <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Mot de passe
+              </Label>
+              <div className="relative">
+                <Lock size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  {...loginForm.register("password")}
+                  className="pl-10 pr-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {loginForm.formState.errors.password && (
+                <p className="text-sm text-red-600 mt-1">
+                  {loginForm.formState.errors.password.message}
+                </p>
+              )}
+            </div>
 
-              <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
-              >
-                <Label htmlFor="login-password" className="text-slate-700 font-medium">
-                  Mot de passe
-                </Label>
-                <div className="relative mt-2">
-                  <Lock size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                  <Input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    {...loginForm.register("password")}
-                    className="pl-10 pr-10 h-12 border-slate-300/50 focus:border-primary focus:ring-4 focus:ring-primary/10 bg-slate-50/50 transition-all duration-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {loginForm.formState.errors.password && (
-                  <p className="text-sm text-red-600 mt-1">
-                    {loginForm.formState.errors.password.message}
-                  </p>
-                )}
-              </motion.div>
-
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
-              >
-                <Button type="submit" className="w-full h-12 text-lg font-medium relative overflow-hidden" disabled={isLoading}>
-                  <motion.div
-                    className="flex items-center justify-center gap-2"
-                    animate={isLoading ? { scale: [1, 1.05, 1] } : {}}
-                    transition={{ duration: 1.5, repeat: isLoading ? Infinity : 0 }}
-                  >
-                    {isLoading && (
-                      <motion.div
-                        className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      />
-                    )}
-                    {isLoading ? 'Connexion en cours...' : 'Se connecter'}
-                  </motion.div>
-                </Button>
-              </motion.div>
-            </form>
-
-            <motion.div
-              className="mt-6 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.6 }}
+            <Button 
+              type="submit" 
+              className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              disabled={isLoading}
             >
-              <motion.a
-                href="/forgot-password"
-                className="text-primary hover:text-primary-light font-medium text-sm transition-colors duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Mot de passe oublié ?
-              </motion.a>
-            </motion.div>
-          </motion.div>
+              {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+            </Button>
+          </form>
 
-          {/* Retour */}
-          <div className="text-center mt-8">
-            <button
-              onClick={() => navigate('/')}
-              className="text-slate-600 hover:text-primary text-sm font-medium transition-colors"
+          <div className="mt-6 text-center">
+            <a
+              href="/forgot-password"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
-              ← Retour à l'accueil
-            </button>
+              Mot de passe oublié ?
+            </a>
           </div>
+        </div>
+
+        {/* Retour à l'accueil */}
+        <div className="text-center mt-6">
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-600 hover:text-blue-600 text-sm font-medium"
+          >
+            ← Retour à l'accueil
+          </button>
         </div>
       </div>
     </div>

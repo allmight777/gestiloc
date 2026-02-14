@@ -1,20 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import {
   Home,
-  CreditCard,
-  Wrench,
+  Key,
   FileText,
+  Folder,
+  Wrench,
+  CheckSquare,
+  StickyNote,
+  FileSignature,
+  CreditCard,
+  Settings,
+  Menu,
+  X,
   Bell,
-  User,
+  MessageCircle,
+  ArrowLeft,
   LogOut,
   Building,
   ChevronRight,
-  Menu,
-  X,
-  FileSignature,
+  Sparkles,
+  Mail,
+  HelpCircle,
 } from 'lucide-react';
 import { Tab, Notification, ToastMessage } from '../types';
 import { Toast } from './ui/Toast';
+import { Landlord } from './Landlord';
 
 interface UserData {
   id: number;
@@ -34,6 +44,7 @@ interface LayoutProps {
   removeToast: (id: number) => void;
   onLogout: () => void;
   user: UserData | null;
+  notify: (message: string, type: 'success' | 'error' | 'info') => void;
 
   // ✅ AJOUTE ÇA
   isDarkMode: boolean;
@@ -54,11 +65,13 @@ export const Layout: React.FC<LayoutProps> = ({
   removeToast,
   onLogout,
   user,
+  notify,
   isDarkMode,
   toggleTheme,
 }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -73,20 +86,39 @@ export const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   const handleNavigate = (tab: Tab) => {
-    onNavigate(tab);
+    // Toujours naviguer vers l'onglet demandé
+    if (activeTab !== tab) {
+      onNavigate(tab);
+    }
     setIsMobileMenuOpen(false);
     const el = document.getElementById('app-scroll-container');
     if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handlePageChange = (page: string) => {
+    // Synchroniser avec activeTab si c'est un onglet valide
+    const validTabIds = ['home', 'location', 'landlord', 'receipts', 'documents', 'interventions', 'tasks', 'notes', 'notice', 'payments', 'settings', 'profile'];
+    if (validTabIds.includes(page)) {
+      onNavigate(page as Tab);
+    }
+    setIsMobileMenuOpen(false);
+    const el = document.getElementById('app-scroll-container');
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Menu complet avec tous les items pour l'indicateur
   const menuItems = [
-    { id: 'home', label: 'Accueil', icon: Home },
-    { id: 'property', label: 'Mon bail', icon: Building },
-    { id: 'receipts', label: 'Quittances', icon: FileText },
-    { id: 'interventions', label: 'Incidents', icon: Wrench },
+    { id: 'home', label: 'Tableau de bord', icon: Home },
+    { id: 'location', label: 'Ma location', icon: Key },
+    { id: 'landlord', label: 'Mon propriétaire', icon: Building },
+    { id: 'receipts', label: 'Mes quittances', icon: FileText },
+    { id: 'documents', label: 'Documents', icon: Folder },
+    { id: 'interventions', label: 'Mes interventions', icon: Wrench },
+    { id: 'tasks', label: 'Mes tâches', icon: CheckSquare },
+    { id: 'notes', label: 'Mes notes', icon: StickyNote },
     { id: 'notice', label: 'Préavis', icon: FileSignature },
-    { id: 'profile', label: 'Profil', icon: User },
-    { id: 'factures', label: 'Paiements', icon: CreditCard },
+    { id: 'payments', label: 'Paiements', icon: CreditCard },
+    { id: 'settings', label: 'Paramètres', icon: Settings },
   ];
 
   const userInitials =
@@ -104,139 +136,297 @@ export const Layout: React.FC<LayoutProps> = ({
       : 'Utilisateur';
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-white flex">
-      {/* Toasts */}
-      <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3">
-        {toasts.map((toast) => (
-          <Toast key={toast.id} toast={toast} onClose={removeToast} />
-        ))}
-      </div>
+    <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col">
+      {/* HEADER - Full width */}
+      <header className="px-4 sm:px-6 py-3 fixed top-0 left-0 right-0 z-[100] h-[60px]" style={{ background: 'rgba(82, 157, 33, 0.82)' }}>
+        <div className="flex justify-between items-center h-full">
+          <div className="flex items-center gap-3">
+            {activeTab !== 'home' && (
+              <button 
+                onClick={() => handleNavigate('home')}
+                className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+                aria-label="Retour au tableau de bord"
+              >
+                <ArrowLeft size={24} className="text-white" />
+              </button>
+            )}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)} 
+              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+              aria-label="Ouvrir le menu"
+            >
+              <Menu size={24} className="text-white" />
+            </button>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">Gestiloc</h1>
+          </div>
 
-      {/* Mobile backdrop */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+              onClick={() => setShowNotifications(!showNotifications)}
+              aria-label="Notifications"
+            >
+              <Bell size={18} />
+              <span className="hidden sm:inline text-sm">Notifications</span>
+            </button>
+            
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+              onClick={() => setShowHelp(!showHelp)}
+              aria-label="Aide"
+            >
+              <HelpCircle size={18} />
+              <span className="hidden sm:inline text-sm">Aide</span>
+            </button>
+            
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+              onClick={() => handlePageChange('profile')}
+              aria-label="Mon compte"
+            >
+              <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+                <span className="text-xs font-bold">{userInitials}</span>
+              </div>
+              <span className="hidden sm:inline text-sm">Mon compte</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Backdrop - HORS du conteneur relative */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[90] lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* SIDEBAR FIXE */}
+      {/* SIDEBAR - HORS du conteneur relative */}
       <aside
         className={`
-          fixed top-4 bottom-4 left-4 z-50 w-72
-          bg-white border border-blue-200 rounded-3xl shadow-xl
+          fixed top-0 left-0 h-full w-[280px] z-[100]
+          bg-white shadow-2xl
           flex flex-col
-          transition-transform duration-300
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[120%] lg:translate-x-0'}
+          transition-transform duration-300 ease-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-64 lg:top-[60px] lg:h-[calc(100vh-60px)] lg:shadow-none lg:border-r lg:border-gray-200 lg:z-40'}
         `}
       >
-        {/* Logo */}
-        <div className="p-6 border-b border-blue-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-              <Building size={20} />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg leading-none">Espace</h1>
-              <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">
-                Locataire
-              </span>
-            </div>
-          </div>
-          <button className="lg:hidden text-gray-400" onClick={() => setIsMobileMenuOpen(false)}>
-            <X size={22} />
+        {/* Mobile Header with Close */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200" style={{ background: 'rgba(82, 157, 33, 0.82)' }}>
+          <h2 className="text-lg font-bold text-white">Menu</h2>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+            aria-label="Fermer le menu"
+          >
+            <X size={24} className="text-white" />
           </button>
         </div>
-
-        {/* Menu */}
-        <nav className="px-4 py-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavigate(item.id as Tab)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm transition ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow'
-                    : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                }`}
-              >
-                <Icon size={18} />
-                {item.label}
-              </button>
-            );
-          })}
+        {/* Menu exact comme sur l'image */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <div className="space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              // Logique simplifiée : actif si l'onglet correspond
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.id as Tab)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#529D21]/20 to-[#F5A623]/20 text-[#529D21] font-semibold border-l-4 border-[#529D21] shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon size={18} className={`flex-shrink-0 ${isActive ? 'text-[#529D21]' : 'text-gray-500'}`} />
+                  <span className="truncate">{item.label}</span>
+                  {isActive && (
+                    <div className="ml-auto flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-pulse" />
+                      <ChevronRight size={16} className="text-[#529D21]" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+            
+          </div>
         </nav>
 
-        {/* User + Logout */}
-        <div className="mt-auto p-4 border-t border-blue-100 space-y-3">
+        {/* User Profile */}
+        <div className="p-4 border-t border-gray-200">
           <div
             onClick={() => handleNavigate('profile')}
-            className="bg-blue-50 p-3 rounded-2xl flex items-center gap-3 border border-blue-200 cursor-pointer hover:bg-blue-100"
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">
               {userInitials}
             </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold truncate">{userLabel}</p>
-              <p className="text-[10px] uppercase font-bold text-gray-500">Locataire</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{userLabel}</p>
+              <p className="text-xs text-gray-500">Locataire</p>
             </div>
-            <ChevronRight size={16} className="text-gray-400" />
           </div>
 
           <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-sm text-gray-700 hover:bg-red-50 hover:text-red-600"
+            onClick={() => {
+              handleNavigate('home');
+              window.location.href = '/login';
+            }}
+            className="w-full mt-2 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             Déconnexion
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 ml-0 lg:ml-[20rem] flex flex-col h-screen">
-        {/* Header */}
-        <header
-          className={`sticky top-0 z-30 px-4 lg:px-8 py-4 border-b ${
-            scrolled ? 'bg-white shadow-sm' : 'bg-white'
-          }`}
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3 lg:hidden">
-              <button onClick={() => setIsMobileMenuOpen(true)}>
-                <Menu size={24} />
+      {/* CONTENU PRINCIPAL */}
+      <div className="flex flex-1 h-[calc(100vh-60px)] relative pt-[60px]">
+        {/* Toasts */}
+        <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-3">
+          {toasts.map((toast) => (
+            <Toast key={toast.id} toast={toast} onClose={removeToast} />
+          ))}
+        </div>
+
+        {/* MAIN CONTENT */}
+        <main className="flex-1 flex flex-col ml-0 lg:ml-64 h-full overflow-hidden z-0 relative">
+          {/* Content */}
+          <div id="app-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 scroll-smooth">
+            {activeTab === 'landlord' ? (
+              <Landlord notify={notify} />
+            ) : (
+              <div className="p-4 sm:p-6 pt-6 sm:pt-8 max-w-7xl mx-auto">
+                {children}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
               </button>
-              <h2 className="font-bold text-lg">
-                {menuItems.find((i) => i.id === activeTab)?.label}
-              </h2>
             </div>
-
-            <div className="hidden lg:block">
-              <h2 className="text-2xl font-bold">
-                {menuItems.find((i) => i.id === activeTab)?.label}
-              </h2>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            {/* Notification items */}
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Loyer novembre en retard</p>
+                  <p className="text-sm text-gray-600 mt-1">Régularisez avant pénalités</p>
+                  <p className="text-xs text-gray-400 mt-2">Il y a 2 heures</p>
+                </div>
+              </div>
             </div>
-
-            <button
-              className="relative p-2 bg-blue-50 rounded-full border border-blue-200"
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Intervention confirmée</p>
+                  <p className="text-sm text-gray-600 mt-1">22/11 - 14h-16h</p>
+                  <p className="text-xs text-gray-400 mt-2">Il y a 1 jour</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Nouvelle quittance disponible</p>
+                  <p className="text-sm text-gray-600 mt-1">Quittance d'octobre 2024</p>
+                  <p className="text-xs text-gray-400 mt-2">Il y a 3 jours</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200">
+            <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+              Voir toutes les notifications
             </button>
           </div>
-        </header>
+        </div>
+      )}
 
-        {/* Scroll UNIQUE */}
-        <div id="app-scroll-container" className="flex-1 overflow-y-auto">
-          <div className="px-4 md:px-8 pb-8 max-w-7xl mx-auto">
-            {children}
+      {/* Help Dropdown */}
+      {showHelp && (
+        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Aide</h3>
+              <button 
+                onClick={() => setShowHelp(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Guide de démarrage</p>
+                  <p className="text-sm text-gray-600 mt-1">Apprenez les bases de GestiLoc</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Centre d'aide complet</p>
+                  <p className="text-sm text-gray-600 mt-1">Accédez à tous nos guides</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Contactez le support</p>
+                  <p className="text-sm text-gray-600 mt-1">Notre équipe est là pour vous aider</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200">
+            <button 
+              onClick={() => {
+                setShowHelp(false);
+                window.location.href = '/help';
+              }}
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              Voir toute l'aide
+            </button>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 };
+
+export default Layout;

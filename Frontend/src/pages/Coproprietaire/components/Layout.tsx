@@ -6,8 +6,10 @@ import {
   Sun,
   Moon,
   Bell,
-  HelpCircle,
   User,
+  Wallet,
+  ExternalLink,
+  HelpCircle,
 } from "lucide-react";
 
 import { Tab, ToastMessage } from '../types';
@@ -56,6 +58,8 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     try {
