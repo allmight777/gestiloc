@@ -4,14 +4,9 @@
 
 @section('content')
 <div class="content-container">
+    <br><br>
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="folder-open" style="width: 32px; height: 32px;"></i>
-                Documents du bail
-            </h1>
-            <p>Contrat de location pour {{ $lease->property->name ?? 'Bien sans nom' }}</p>
-        </div>
+
 
         <div class="content-body">
             <div class="top-actions">
@@ -112,7 +107,7 @@
             <div class="documents-section">
                 <div class="documents-header"
                     style="
-                        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+                        background: #70AE48;
                         color: #ffffff;
                         padding: 16px 20px;
                         border-radius: 14px;
@@ -445,7 +440,7 @@
 
     .button-secondary {
         background: rgba(255, 255, 255, .92);
-        color: #4338ca;
+        color: #70AE48;
         border: 2px solid rgba(67, 56, 202, .20);
     }
 

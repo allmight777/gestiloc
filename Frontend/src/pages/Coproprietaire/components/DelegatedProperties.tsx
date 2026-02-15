@@ -21,6 +21,7 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
   const [statusFilter, setStatusFilter] = useState<'all' | 'rented' | 'available' | 'maintenance' | 'off_market'>('all');
   const [selectedEditProperty, setSelectedEditProperty] = useState<CoOwnerProperty | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [quickSearch, setQuickSearch] = useState('');
 
   useEffect(() => {
     fetchProperties();
@@ -40,10 +41,16 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
     }
   };
 
+  // Filtre combiné (recherche principale + recherche rapide)
   const filteredProperties = properties.filter(property => {
-    const matchesSearch = property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         property.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         property.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = (searchTerm || quickSearch).toLowerCase();
+    const matchesSearch = 
+      property.name.toLowerCase().includes(searchLower) ||
+      property.address.toLowerCase().includes(searchLower) ||
+      property.city.toLowerCase().includes(searchLower) ||
+      property.reference_code?.toLowerCase().includes(searchLower) ||
+      property.property_type?.toLowerCase().includes(searchLower);
+    
     const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -57,9 +64,9 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-emerald-500 text-white';
+        return 'bg-[#70AE48] text-white';
       case 'rented':
-        return 'bg-blue-600 text-white';
+        return 'bg-[#8BC34A] text-white';
       case 'maintenance':
         return 'bg-amber-500 text-white';
       case 'off_market':
@@ -183,7 +190,7 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
         {/* Informations principales */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-[#70AE48]">
               {formatCurrency(property.rent_amount)}
             </p>
             <p className="text-xs text-gray-500">/mois</p>
@@ -204,7 +211,7 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
               {[...Array(Math.min(property.photos?.length || 0, 3))].map((_, i) => (
                 <div 
                   key={i} 
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white flex items-center justify-center"
+                  className="w-8 h-8 rounded-full bg-gradient-to-br from-[#70AE48] to-[#8BC34A] border-2 border-white flex items-center justify-center"
                 >
                   <Home className="w-4 h-4 text-white" />
                 </div>
@@ -266,41 +273,49 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
           </button>
         </div>
 
-        {/* Header avec titre et description */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center mb-2">
-            <Building className="w-8 h-8 mr-3" />
-            Mes biens
-          </h1>
-          <p className="text-gray-600">
-            Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels...
-          </p>
-        </div>
-
-        {/* Barre de recherche et bouton Ajouter */}
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, adresse..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent shadow-sm"
-            />
+        {/* Header avec titre et barre de recherche à droite */}
+        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center">
+            <Building className="w-8 h-8 mr-3 text-[#70AE48]" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Mes biens
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels...
+              </p>
+            </div>
           </div>
           
-       
+          {/* Barre de recherche rapide à droite */}
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Rechercher un bien..."
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#70AE48] focus:border-transparent shadow-sm"
+            />
+            {quickSearch && (
+              <button
+                onClick={() => setQuickSearch('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Filtres horizontaux */}
+        {/* Filtres horizontaux - changés en vert */}
         <div className="flex items-center space-x-3 mb-8 pb-4 border-b border-gray-200 overflow-x-auto">
           <button
             onClick={() => setStatusFilter('all')}
             className={`px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
               statusFilter === 'all'
-                ? 'bg-gray-900 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-[#70AE48] text-white'
+                : 'bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200'
             }`}
           >
             Tous
@@ -309,8 +324,8 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
             onClick={() => setStatusFilter('rented')}
             className={`px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
               statusFilter === 'rented'
-                ? 'bg-gray-900 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-[#70AE48] text-white'
+                : 'bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200'
             }`}
           >
             Loué
@@ -319,8 +334,8 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
             onClick={() => setStatusFilter('available')}
             className={`px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
               statusFilter === 'available'
-                ? 'bg-gray-900 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-[#70AE48] text-white'
+                : 'bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200'
             }`}
           >
             Disponible
@@ -329,8 +344,8 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
             onClick={() => setStatusFilter('maintenance')}
             className={`px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
               statusFilter === 'maintenance'
-                ? 'bg-gray-900 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-[#70AE48] text-white'
+                : 'bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200'
             }`}
           >
             En travaux
@@ -339,16 +354,23 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
             onClick={() => setStatusFilter('off_market')}
             className={`px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
               statusFilter === 'off_market'
-                ? 'bg-gray-900 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-[#70AE48] text-white'
+                : 'bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200'
             }`}
           >
             Préavis
           </button>
-          <button className="px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors">
+          <button className="px-6 py-2.5 rounded-xl font-semibold whitespace-nowrap bg-white text-gray-700 hover:bg-[#70AE48]/10 border border-gray-200 transition-colors">
             Meublé
           </button>
         </div>
+
+        {/* Résultats de recherche */}
+        {quickSearch && (
+          <div className="mb-4 text-sm text-gray-600">
+            {filteredProperties.length} résultat{filteredProperties.length !== 1 ? 's' : ''} pour "{quickSearch}"
+          </div>
+        )}
 
         {/* Sections par statut */}
         {(statusFilter === 'all' || statusFilter === 'rented') && rentedProperties.length > 0 && (
@@ -398,18 +420,26 @@ export const DelegatedProperties: React.FC<DelegatedPropertiesProps> = ({ onNavi
         {/* Message vide */}
         {filteredProperties.length === 0 && (
           <div className="text-center py-16">
-            <div className="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Building className="w-12 h-12 text-gray-400" />
+            <div className="bg-[#70AE48]/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Building className="w-12 h-12 text-[#70AE48]" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {searchTerm || statusFilter !== 'all' ? 'Aucun bien trouvé' : 'Aucun bien délégué'}
+              {quickSearch || statusFilter !== 'all' ? 'Aucun bien trouvé' : 'Aucun bien délégué'}
             </h3>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              {searchTerm || statusFilter !== 'all' 
+              {quickSearch || statusFilter !== 'all' 
                 ? 'Essayez de modifier vos critères de recherche'
                 : 'Les biens qui vous seront délégués apparaîtront ici'
               }
             </p>
+            {quickSearch && (
+              <button
+                onClick={() => setQuickSearch('')}
+                className="px-6 py-3 bg-[#70AE48] text-white rounded-xl font-semibold hover:bg-[#5d8f3a] transition-colors"
+              >
+                Effacer la recherche
+              </button>
+            )}
           </div>
         )}
       </div>

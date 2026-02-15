@@ -128,7 +128,7 @@
                     <div class="contract-actions">
 
 
-                    
+
                         <a href="{{ route('co-owner.leases.documents.index', $lease) }}" class="action-btn btn-edit" title="Modifier">
                            <i data-lucide="download" style="width: 16px; height: 16px;"></i>
                         </a>
@@ -316,7 +316,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: #1650cc;
+        background: #70AE48;
         color: white;
         padding: 0.875rem 1.5rem;
         border-radius: 50px;
@@ -381,8 +381,8 @@
         border: 1px solid #d1d5db;
         border-radius: 8px;
         font-size: 0.95rem;
-        color: #374151;
-        background: white;
+        color: #000000;
+        background: #ffffff;
         appearance: none;
         cursor: pointer;
         transition: border-color 0.2s;
@@ -390,7 +390,7 @@
 
     .filter-select:focus {
         outline: none;
-        border-color: #84cc16;
+        border-color: #84cc16 !important;
         box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
     }
 

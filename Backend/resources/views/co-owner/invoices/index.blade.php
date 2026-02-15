@@ -40,7 +40,7 @@
     }
 
     .add-document-btn {
-        background: #377DF4;
+        background: #70AE48;
         color: white;
         padding: 1rem 2rem;
         border-radius: 2rem;
@@ -127,7 +127,7 @@
     }
 
     .filter-tab.active {
-        background: #377DF4;
+        background: #70AE48;
         color: white;
         box-shadow: 0 2px 8px rgba(124, 179, 66, 0.3);
     }
@@ -343,7 +343,7 @@
     }
 
     .action-btn.primary {
-        background: #2196f3;
+        background: #70AE48;
         color: white;
         border-color: #2196f3;
     }
@@ -426,7 +426,7 @@
             <div class="stat-value">{{ $stats['count_pending'] + $stats['count_paid'] }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Dépenses 2025</div>
+            <div class="stat-label">Montant</div>
             <div class="stat-value orange">{{ number_format($stats['total_pending'] + $stats['total_paid'], 0, ',', ' ') }} FCFA</div>
         </div>
         <div class="stat-card">
@@ -548,7 +548,7 @@
 
                 <div class="detail-item">
                     <div class="detail-label">Montant TTC</div>
-                    <div class="detail-value amount">{{ number_format($invoice->amount_total, 0, ',', ' ') }} €</div>
+                    <div class="detail-value amount">{{ number_format($invoice->amount_total, 0, ',', ' ') }} FCFA</div>
                 </div>
             </div>
 
@@ -563,13 +563,14 @@
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
                     </a>
-                    <a href="{{ route('co-owner.invoices.pdf', $invoice->id) }}" class="action-btn primary" title="PDF">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                    </a>
+            <a href="{{ route('co-owner.invoices.pdf', $invoice->id) }}" class="action-btn primary" title="PDF">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+</a>
+
                     <button class="action-btn" title="Modifier">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>

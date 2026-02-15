@@ -11,10 +11,10 @@
 
     <style>
         :root {
-            --gradA: #667eea;
-            --gradB: #764ba2;
-            --indigo: #4f46e5;
-            --violet: #7c3aed;
+            --gradA: #70AE48;
+            --gradB: #8BC34A;
+            --indigo: #70AE48;
+            --violet: #8BC34A;
             --emerald: #10b981;
             --ink: #0f172a;
             --muted: #64748b;
@@ -59,7 +59,7 @@
             padding: 1.5rem;
             height: 64px;
             border-bottom: 1px solid #e5e7eb;
-            background: #377DF4;
+            background: #70AE48;
         }
 
         .sidebar-header h1 {
@@ -92,15 +92,15 @@
         }
 
         .menu-item:hover {
-            background: #eff6ff;
-            color: #2563eb;
-            border-color: #dbeafe;
+            background: #f0f9e6;
+            color: #70AE48;
+            border-color: #d4edc9;
         }
 
         .menu-item.active {
-            background: linear-gradient(to right, #2563eb, #3b82f6);
+            background: linear-gradient(to right, #70AE48, #8BC34A);
             color: white;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(112, 174, 72, 0.3);
         }
 
         .menu-item-content {
@@ -125,7 +125,7 @@
             width: 2.5rem;
             height: 2.5rem;
             border-radius: 9999px;
-            background: linear-gradient(to right, #3b82f6, #2563eb);
+            background: linear-gradient(to right, #70AE48, #8BC34A);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -151,7 +151,7 @@
 
         .top-bar {
             height: 64px;
-            background: #377DF4;
+            background: #70AE48;
             border-bottom: none;
             display: flex;
             align-items: center;
@@ -279,8 +279,8 @@
             position: fixed;
             inset: 0;
             background:
-                radial-gradient(900px 520px at 12% -8%, rgba(102, 126, 234, .16) 0%, rgba(102, 126, 234, 0) 62%),
-                radial-gradient(900px 520px at 92% 8%, rgba(118, 75, 162, .14) 0%, rgba(118, 75, 162, 0) 64%),
+                radial-gradient(900px 520px at 12% -8%, rgba(112, 174, 72, .16) 0%, rgba(112, 174, 72, 0) 62%),
+                radial-gradient(900px 520px at 92% 8%, rgba(139, 195, 74, .14) 0%, rgba(139, 195, 74, 0) 64%),
                 radial-gradient(700px 420px at 40% 110%, rgba(16, 185, 129, .10) 0%, rgba(16, 185, 129, 0) 60%);
             pointer-events: none;
             z-index: -2;
@@ -293,7 +293,7 @@
             border-radius: 22px;
             box-shadow: var(--shadow);
             overflow: hidden;
-            border: 1px solid rgba(102, 126, 234, .18);
+            border: 1px solid rgba(112, 174, 72, .18);
             position: relative;
             backdrop-filter: blur(10px);
         }
@@ -370,8 +370,8 @@
         .form-select:focus,
         .form-textarea:focus {
             outline: none;
-            border-color: rgba(79, 70, 229, .75);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
+            border-color: rgba(112, 174, 72, .75);
+            box-shadow: 0 0 0 4px rgba(112, 174, 72, 0.14);
         }
 
         .input-error {
@@ -409,22 +409,22 @@
         .button-primary {
             background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
             color: #fff;
-            box-shadow: 0 14px 30px rgba(79, 70, 229, .22);
+            box-shadow: 0 14px 30px rgba(112, 174, 72, .22);
         }
 
         .button-primary:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 18px 34px rgba(79, 70, 229, .28);
+            box-shadow: 0 18px 34px rgba(112, 174, 72, .28);
         }
 
         .button-secondary {
             background: rgba(255, 255, 255, .92);
-            color: #4338ca;
-            border: 2px solid rgba(67, 56, 202, .20);
+            color: #70AE48;
+            border: 2px solid rgba(112, 174, 72, .20);
         }
 
         .button-secondary:hover {
-            background: rgba(67, 56, 202, .06);
+            background: rgba(112, 174, 72, .06);
         }
 
         .button-danger {
@@ -473,9 +473,9 @@
         }
 
         .alert-info {
-            background: rgba(239, 246, 255, .92);
-            border-color: rgba(59, 130, 246, .30);
-            color: #1e40af;
+            background: rgba(240, 249, 235, .92);
+            border-color: rgba(112, 174, 72, .30);
+            color: #2e5e1e;
         }
 
         .alert-warning {
@@ -669,12 +669,7 @@
                         </div>
                     </button>
 
-                    <button class="menu-item" onclick="goToReact('/coproprietaire/parametres')">
-                        <div class="menu-item-content">
-                            <span class="nav-emoji">📜</span>
-                            <span>Mon compte</span>
-                        </div>
-                    </button>
+
                 </div>
             </nav>
 

@@ -5,13 +5,7 @@
 @section('content')
 <div class="content-container">
     <div class="content-card">
-        <div class="content-header">
-            <h1>
-                <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
-                Détail de la demande
-            </h1>
-            <p>Référence : MAINT-{{ str_pad($maintenance->id, 6, '0', STR_PAD_LEFT) }}</p>
-        </div>
+
 
         <div class="content-body">
             <a href="{{ route('co-owner.maintenance.index') }}" class="back-button">
@@ -299,19 +293,24 @@
                         <i data-lucide="message-square"></i>
                         Répondre au locataire
                     </h3>
-                    <form action="{{ route('co-owner.maintenance.reply', $maintenance) }}" method="POST" class="reply-form">
-                        @csrf
-                        <div class="form-group">
-                            <label class="form-label">Votre message</label>
-                            <textarea name="message" class="form-textarea"
-                                      placeholder="Envoyez un message au locataire pour l'informer de l'avancement..."
-                                      required></textarea>
-                        </div>
-                        <button type="submit" class="button button-primary">
-                            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
-                            Envoyer au locataire
-                        </button>
-                    </form>
+                   <form action="{{ route('co-owner.maintenance.reply', $maintenance) }}" method="POST" class="reply-form">
+    @csrf
+    <div class="form-group">
+        <label class="form-label">Votre message</label>
+    <textarea name="reply_message" class="form-textarea"  placeholder="Envoyez un message au locataire pour l'informer de l'avancement..." required></textarea>
+
+    </div>
+
+
+    <!-- Conteneur pour bouton aligné à droite -->
+    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button type="submit" class="button button-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+            Envoyer au locataire
+        </button>
+    </div>
+</form>
+
                 </div>
             </div>
         </div>
@@ -345,215 +344,14 @@
         --shadow: 0 22px 70px rgba(0,0,0,.18);
     }
 
-    .content-container {
-        min-height: 100vh;
-        background: #ffffff;
-        padding: 2rem;
-        position: relative;
-=======
-    <script>
-        // Initialiser les icônes
-        lucide.createIcons();
+  .content-container {
+    min-height: 100vh;
+    background: #ffffff;
+    padding: 2rem;
+    width: 70%;
+    margin: 0 auto; /* centre horizontalement */
+}
 
-        // Fonction UNIFIÉE - React sur 8080, Laravel sur 8000
-        function goToReact(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
-
-            // Déterminer si c'est une route React ou Laravel
-            const isLaravelRoute = path.includes('/tenants') ||
-                                  path.includes('/assign-property') ||
-                                  path.includes('/leases') ||
-                                  path.includes('/notices') ||
-                                  path.includes('/maintenance') ||
-                                  path.includes('/test-laravel');
-
-            let baseUrl = 'http://localhost:';
-
-            if (isLaravelRoute) {
-                baseUrl += '8000'; // Laravel
-            } else {
-                baseUrl += '8080'; // React
-            }
-
-            let fullUrl = baseUrl + path;
-
-            const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-            console.log('Navigation vers:', fullUrl);
-            window.location.href = fullUrl;
-        }
-
-        // Pour les routes Laravel
-        function navigateTo(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
-
-            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-            let fullUrl = baseUrl + path;
-
-            const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-            console.log('Navigation Laravel vers:', fullUrl);
-            window.location.href = fullUrl;
-        }
-
-        // Helper pour récupérer un paramètre d'URL
-        function getUrlParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // Gestion des sous-menus
-        function toggleSubmenu(menuId) {
-            const submenu = document.getElementById(menuId);
-            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
-
-            if (submenu.style.display === 'none' || !submenu.style.display) {
-                submenu.style.display = 'block';
-                parent.classList.add('active');
-            } else {
-                submenu.style.display = 'none';
-                parent.classList.remove('active');
-            }
-        }
-
-        // Gestion de la sidebar mobile
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        document.getElementById('overlay').addEventListener('click', toggleSidebar);
-
-        // Logout
-        function logout() {
-            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
-            }
-        }
-
-        // Au chargement
-        function checkMobile() {
-            const mobileBtn = document.querySelector('.mobile-menu-btn');
-            if (window.innerWidth <= 768) {
-                mobileBtn.style.display = 'block';
-            } else {
-                mobileBtn.style.display = 'none';
-            }
-        }
-
-        window.addEventListener('resize', checkMobile);
-        checkMobile();
-
-        // Ajouter le token à la page actuelle si présent dans l'URL
-        const urlToken = getUrlParam('api_token');
-        if (urlToken) {
-            localStorage.setItem('token', urlToken);
-        }
-
-        // Gestion des formulaires d'action
-        function toggleAssignForm() {
-            const form = document.getElementById('assign-form');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function toggleCancelForm() {
-            const form = document.getElementById('cancel-form');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function toggleResolveForm() {
-            const form = document.getElementById('resolve-form');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Modal pour les photos
-        function openModal(imageSrc) {
-            document.getElementById('modalImage').src = imageSrc;
-            document.getElementById('photoModal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('photoModal').style.display = 'none';
-        }
-
-        // Fermer modal avec ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-            }
-        });
-
-        // Fermer modal en cliquant à côté
-        document.getElementById('photoModal').addEventListener('click', function(e) {
-            if (e.target.id === 'photoModal') {
-                closeModal();
-            }
-        });
-    </script>
-
-    <script>
-    // Initialiser les icônes
-    lucide.createIcons();
-
-    // Navigation vers React (8080)
-    function goToReact(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'http://localhost:8080';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation React vers:', fullUrl);
-        window.location.href = fullUrl;
-    }
-
-    // Navigation vers Laravel (8000)
-    function navigateTo(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation Laravel vers:', fullUrl);
-        window.location.href = fullUrl;
->>>>>>> origin/main
-    }
 
     .content-container::before {
         content: "";
@@ -677,7 +475,7 @@
     }
 
     .button-primary {
-        background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+        background: #70AE48;
         color: #fff;
         box-shadow: 0 14px 30px rgba(79,70,229,.22);
     }

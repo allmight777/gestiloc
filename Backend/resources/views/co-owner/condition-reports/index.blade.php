@@ -33,7 +33,7 @@
     }
 
     .create-btn {
-        background: #377DF4;
+        background: #70AE48;
         color: white;
         padding: 0.875rem 1.5rem;
         border-radius: 2rem;
@@ -49,7 +49,7 @@
     }
 
     .create-btn:hover {
-        background: #2563eb;
+        background: #70AE48;
         transform: translateY(-1px);
     }
 
@@ -84,7 +84,7 @@
     }
 
     .tab-btn.active {
-        background: #377DF4;
+        background: #70AE48;
         color: white;
     }
 

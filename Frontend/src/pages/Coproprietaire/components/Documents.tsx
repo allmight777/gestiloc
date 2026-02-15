@@ -234,7 +234,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
             <h1 className="text-3xl font-bold text-gray-900">Archivage de documents</h1>
             <p className="text-gray-600 mt-2">Retrouvez tous vos documents archivés : anciens baux, états des lieux terminés, quittances passées. Gardez un historique complet de votre gestion locative.</p>
           </div>
-          <button className="bg-[#377df4] hover:bg-[#2b65c9] text-white px-6 py-3 rounded-full flex items-center gap-2 font-medium transition-colors">
+          <button className="bg-[#70AE48] hover:bg-[#5d8f3a] text-white px-6 py-3 rounded-full flex items-center gap-2 font-medium transition-colors">
             <Plus className="w-5 h-5" />
             Ajouter un document
           </button>
@@ -288,7 +288,6 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
             Gardez un historique complet de votre gestion locative.
           </p>
         </div>
-   
       </div>
 
       {/* Stats Cards */}
@@ -320,7 +319,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
           onClick={() => setTypeFilter('all')}
           className={`px-6 py-2.5 rounded-full font-medium transition-colors ${
             typeFilter === 'all'
-              ? 'bg-[#377df4] text-white'
+              ? 'bg-[#70AE48] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -330,7 +329,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
           onClick={() => setTypeFilter('lease')}
           className={`px-6 py-2.5 rounded-full font-medium transition-colors ${
             typeFilter === 'lease'
-              ? 'bg-[#377df4] text-white'
+              ? 'bg-[#70AE48] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -340,7 +339,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
           onClick={() => setTypeFilter('inventory')}
           className={`px-6 py-2.5 rounded-full font-medium transition-colors ${
             typeFilter === 'inventory'
-              ? 'bg-[#377df4] text-white'
+              ? 'bg-[#70AE48] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -350,7 +349,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
           onClick={() => setTypeFilter('receipt')}
           className={`px-6 py-2.5 rounded-full font-medium transition-colors ${
             typeFilter === 'receipt'
-              ? 'bg-[#377df4] text-white'
+              ? 'bg-[#70AE48] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -360,7 +359,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
           onClick={() => setTypeFilter('other')}
           className={`px-6 py-2.5 rounded-full font-medium transition-colors ${
             typeFilter === 'other'
-              ? 'bg-[#377df4] text-white'
+              ? 'bg-[#70AE48] text-white'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
@@ -376,7 +375,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
             <select 
               value={propertyFilter}
               onChange={(e) => setPropertyFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg appearance-none bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#377df4] focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg appearance-none bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#70AE48] focus:border-transparent"
             >
               <option value="all">Tous les biens</option>
               {availableProperties.map(prop => (
@@ -393,7 +392,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
             <select 
               value={yearFilter}
               onChange={(e) => setYearFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg appearance-none bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#377df4] focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg appearance-none bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#70AE48] focus:border-transparent"
             >
               <option value="all">Toutes les années</option>
               {availableYears.map(year => (
@@ -414,7 +413,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
             placeholder="Rechercher"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#377df4] focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#70AE48] focus:border-transparent"
           />
         </div>
       </div>
@@ -483,7 +482,7 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
                   {/* Property Location */}
                   {document.property && (
                     <div className="flex items-center gap-2 text-gray-600 mb-4">
-                      <MapPin className="w-4 h-4 text-red-500" />
+                      <MapPin className="w-4 h-4 text-[#70AE48]" />
                       <span className="text-sm">{document.property.name}</span>
                     </div>
                   )}
@@ -576,7 +575,13 @@ export const CoOwnerDocuments: React.FC<DocumentsProps> = ({ onNavigate, notify 
                     <span className="text-xs text-gray-500">
                       Archivé le {formatDate(document.archived_at || document.created_at)}
                     </span>
-                  
+                    <button
+                      onClick={() => handleDownload(document)}
+                      className="p-2 text-[#70AE48] hover:bg-[#70AE48]/10 rounded-full transition-colors"
+                      title="Télécharger"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

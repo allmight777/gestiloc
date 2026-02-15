@@ -32,9 +32,9 @@
                font-size: 14px;
                text-decoration: none;
                transition: all 0.2s ease;
-               background-color: #377df4;
+               background-color:  #70AE48;
                color: #ffffff;
-               border: 1px solid #052096;
+               border: 1px solid #000000;
                box-shadow: {{ $status === 'active' ? '0 4px 10px rgba(5,150,105,0.3)' : 'none' }};
            "
                             onmouseover="this.style.backgroundColor='#377df4'; this.style.color='#fff'"
@@ -91,7 +91,7 @@
                         </svg>
                         Retour au tableau de bord
                     </a>
-                    <a href="{{ route('co-owner.tenants.create') }}" class="btn-primary" style="background-color: #377df4;">
+                    <a href="{{ route('co-owner.tenants.create') }}" class="btn-primary" style="background-color: #70AE48;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <path d="M12 5v14M5 12h14" />

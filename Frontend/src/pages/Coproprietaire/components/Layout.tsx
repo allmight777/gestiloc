@@ -6,7 +6,6 @@ import {
   Sun,
   Moon,
   Bell,
-  HelpCircle,
   User,
   Wallet,
   ExternalLink,
@@ -323,13 +322,7 @@ export const Layout: React.FC<LayoutProps> = ({
           path: "/coproprietaire/parametres",
           isReact: true
         },
-        { 
-          id: "profile", 
-          label: "Mon compte", 
-          emoji: '📜',
-          path: "/coproprietaire/parametres",
-          isReact: true
-        },
+        
       ]
     }
   ];
@@ -356,8 +349,8 @@ export const Layout: React.FC<LayoutProps> = ({
     const isActive = item.path === activeTab || item.id === activeTab;
 
     const baseBtn = "w-full flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group cursor-pointer";
-    const activeBtn = "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg";
-    const idleBtn = "text-gray-700 hover:bg-blue-50 hover:text-blue-600";
+    const activeBtn = `bg-gradient-to-r from-[#70AE48] to-[#8BC34A] text-white shadow-lg`;
+    const idleBtn = "text-gray-700 hover:bg-[#70AE48]/10 hover:text-[#70AE48]";
 
     return (
       <button
@@ -383,18 +376,43 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <>
+      <style>{`
+        /* Masquer UNIQUEMENT la barre de défilement dans le menu latéral */
+        .sidebar-menu-container {
+          overflow-y: auto !important;
+          scrollbar-width: none !important; /* Firefox */
+          -ms-overflow-style: none !important; /* IE and Edge */
+        }
+        
+        .sidebar-menu-container::-webkit-scrollbar {
+          display: none !important; /* Chrome, Safari, Opera */
+        }
+        
+        /* Le reste de la page garde son comportement normal */
+        main {
+          overflow-y: auto !important;
+        }
+        
+        /* Les barres de défilement normales restent visibles ailleurs */
+        ::-webkit-scrollbar {
+          display: block;
+        }
+      `}</style>
+      
       <div className="min-h-screen bg-white">
         <div className="flex h-screen bg-white">
           {/* Sidebar - Desktop */}
           <aside className="hidden lg:flex lg:flex-shrink-0">
             <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
-              {/* Header avec fond bleu #377DF4 */}
-              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#377DF4' }}>
+              {/* Header avec fond vert #70AE48 */}
+              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#70AE48' }}>
                 <h1 className="text-xl font-bold text-white">
                   GestiLoc
                 </h1>
               </div>
-              <div className="flex-1 overflow-y-auto px-5 py-6">
+              
+              {/* Menu avec scroll mais sans barre visible */}
+              <div className="flex-1 sidebar-menu-container px-5 py-6">
                 {menuSections.map((section) => (
                   <div key={section.title} className="mb-6">
                     <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
@@ -406,9 +424,11 @@ export const Layout: React.FC<LayoutProps> = ({
                   </div>
                 ))}
               </div>
-              <div className="p-5 border-t border-gray-200">
+              
+              {/* Footer */}
+              <div className="p-5 border-t border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-10 h-10 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {ownerInitials}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -428,9 +448,9 @@ export const Layout: React.FC<LayoutProps> = ({
           </aside>
 
           {/* Main content */}
-          <div className="flex flex-col flex-1 overflow-hidden bg-white">
-            {/* Top bar avec fond bleu #377DF4 */}
-            <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#377DF4' }}>
+          <div className="flex flex-col flex-1 bg-white">
+            {/* Top bar avec fond vert #70AE48 */}
+            <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#70AE48' }}>
               <button
                 type="button"
                 className="px-4 text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white lg:hidden hover:bg-white/10 transition-all duration-200"
@@ -446,13 +466,25 @@ export const Layout: React.FC<LayoutProps> = ({
                 </div>
                 <div className="ml-4 flex items-center md:ml-6 space-x-4">
                   <button
-                    onClick={() => setShowHelp(!showHelp)}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    title="Aide"
+                    onClick={() => onNavigate('/coproprietaire/notifications' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Notifications"
                   >
-                    <HelpCircle className="w-5 h-5" />
+                    <Bell className="w-4 h-4" />
+                    <span className="hidden md:inline">Notifications</span>
                   </button>
 
+                  {/* Bouton Aide */}
+                  <button
+                    onClick={() => onNavigate('/coproprietaire/aide' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Aide"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    <span className="hidden md:inline">Aide</span>
+                  </button>
+
+                  {/* Bouton Mon compte */}
                   <button
                     onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
@@ -473,8 +505,8 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             </div>
 
-            {/* Page content */}
-            <main className="flex-1 relative overflow-y-auto focus:outline-none bg-white">
+            {/* Page content - garde son scroll normal */}
+            <main className="flex-1 overflow-y-auto focus:outline-none bg-white">
               <div className="py-6">
                 <div className="max-w-7xl mx-auto px-6">
                   {children}

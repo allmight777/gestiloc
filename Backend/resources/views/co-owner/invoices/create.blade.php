@@ -65,7 +65,7 @@
     }
 
     .step-circle.active {
-        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        background: #70AE48;
         color: white;
         box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
     }
@@ -121,7 +121,7 @@
     }
 
     .step-title svg {
-        color: #2196f3;
+        color: #70AE48;
     }
 
     .form-group {
@@ -284,7 +284,7 @@
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        background: #70AE48;
         color: white;
         box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
     }

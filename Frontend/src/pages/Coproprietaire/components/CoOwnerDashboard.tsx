@@ -23,7 +23,7 @@ import { Card } from "../../Proprietaire/components/ui/Card";
 import { Button } from "../../Proprietaire/components/ui/Button";
 import { Skeleton } from "../../Proprietaire/components/ui/Skeleton";
 import { Tab } from "../types";
-import { PropertyModal } from './PropertyModal';
+import { PropertyModal } from "./PropertyModal";
 
 import {
   coOwnerApi,
@@ -42,41 +42,17 @@ interface CoOwnerDashboardProps {
 
 const eur = (n: number) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
-    isFinite(n) ? n : 0
+    isFinite(n) ? n : 0,
   );
 
-<<<<<<< HEAD
-=======
-const toNumber = (v: any) => {
-  if (v === null || v === undefined) return 0;
-  if (typeof v === "number") return v;
-  const s = String(v).replace(/\s/g, "").replace(",", ".");
-  const m = s.match(/-?\d+(\.\d+)?/);
-  return m ? Number(m[0]) : 0;
-};
-
-const getPropertyImage = (property: CoOwnerProperty) => {
-  if (property.photos && property.photos.length > 0) {
-    const firstPhoto = property.photos[0];
-    if (typeof firstPhoto === 'string' && firstPhoto.startsWith('http')) {
-      return firstPhoto;
-    }
-    if (typeof firstPhoto === 'string') {
-      return `${import.meta.env.VITE_API_URL || 'https://wheat-skunk-120710.hostingersite.com'}/storage/${firstPhoto}`;
-    }
-  }
-  return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
-};
-
-type ActivityItem =
-  | { kind: "receipt"; date: string; title: string; subtitle: string; amount: number }
-  | { kind: "delegation"; date: string; title: string; subtitle: string; action: string };
-
->>>>>>> origin/main
-export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, notify }) => {
+export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({
+  onNavigate,
+  notify,
+}) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<CoOwnerProfile | null>(null);
-  const [selectedProperty, setSelectedProperty] = useState<CoOwnerProperty | null>(null);
+  const [selectedProperty, setSelectedProperty] =
+    useState<CoOwnerProperty | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchProfile = async () => {
@@ -121,7 +97,9 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
   if (!profile) {
     return (
       <div className="p-6 text-center">
-        <p className="text-slate-500">Impossible de charger les données du tableau de bord.</p>
+        <p className="text-slate-500">
+          Impossible de charger les données du tableau de bord.
+        </p>
         <Button onClick={fetchProfile} className="mt-4">
           Réessayer
         </Button>
@@ -130,7 +108,7 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
   }
 
   const dashboardData = profile.dashboard_data || {
-    subscription: { plan: 'Permanent', renewal_date: '15 Mars 2026' },
+    subscription: { plan: "Permanent", renewal_date: "15 Mars 2026" },
     rent_data: [],
     graph_max: 5000,
     occupancy_data: { occupied: 0, vacant: 0, total: 0, occupancy_rate: 0 },
@@ -143,11 +121,19 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
       occupied_properties: 0,
       total_properties: 0,
       active_delegations: 0,
-      active_alerts: 0
-    }
+      active_alerts: 0,
+    },
   };
 
-  const { subscription, rent_data, graph_max, occupancy_data, recent_documents, quick_actions, kpis } = dashboardData;
+  const {
+    subscription,
+    rent_data,
+    graph_max,
+    occupancy_data,
+    recent_documents,
+    quick_actions,
+    kpis,
+  } = dashboardData;
   const isAgency = profile.is_professional;
 
   // Générer l'échelle verticale dynamique
@@ -165,37 +151,38 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
 
   return (
     <div className="p-6 space-y-8">
-      {/* En-tête de bienvenue */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
+      {/* En-tête de bienvenue - avec vert */}
+      <div className="bg-[#70AE48] rounded-2xl p-8 border border-[#70AE48]/30">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Bienvenue sur Gestiloc{profile.company_name ? `, ${profile.company_name}` : ''} !
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Bienvenue sur Gestiloc
+              {profile.company_name ? `, ${profile.company_name}` : ""} !
             </h1>
-            <p className="text-slate-600 text-lg">
-              Merci de vous être inscrit ! Nous sommes heureux de vous avoir à bord ! 
-              Dites-nous un peu plus sur vous afin de compléter votre profil et de profiter 
-              pleinement de toutes nos fonctionnalités.
+            <p className="text-white/90 text-lg">
+              Merci de vous être inscrit ! Nous sommes heureux de vous avoir à
+              bord ! Dites-nous un peu plus sur vous afin de compléter votre
+              profil et de profiter pleinement de toutes nos fonctionnalités.
             </p>
           </div>
-          
-        
         </div>
       </div>
 
-  <div className="rounded-xl p-4 min-w-[200px] 
-                bg-gradient-to-br from-blue-50 to-sky-100
-                border border-blue-200 
-                shadow-md
-                grid grid-cols-2 gap-y-2">
-  
-  <span className="text-sm text-blue-600">Abonnement</span>
-  <span className="text-sm font-semibold text-blue-800 text-right">
+      {/* Carte d'abonnement - avec vert */}
+ <div
+  className="rounded-xl p-4 min-w-[200px] 
+              bg-gradient-to-br from-red-50 to-red-100
+              border border-red-200
+              shadow-sm
+              grid grid-cols-2 gap-y-2"
+>
+  <span className="text-sm text-red-600">Abonnement</span>
+  <span className="text-sm font-semibold text-red-700 text-right">
     {subscription.plan}
   </span>
 
-  <span className="text-sm text-blue-600">Renouvellement</span>
-  <span className="text-sm font-medium text-blue-900 text-right">
+  <span className="text-sm text-red-600">Renouvellement</span>
+  <span className="text-sm font-medium text-red-700 text-right">
     {subscription.renewal_date}
   </span>
 </div>
@@ -209,29 +196,34 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
             <h2 className="text-2xl font-bold text-slate-900 mb-6">
               Pour démarrer, c'est simple comme 1, 2, 3...
             </h2>
-            
+
             <div className="space-y-6">
               {quick_actions.map((action, index) => (
-                <div 
+                <div
                   key={action.id}
-                  className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
-                  onClick={() => onNavigate('biens')}
+                  className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 hover:border-[#70AE48] hover:bg-[#70AE48]/5 transition-all cursor-pointer"
                 >
-                  <div className="text-2xl font-bold text-blue-600">{(index + 1) + '\uFE0F\u20E3'}</div>
+                  {/* Cercle numéro */}
+                  <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#70AE48] text-white font-bold text-lg shadow-md">
+                    {index + 1}
+                  </div>
+
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-1">{action.title}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1">
+                      {action.title}
+                    </h3>
                     <p className="text-slate-600">{action.description}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          
+
           {/* Image à droite */}
           <div className="flex-1 flex justify-center lg:justify-end">
             <div className="w-full max-w-md">
-              <img 
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
+              <img
+                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                 alt="Dashboard illustration"
                 className="w-full h-auto rounded-xl shadow-lg"
               />
@@ -245,52 +237,57 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
         <div className="bg-white rounded-2xl p-6 border border-slate-200">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-slate-900">Loyers</h2>
-          
           </div>
-          
+
           {/* Échelle verticale dynamique */}
           <div className="flex h-64 mb-2">
             <div className="flex flex-col justify-between mr-4 text-right text-sm text-slate-500">
               {verticalScale.map((value, index) => (
-                <div key={index}>{value.toLocaleString('fr-FR')}</div>
+                <div key={index}>{value.toLocaleString("fr-FR")}</div>
               ))}
             </div>
-            
+
             {/* Graphique */}
             <div className="flex-1 flex items-end space-x-4">
               {rent_data.map((item, index) => {
                 const receivedHeight = (item.received / graph_max) * 180;
-                const expectedHeight = ((item.expected - item.received) / graph_max) * 180;
-                
+                const expectedHeight =
+                  ((item.expected - item.received) / graph_max) * 180;
+
                 return (
-                  <div key={index} className="flex-1 flex flex-col items-center">
+                  <div
+                    key={index}
+                    className="flex-1 flex flex-col items-center"
+                  >
                     {/* Barres empilées */}
                     <div className="w-full flex flex-col items-center">
-                      <div 
-                        className="w-6 bg-blue-500 rounded-t-lg"
+                      <div
+                        className="w-6 bg-[#70AE48] rounded-t-lg"
                         style={{ height: `${Math.max(0, receivedHeight)}px` }}
                       ></div>
-                      <div 
-                        className="w-6 bg-blue-300 rounded-b-lg mt-1"
+                      <div
+                        className="w-6 bg-[#8BC34A] rounded-b-lg mt-1"
                         style={{ height: `${Math.max(0, expectedHeight)}px` }}
                       ></div>
                     </div>
-                    
-                    <div className="text-xs text-slate-500 mt-2">{item.month}</div>
+
+                    <div className="text-xs text-slate-500 mt-2">
+                      {item.month}
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
-          
+
           {/* Légende */}
           <div className="flex justify-center space-x-8 mt-6">
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-[#70AE48] rounded mr-2"></div>
               <span className="text-sm text-slate-700">Loyers reçus</span>
             </div>
             <div className="flex items-center">
-              <div className="w-4 h-4 bg-blue-300 rounded mr-2"></div>
+              <div className="w-4 h-4 bg-[#8BC34A] rounded mr-2"></div>
               <span className="text-sm text-slate-700">Loyers attendus</span>
             </div>
           </div>
@@ -299,44 +296,50 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
         {/* Graphique Taux d'occupation */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200">
           <h2 className="text-xl font-bold text-slate-900 mb-6">Cette année</h2>
-          
+
           <div className="text-center mb-8">
-            <div className="text-5xl font-bold text-blue-700">{occupancy_data.occupancy_rate}%</div>
+            <div className="text-5xl font-bold text-[#70AE48]">
+              {occupancy_data.occupancy_rate}%
+            </div>
             <div className="text-sm text-slate-500">Taux d'occupation</div>
           </div>
-          
+
           {/* Graphique circulaire simplifié */}
           <div className="flex justify-center mb-6">
             <div className="relative w-48 h-48">
               {/* Cercle de fond */}
               <div className="absolute inset-0 rounded-full border-8 border-slate-200"></div>
-              
+
               {/* Portion occupée */}
-              <div 
-                className="absolute inset-0 rounded-full border-8 border-blue-500"
+              <div
+                className="absolute inset-0 rounded-full border-8 border-[#70AE48]"
                 style={{
                   clipPath: `inset(0 ${100 - occupancy_data.occupancy_rate}% 0 0)`,
                 }}
               ></div>
-              
+
               {/* Portion vacante */}
-              <div 
-                className="absolute inset-0 rounded-full border-8 border-blue-300"
+              <div
+                className="absolute inset-0 rounded-full border-8 border-[#8BC34A]"
                 style={{
                   clipPath: `inset(0 0 0 ${occupancy_data.occupancy_rate}%)`,
                 }}
               ></div>
             </div>
           </div>
-          
+
           {/* Légende et chiffres */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-2xl font-bold text-blue-700">{occupancy_data.occupied}</div>
+            <div className="text-center p-4 bg-[#70AE48]/10 rounded-xl">
+              <div className="text-2xl font-bold text-[#70AE48]">
+                {occupancy_data.occupied}
+              </div>
               <div className="text-sm text-slate-600">Occupés</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-2xl font-bold text-blue-300">{occupancy_data.vacant}</div>
+            <div className="text-center p-4 bg-[#8BC34A]/10 rounded-xl">
+              <div className="text-2xl font-bold text-[#8BC34A]">
+                {occupancy_data.vacant}
+              </div>
               <div className="text-sm text-slate-600">Vacants</div>
             </div>
           </div>
@@ -346,34 +349,36 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
       {/* Documents récents */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-slate-900">Nouveaux documents</h2>
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('documents')}>
+          <h2 className="text-xl font-bold text-slate-900">
+            Nouveaux documents
+          </h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate("documents")}
+          >
             Voir tous <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
-        
+
         <div className="space-y-4">
           {recent_documents.length > 0 ? (
             recent_documents.map((doc, index) => (
-              <div 
+              <div
                 key={index}
-                className="flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:bg-[#70AE48]/5 transition-colors"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 rounded-lg bg-[#70AE48]/10 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#70AE48]" />
                   </div>
                   <div>
-                    <div className="font-medium text-slate-900">{doc.title}</div>
+                    <div className="font-medium text-slate-900">
+                      {doc.title}
+                    </div>
                     <div className="text-sm text-slate-500">{doc.date}</div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => {
-                  // TODO: Implémenter le téléchargement selon le type de document
-                  notify(`Téléchargement de ${doc.title}`, 'info');
-                }}>
-                  <Download className="w-4 h-4" />
-                </Button>
               </div>
             ))
           ) : (
@@ -384,9 +389,6 @@ export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, 
           )}
         </div>
       </div>
-
-      {/* KPIs en bas */}
-
 
       {/* Property Modal */}
       <PropertyModal
