@@ -230,6 +230,7 @@
         position: relative;
     }
 
+<<<<<<< HEAD
     .content-container::before {
         content: "";
         position: fixed;
@@ -241,6 +242,13 @@
         pointer-events: none;
         z-index: -2;
     }
+=======
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+>>>>>>> origin/main
 
     .content-card {
         max-width: 1500px;
@@ -305,6 +313,7 @@
         gap: 10px;
     }
 
+<<<<<<< HEAD
     .alert-success {
         background: rgba(240,253,244,.92);
         border-color: rgba(74,222,128,.30);
@@ -316,6 +325,16 @@
         border-color: rgba(248,113,113,.30);
         color: #991b1b;
     }
+=======
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            let fullUrl = baseUrl + path;
+>>>>>>> origin/main
 
     .button {
         padding: 0.9rem 1.35rem;
@@ -373,12 +392,23 @@
         margin-bottom: 2rem;
     }
 
+<<<<<<< HEAD
     .notice-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1.5rem;
     }
+=======
+        // Logout
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+            }
+        }
+>>>>>>> origin/main
 
     .notice-title {
         font-size: 1.5rem;
@@ -466,7 +496,111 @@
 </style>
 
 <script>
+<<<<<<< HEAD
     // Scripts spécifiques à cette page
+=======
+    // Initialiser les icônes
+    lucide.createIcons();
+
+    // Navigation vers React (8080)
+    function goToReact(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'http://localhost:8080';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation React vers:', fullUrl);
+        window.location.href = fullUrl;
+    }
+
+    // Navigation vers Laravel (8000)
+    function navigateTo(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation Laravel vers:', fullUrl);
+        window.location.href = fullUrl;
+    }
+
+    // Helper pour récupérer un paramètre d'URL
+    function getUrlParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    // Gestion des sous-menus
+    function toggleSubmenu(menuId) {
+        const submenu = document.getElementById(menuId);
+        const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+
+        if (submenu.style.display === 'none' || !submenu.style.display) {
+            submenu.style.display = 'block';
+            parent.classList.add('active');
+        } else {
+            submenu.style.display = 'none';
+            parent.classList.remove('active');
+        }
+    }
+
+    // Gestion de la sidebar mobile
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    // Logout
+    function logout() {
+        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+        }
+    }
+
+    // Au chargement
+    function checkMobile() {
+        const mobileBtn = document.querySelector('.mobile-menu-btn');
+        if (window.innerWidth <= 768) {
+            mobileBtn.style.display = 'block';
+        } else {
+            mobileBtn.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('resize', checkMobile);
+    checkMobile();
+
+    // Ajouter le token à la page actuelle si présent dans l'URL
+    const urlToken = getUrlParam('api_token');
+    if (urlToken) {
+        localStorage.setItem('token', urlToken);
+    }
+
+    // Marquer le menu actif en fonction de la page courante
+>>>>>>> origin/main
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les icônes Lucide
         if (typeof lucide !== 'undefined') {

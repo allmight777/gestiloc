@@ -45,6 +45,34 @@ const eur = (n: number) =>
     isFinite(n) ? n : 0
   );
 
+<<<<<<< HEAD
+=======
+const toNumber = (v: any) => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return v;
+  const s = String(v).replace(/\s/g, "").replace(",", ".");
+  const m = s.match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : 0;
+};
+
+const getPropertyImage = (property: CoOwnerProperty) => {
+  if (property.photos && property.photos.length > 0) {
+    const firstPhoto = property.photos[0];
+    if (typeof firstPhoto === 'string' && firstPhoto.startsWith('http')) {
+      return firstPhoto;
+    }
+    if (typeof firstPhoto === 'string') {
+      return `${import.meta.env.VITE_API_URL || 'https://wheat-skunk-120710.hostingersite.com'}/storage/${firstPhoto}`;
+    }
+  }
+  return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
+};
+
+type ActivityItem =
+  | { kind: "receipt"; date: string; title: string; subtitle: string; amount: number }
+  | { kind: "delegation"; date: string; title: string; subtitle: string; action: string };
+
+>>>>>>> origin/main
 export const CoOwnerDashboard: React.FC<CoOwnerDashboardProps> = ({ onNavigate, notify }) => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<CoOwnerProfile | null>(null);

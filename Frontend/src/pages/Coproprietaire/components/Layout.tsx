@@ -96,7 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({
       return;
     }
 
-    const laravelBaseUrl = 'http://localhost:8000';
+    const laravelBaseUrl = 'https://wheat-skunk-120710.hostingersite.com';
     let fullPath = path;
     
     // Assurer le format correct
