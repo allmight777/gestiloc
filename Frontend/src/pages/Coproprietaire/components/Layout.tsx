@@ -8,6 +8,9 @@ import {
   Bell,
   HelpCircle,
   User,
+  Wallet,
+  ExternalLink,
+  HelpCircle,
 } from "lucide-react";
 
 import { Tab, ToastMessage } from '../types';
@@ -56,6 +59,8 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     try {
@@ -439,28 +444,15 @@ export const Layout: React.FC<LayoutProps> = ({
                     <h1 className="text-2xl font-bold text-white">{activeTitle}</h1>
                   </div>
                 </div>
-                <div className="ml-4 flex items-center md:ml-6 space-x-2">
-                  {/* Bouton Notifications */}
+                <div className="ml-4 flex items-center md:ml-6 space-x-4">
                   <button
-                    onClick={() => onNavigate('/coproprietaire/notifications' as Tab)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
-                    title="Notifications"
-                  >
-                    <Bell className="w-4 h-4" />
-                    <span className="hidden md:inline">Notifications</span>
-                  </button>
-
-                  {/* Bouton Aide */}
-                  <button
-                    onClick={() => onNavigate('/coproprietaire/aide' as Tab)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    onClick={() => setShowHelp(!showHelp)}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                     title="Aide"
                   >
-                    <HelpCircle className="w-4 h-4" />
-                    <span className="hidden md:inline">Aide</span>
+                    <HelpCircle className="w-5 h-5" />
                   </button>
 
-                  {/* Bouton Mon compte */}
                   <button
                     onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"

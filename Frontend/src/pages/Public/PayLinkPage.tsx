@@ -22,8 +22,9 @@ export default function PayLinkPage() {
         } else {
           setError('Impossible d\'obtenir l\'URL de paiement');
         }
-      } catch (e: any) {
-        setError(e?.response?.data?.message || 'Erreur lors de l\'initialisation du paiement');
+      } catch (e: unknown) {
+        const error = e as { response?: { data?: { message?: string } } };
+        setError(error?.response?.data?.message || 'Erreur lors de l\'initialisation du paiement');
       }
     };
     init();

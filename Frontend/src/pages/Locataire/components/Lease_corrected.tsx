@@ -121,7 +121,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Mon Bail</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownload}>
+          <Button variant="secondary" size="sm" onClick={handleDownload}>
             <Download className="h-4 w-4 mr-2" />
             Télécharger
           </Button>
@@ -171,7 +171,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
                 <FileSignature className="h-5 w-5 text-gray-400 mr-3" />
                 <div>
                   <p className="text-sm text-gray-500">Référence</p>
-                  <p className="font-medium">{lease.reference || 'Non spécifiée'}</p>
+                  <p className="font-medium">{lease.uuid || 'Non spécifiée'}</p>
                 </div>
               </div>
               <div className="flex items-center">
@@ -206,7 +206,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
               <FileSignature className="h-5 w-5 text-gray-400 mr-3" />
               <span>Contrat de bail</span>
             </div>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button variant="secondary" size="sm" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Télécharger
             </Button>
@@ -216,7 +216,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
               <Shield className="h-5 w-5 text-gray-400 mr-3" />
               <span>État des lieux d'entrée</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => {}}>
+            <Button variant="secondary" size="sm" onClick={() => {}}>
               <Download className="h-4 w-4 mr-2" />
               Télécharger
             </Button>

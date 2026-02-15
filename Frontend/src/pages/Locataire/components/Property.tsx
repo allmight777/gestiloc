@@ -380,7 +380,7 @@ const Property: React.FC<PropertyProps> = ({ notify }) => {
                 {postal} {property.city}
               </p>
               <div className="mt-4">
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="secondary" size="sm">
                   <Map className="h-4 w-4 mr-2" />
                   Voir sur la carte
                 </Button>

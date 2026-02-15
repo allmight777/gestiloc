@@ -1,17 +1,13 @@
-import { Hero } from "@/components/home/Hero";
-import { Steps } from "@/components/home/Steps";
-import { Features } from "@/components/home/Features";
-import { Stats } from "@/components/home/Stats";
-import { PressLogos } from "@/components/home/PressLogos";
-import { CTASection } from "@/components/home/CTASection";
+import HeroSection from "@/components/home/HeroSection";
+import FeaturesSection from "@/components/home/FeaturesSection";
+import TestimonialsSection from "@/components/home/TestimonialsSection";
 
 export default function Home() {
   return (
-    <>
-      <Hero />
-      <Steps />
-      <Features />
-      <Stats />
-    </>
+    <div className="bg-white min-h-screen">
+      <HeroSection />
+      <FeaturesSection />
+      <TestimonialsSection />
+    </div>
   );
 }

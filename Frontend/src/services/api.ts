@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Configuration mode standalone/backend
+const IS_STANDALONE = true; // Mettre 'false' pour utiliser le backend Laravel
+
 export interface User {
   id: number;
   name: string;
@@ -178,6 +181,13 @@ const api = axios.create({
 // ================= CSRF / SANCTUM =================
 
 const getCsrfToken = async () => {
+  if (IS_STANDALONE) {
+    // Mode standalone : pas de backend, on simule le succès
+    console.log('Mode standalone : CSRF token simulation (pas d\'appel backend)');
+    return true;
+  }
+  
+  // Mode backend : appel réel au serveur Laravel
   try {
     await axios.get('https://wheat-skunk-120710.hostingersite.com/sanctum/csrf-cookie', {
       withCredentials: true,
@@ -203,7 +213,10 @@ const initializeCsrfToken = async () => {
   return true;
 };
 
-initializeCsrfToken().catch(console.error);
+// Initialisation CSRF automatique (seulement en mode backend)
+if (!IS_STANDALONE) {
+  initializeCsrfToken().catch(console.error);
+}
 
 // Intercepteur réponses (CSRF 419)
 api.interceptors.response.use(
@@ -667,6 +680,8 @@ export const tenantService = {
 // ================= LEASES SERVICE =================
 
 export interface Lease {
+  tenant: any;
+  property: any;
   id: number;
   uuid: string;
   property_id: number;

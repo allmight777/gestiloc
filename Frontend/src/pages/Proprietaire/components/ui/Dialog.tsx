@@ -9,11 +9,8 @@ const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
 
-const DialogPortal = ({
-  className,
-  ...props
-}: DialogPrimitive.DialogPortalProps) => (
-  <DialogPrimitive.Portal className={cn(className)} {...props} />
+const DialogPortal = (props: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>) => (
+  <DialogPrimitive.Portal {...props} />
 );
 DialogPortal.displayName = DialogPrimitive.Portal.displayName;
 
@@ -39,14 +36,6 @@ const DialogContent = React.forwardRef<
     hideCloseButton?: boolean;
   }
 >(({ className, children, hideCloseButton = false, ...props }, ref) => {
-  // Prevent event propagation to avoid closing the dialog when clicking inside
-  const handlePointerDownOutside = (event: any) => {
-    if (props.onPointerDownOutside) {
-      props.onPointerDownOutside(event);
-    }
-    // Don't stop propagation by default to allow interaction with form elements
-  };
-
   return (
     <DialogPortal>
       <DialogOverlay>
@@ -64,7 +53,6 @@ const DialogContent = React.forwardRef<
             'sm:w-full sm:max-w-lg sm:rounded-lg',
             className
           )}
-          onPointerDownOutside={handlePointerDownOutside}
           {...props}
         >
           {children}

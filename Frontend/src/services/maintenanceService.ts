@@ -17,7 +17,11 @@ export interface MaintenanceRequest {
   status: MaintenanceStatus;
   priority: MaintenancePriority;
 
-  preferred_slots?: any[] | null;
+  preferred_slots?: {
+    date: string;
+    start_time: string;
+    end_time: string;
+  }[] | null;
   photos?: string[] | null;
 
   assigned_provider?: string | null;
@@ -51,13 +55,13 @@ export interface PaginatedResponse<T> {
 }
 
 // -------- helpers (Laravel Resource / Collection / plain array) --------
-function unwrap<T>(payload: any): T {
-  return (payload?.data ?? payload) as T;
+function unwrap<T>(payload: T | { data: T }): T {
+  return (payload as { data?: T }).data ?? payload as T;
 }
 
 export const maintenanceService = {
   async list(params?: { status?: MaintenanceStatus; property_id?: number; page?: number }) {
-    const res = await api.get<PaginatedResponse<MaintenanceRequest> | any>("/incidents", { params });
+    const res = await api.get<PaginatedResponse<MaintenanceRequest>>("/incidents", { params });
 
     // Cas paginate Laravel => { data: [...], ...meta }
     if (res.data && typeof res.data === "object" && Array.isArray(res.data.data)) {
