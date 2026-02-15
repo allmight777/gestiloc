@@ -16,6 +16,7 @@ interface Locataire {
   etat: "actif" | "inactif" | "suspendu" | "invited";
   modeles: string[];
   is_invited?: boolean;
+  invitation_accepted_at?: string | null;
 }
 
 interface LocatairesProps {
@@ -41,17 +42,38 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   const mapTenantApiToLocataire = (tenant: TenantApi): Locataire => {
     const nom = [tenant.first_name, tenant.last_name].filter(Boolean).join(" ") || tenant.email || "Locataire sans nom";
 
-    const bien = tenant.property
-      ? `${tenant.property.name ?? "Bien"} – ${tenant.property.address}${tenant.property.city ? ` (${tenant.property.city})` : ""}`
-      : "Aucun bien assigné";
+    // --- MODIFICATION ICI ---
+    // On récupère tous les noms de biens et on les joint avec une virgule
+    let bien = "Aucun bien assigné";
+    
+    if (tenant.properties && tenant.properties.length > 0) {
+      bien = tenant.properties
+        .map(p => p.name || p.address || "Bien sans nom")
+        .join(", ");
+    } else if (tenant.active_property) {
+      bien = tenant.active_property.name || tenant.active_property.address;
+    }
+    // -------------------------
 
+    // Déterminer l'état basé sur le statut du backend
     let etat: Locataire["etat"] = "actif";
-    if (tenant.status === "invited" || tenant.is_invited) {
-      etat = "invited";
-    } else if (tenant.status === "inactive") {
-      etat = "inactif";
-    } else if (tenant.status === "suspended") {
-      etat = "suspendu";
+    
+    // Utiliser les nouvelles données d'invitation si disponibles
+    if (tenant.invitation) {
+      if (tenant.invitation.is_pending) {
+        etat = "invited";
+      } else if (tenant.invitation.is_accepted) {
+        etat = "actif";
+      }
+    } else {
+      // Fallback pour la rétrocompatibilité
+      if (tenant.is_invited || tenant.status === "invited") {
+        etat = "invited";
+      } else if (tenant.status === "inactive") {
+        etat = "inactif";
+      } else if (tenant.status === "suspended") {
+        etat = "suspendu";
+      }
     }
 
     return {
@@ -65,6 +87,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
       etat,
       modeles: [],
       is_invited: tenant.is_invited,
+      invitation_accepted_at: tenant.invitation?.accepted_at ?? null,
     };
   };
 
@@ -72,21 +95,40 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   // FETCH tenants API
   // ============================
   const fetchTenants = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  try {
+    setLoading(true);
+    setError(null);
 
-      const res: TenantIndexResponse = await tenantService.listTenants();
-      const mapped = (res.tenants || []).map(mapTenantApiToLocataire);
-      setLocataires(mapped);
-    } catch (err: any) {
-      const message = err?.message || "Impossible de charger les locataires";
-      setError(message);
-      notify(message, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const res: TenantIndexResponse = await tenantService.listTenants();
+    
+    // 1. Mapper les locataires réels (déjà inscrits)
+    const mappedTenants = (res.tenants || []).map(mapTenantApiToLocataire);
+
+    // 2. Mapper les invitations en attente (pas encore inscrits)
+    const mappedInvitations = (res.invitations || []).map((inv): Locataire => ({
+      id: `inv-${inv.id}`, // Préfixe pour éviter les conflits d'ID
+      nom: [inv.first_name, inv.last_name].filter(Boolean).join(" ") || inv.email,
+      type: "Invitation en attente",
+      bien: "En attente de configuration",
+      telephone: "N/A",
+      email: inv.email,
+      solde: 0,
+      etat: "invited", // Forcer l'état invited
+      modeles: [],
+      is_invited: true
+    }));
+
+    // 3. Fusionner les deux listes
+    setLocataires([...mappedTenants, ...mappedInvitations]);
+
+  } catch (err: any) {
+    const message = err?.message || "Impossible de charger les locataires";
+    setError(message);
+    notify(message, "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchTenants();
@@ -201,7 +243,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
             <span className="group-hover:text-blue-600 transition-colors">Actualiser</span>
           </Button>
           <Button 
-            variant="primary" 
+            variant="default" 
             icon={<Plus size={16} />} 
             onClick={handleAddLocataire}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
@@ -438,8 +480,15 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
                     </td>
 
                     <td className="px-6 py-4">
-                      <div className="max-w-xs">
-                        <span className="text-sm text-slate-600 line-clamp-2">{locataire.bien}</span>
+                      <div className="max-w-xs flex flex-wrap gap-1">
+                        {locataire.bien.split(", ").map((b, i) => (
+                          <span 
+                            key={i} 
+                            className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-200 inline-block"
+                          >
+                            {b}
+                          </span>
+                        ))}
                       </div>
                     </td>
 
@@ -545,7 +594,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
               }
             </p>
             <Button 
-              variant="primary" 
+              variant="default" 
               onClick={handleAddLocataire}
               className="bg-gradient-to-r from-blue-600 to-indigo-600"
             >

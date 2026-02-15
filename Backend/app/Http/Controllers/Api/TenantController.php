@@ -636,7 +636,15 @@ HTML;
             // Déterminer le statut complet
             $status = $tenant->status ?? 'active';
             $invitationStatus = $meta['invitation_status'] ?? null;
-            $fullStatus = ($status === 'candidate' && $invitationStatus) ? $invitationStatus : $status;
+            $acceptedAt = $meta['accepted_at'] ?? null;
+            
+            // Si le Tenant a été invité et a accepté (accepted_at présent), passer à 'active'
+            $fullStatus = $status;
+            if ($status === 'candidate' && $acceptedAt) {
+                $fullStatus = 'active';
+            } elseif ($status === 'candidate' && $invitationStatus) {
+                $fullStatus = $invitationStatus;
+            }
 
             // Formater les biens
             $formattedProperties = $properties->map(function ($property) {
@@ -664,10 +672,16 @@ HTML;
                 'email'          => $email,
                 'phone'          => $phone,
                 'status'         => $fullStatus,
+                'tenant_status'  => $status, // Statut brut du tenant
                 'solvency_score' => $tenant->solvency_score,
-                'is_invited'     => $status === 'candidate' || $fullStatus === 'invited' ||
-                                   (!empty($meta['invitation_id']) && empty($meta['accepted_at'])),
-                'invitation_id'  => $meta['invitation_id'] ?? null,
+                'is_invited'    => $status === 'candidate' && !$acceptedAt,
+                'invitation'     => [
+                    'id'          => $meta['invitation_id'] ?? null,
+                    'sent_at'     => $tenant->created_at?->toISOString(),
+                    'accepted_at' => $acceptedAt,
+                    'is_pending'  => $status === 'candidate' && !$acceptedAt,
+                    'is_accepted' => (bool) $acceptedAt,
+                ],
                 'properties'     => $formattedProperties,
                 'active_property' => $formattedProperties->firstWhere('is_active', true),
                 'properties_count' => $properties->count(),

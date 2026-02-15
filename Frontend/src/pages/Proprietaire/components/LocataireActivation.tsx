@@ -38,16 +38,24 @@ export const TenantActivation: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await tenantService.completeTenantRegistration({
+      const response = await tenantService.completeTenantRegistration({
         token,
         email,
         password,
         password_confirmation: passwordConfirmation,
       });
 
+      // Stocker le token et les données utilisateur dans localStorage
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+      }
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+
       setSuccess('Votre compte a été créé. Redirection vers votre espace locataire...');
       setTimeout(() => {
-        navigate('/locataire'); // ou '/locataire/dashboard' selon tes routes
+        navigate('/locataire');
       }, 1500);
     } catch (err: any) {
       console.error(err);

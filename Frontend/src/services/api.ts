@@ -532,13 +532,25 @@ export interface TenantApiProperty {
   name: string | null;
   address: string;
   city: string | null;
+  role?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: string;
+  is_active?: boolean;
 }
 
 export interface TenantApiLease {
   id: number;
   uuid: string | null;
   status: string;
-  // current_balance?: number | null; // à activer si le backend le renvoie
+}
+
+export interface TenantApiInvitation {
+  id: number | null;
+  sent_at: string | null;
+  accepted_at: string | null;
+  is_pending: boolean;
+  is_accepted: boolean;
 }
 
 export interface TenantApi {
@@ -547,10 +559,13 @@ export interface TenantApi {
   last_name: string | null;
   email: string;
   phone?: string | null;
-  status?: string | null;
+  status?: string | null;       // Statut du tenant (candidate, active, inactive)
+  tenant_status?: string | null; // Statut brut du tenant
   solvency_score?: number | null;
-  property?: TenantApiProperty | null;
-  lease?: TenantApiLease | null;
+  properties?: TenantApiProperty[];
+  active_property?: TenantApiProperty | null;
+  is_invited?: boolean;
+  invitation?: TenantApiInvitation; // ✅ Nouvelles données d'invitation structurées
 }
 
 export interface TenantInvitationApi {
@@ -1257,26 +1272,5 @@ export const apiService = {
   createInvoice: invoiceService.createInvoice,
 };
 
-
-export interface TenantApi {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  solvency_score: number | null;
-  property?: {
-    name: string;
-    address: string;
-    city: string;
-  };
-  is_invited?: boolean;
-}
-
-export interface TenantIndexResponse {
-  tenants: TenantApi[];
-  invitations: any[];
-}
 
 export default api;

@@ -654,7 +654,7 @@ export const AjouterLocataire: React.FC = () => {
 
   const handleCancel = () => {
     if (confirm("Êtes-vous sûr de vouloir annuler ? Les modifications seront perdues.")) {
-      navigate("/proprietaire");
+      navigate("/proprietaire/locataires");
     }
   };
 
@@ -703,10 +703,14 @@ export const AjouterLocataire: React.FC = () => {
       console.log('📞 Phone in invitePayload:', invitePayload.phone);
 
       const response = await tenantService.inviteTenant(invitePayload);
+      // ✅ 1. Affichage du message de succès
+    pushToast("success", "Locataire ajouté", `L'invitation a été envoyée avec succès à ${formData.email}.`);
       console.log("Réponse API inviteTenant :", response);
 
-      pushToast("success", "Invitation envoyée", `Un email a été envoyé à ${formData.email.trim()} pour activer le compte.`);
-      navigate("/proprietaire");
+     // pushToast("success", "Invitation envoyée", `Un email a été envoyé à ${formData.email.trim()} pour activer le compte.`);
+     setTimeout(() => {
+      navigate("/proprietaire/locataires"); // Remplace "/proprietaire" par ton vrai chemin locataires
+    }, 500);
     } catch (error: any) {
       console.error("Erreur lors de l'invitation du locataire :", error);
 
