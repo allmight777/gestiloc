@@ -187,15 +187,14 @@ export const Layout: React.FC<LayoutProps> = ({
     },
   ];
 
+  // ✅ Créer un flat menu à partir de menuSections pour la navigation
   const flatMenu = useMemo(() => {
     const items: MenuItem[] = [];
-    const walk = (arr: MenuItem[]) => {
-      arr.forEach((i) => {
-        items.push(i);
-        if (i.submenu?.length) walk(i.submenu);
+    menuSections.forEach(section => {
+      section.items.forEach(item => {
+        items.push(item);
       });
-    };
-    walk(menuItems);
+    });
     return items;
   }, []);
 
@@ -204,13 +203,6 @@ export const Layout: React.FC<LayoutProps> = ({
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
 
-  // ✅ Auto-open du menu parent du sous-menu actif
-  useEffect(() => {
-    const parent = menuItems.find((m) => m.submenu?.some((s) => s.path === activeTab || s.id === activeTab));
-    if (parent?.id) setExpandedMenu(String(parent.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
   const handleNavigate = (tab: Tab | string) => {
     const menuItem = flatMenu.find((i) => i.id === tab || i.path === tab);
     if (menuItem?.path) onNavigate(menuItem.path as Tab);
@@ -218,116 +210,8 @@ export const Layout: React.FC<LayoutProps> = ({
 
     setIsMobileMenuOpen(false);
     setShowNotifications(false);
+    setShowHelp(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // ✅ Un seul ouvert : toggle = ouvrir OU fermer, mais jamais plusieurs
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenu((prev) => (prev === menuId ? null : menuId));
-  };
-
-  const renderMenuItem = (item: MenuItem) => {
-    const Icon = item.icon;
-
-    const isActive =
-      (item.path && item.path === activeTab) ||
-      item.id === activeTab ||
-      (item.submenu?.some((s) => s.path === activeTab || s.id === activeTab) ?? false);
-
-    const hasSub = !!item.submenu?.length;
-    const isExpanded = expandedMenu === String(item.id);
-
-    const baseBtn =
-      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative";
-    const activeBtn = "bg-blue-600 text-white shadow-lg shadow-blue-600/30";
-    const idleBtn = "text-gray-600 hover:bg-blue-50 hover:text-blue-600";
-
-    if (hasSub) {
-      return (
-        <div key={String(item.id)} className="space-y-1">
-          <button
-            onClick={() => toggleMenu(String(item.id))}
-            className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
-            type="button"
-          >
-            <div className="flex items-center gap-3.5">
-              <Icon
-                size={20}
-                className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`}
-              />
-              {item.label}
-            </div>
-            <ChevronDown
-              size={18}
-              className={`transition-transform ${isExpanded ? "rotate-180" : ""} ${
-                isActive ? "text-white/90" : "text-gray-400 group-hover:text-blue-600"
-              }`}
-            />
-          </button>
-
-          {isExpanded && (
-            <div className="pl-2 space-y-1">
-              {item.submenu!.map((sub) => {
-                const SubIcon = sub.icon;
-                const subActive = sub.path === activeTab || sub.id === activeTab;
-                return (
-                  <button
-                    key={String(sub.id)}
-                    onClick={() => handleNavigate(sub.path ?? sub.id)}
-                    className={`${baseBtn} ${
-                      subActive ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : idleBtn
-                    } py-3`}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <SubIcon
-                        size={18}
-                        className={`${subActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`}
-                      />
-                      {sub.label}
-                    </div>
-
-                    {typeof sub.badge === "number" && sub.badge > 0 && (
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          subActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {sub.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <button
-        key={String(item.id)}
-        onClick={() => handleNavigate(item.path ?? item.id)}
-        className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
-        type="button"
-      >
-        <div className="flex items-center gap-3.5">
-          <Icon size={20} className={`${isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"}`} />
-          {item.label}
-        </div>
-
-        {typeof item.badge === "number" && item.badge > 0 && (
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {item.badge}
-          </span>
-        )}
-      </button>
-    );
   };
 
   return (
@@ -645,7 +529,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <button 
                       onClick={() => {
                         setShowHelp(false);
-                        onNavigate("/help");
+                        handleNavigate("/help");
                       }}
                       className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" 
                       type="button"

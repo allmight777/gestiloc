@@ -14,7 +14,7 @@
 
     /* Header avec gradient */
     .create-header {
-        background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+        background: #70AE48;
         border-radius: 24px;
         padding: 2rem 2.5rem;
         margin-bottom: 2rem;
@@ -109,7 +109,7 @@
     }
 
     .section-icon {
-        background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+        background: #70AE48;
         padding: 0.75rem;
         border-radius: 12px;
         box-shadow: 0 8px 15px -3px rgba(37, 99, 235, 0.2);
@@ -370,7 +370,7 @@
     .btn-add-photo {
         margin-top: 1.5rem;
         padding: 1rem 2rem;
-        background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+        background: #70AE48;
         border: none;
         border-radius: 14px;
         color: white;
@@ -385,7 +385,7 @@
     }
 
     .btn-add-photo:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+        background: #70AE48;
         transform: translateY(-2px);
         box-shadow: 0 12px 20px -5px rgba(37, 99, 235, 0.4);
     }
@@ -423,7 +423,7 @@
 
     .btn-submit {
         padding: 0.875rem 2.5rem;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: #70AE48;
         border: none;
         border-radius: 14px;
         color: white;
@@ -438,7 +438,7 @@
     }
 
     .btn-submit:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        background: #70AE48;
         transform: translateY(-2px);
         box-shadow: 0 12px 20px -5px rgba(16, 185, 129, 0.4);
     }
@@ -533,26 +533,7 @@
         </div>
     @endif
 
-    <!-- Header avec gradient -->
-    <div class="create-header">
-        <div class="header-left">
-            <div class="header-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-            </div>
-            <div class="header-title">
-                <h1>Nouvel état des lieux</h1>
-                <p>Documentez l'état de votre bien avec photos et descriptions détaillées</p>
-            </div>
-        </div>
-        <a href="{{ route('co-owner.condition-reports.index') }}" class="btn-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linecap="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-            Retour
-        </a>
-    </div>
+
 
     <!-- Formulaire -->
     <div class="form-card">
@@ -570,6 +551,7 @@
                     <div>
                         <h2>Informations générales</h2>
                         <p>Sélectionnez le bien et le bail associé</p>
+
                     </div>
                 </div>
 

@@ -39,7 +39,7 @@
 
         <div class="stat-card">
             <div class="stat-label">REVENUS LOCATIFS</div>
-            <div class="stat-value text-blue">{{ $stats['revenus_formatted'] }}</div>
+            <div class="stat-value text-green">{{ $stats['revenus_formatted'] }}</div>
             <div class="stat-sublabel">{{ $stats['active_properties'] }} biens actifs</div>
         </div>
 
@@ -51,7 +51,7 @@
 
         <div class="stat-card">
             <div class="stat-label">TAUX DE RENTABILITÉ</div>
-            <div class="stat-value text-blue">{{ $stats['rentabilite'] }}%</div>
+            <div class="stat-value text-green">{{ $stats['rentabilite'] }}%</div>
             <div class="stat-sublabel">Brut annuel</div>
         </div>
     </div>
@@ -78,11 +78,11 @@
             </div>
             <div class="chart-legend">
                 <div class="legend-item">
-                    <span class="legend-dot dot-blue"></span>
+                    <span class="legend-dot dot-green"></span>
                     <span>Loyers reçus</span>
                 </div>
                 <div class="legend-item">
-                    <span class="legend-dot dot-green"></span>
+                    <span class="legend-dot dot-orange"></span>
                     <span>Moyenne mensuelle</span>
                 </div>
             </div>
@@ -95,7 +95,7 @@
             </div>
             <div class="occupancy-stats">
                 <div class="occupancy-item">
-                    <div class="occupancy-number text-blue">{{ $stats['occupied'] }}</div>
+                    <div class="occupancy-number text-green">{{ $stats['occupied'] }}</div>
                     <div class="occupancy-label">Occupés</div>
                 </div>
                 <div class="occupancy-item">
@@ -109,7 +109,7 @@
     <!-- Categories Section -->
     <div class="categories-section">
         <div class="category-card">
-            <h4><i data-lucide="arrow-up-circle" style="width: 16px; height: 16px; color: #3b82f6;"></i> Revenus par catégorie</h4>
+            <h4><i data-lucide="arrow-up-circle" style="width: 16px; height: 16px; color: #70AE48;"></i> Revenus par catégorie</h4>
             <div class="category-list">
                 @foreach($stats['revenus_par_categorie'] as $name => $amount)
                     @if($amount > 0)
@@ -127,7 +127,7 @@
                 @endif
                 <div class="category-item total">
                     <span>Total revenus</span>
-                    <span class="amount text-blue">{{ number_format(array_sum($stats['revenus_par_categorie']), 0, ',', ' ') }} FCFA</span>
+                    <span class="amount text-green">{{ number_format(array_sum($stats['revenus_par_categorie']), 0, ',', ' ') }} FCFA</span>
                 </div>
             </div>
         </div>
@@ -157,13 +157,13 @@
         </div>
 
         <div class="category-card">
-            <h4><i data-lucide="home" style="width: 16px; height: 16px; color: #8b5cf6;"></i> Performance par bien</h4>
+            <h4><i data-lucide="home" style="width: 16px; height: 16px; color: #70AE48;"></i> Performance par bien</h4>
             <div class="category-list">
                 @if(!empty($stats['repartition_par_bien']))
                     @foreach(array_slice($stats['repartition_par_bien'], 0, 5, true) as $name => $data)
                         <div class="category-item">
                             <span title="{{ $name }}">{{ \Illuminate\Support\Str::limit($name, 20) }}</span>
-                            <span class="amount {{ $data['resultat'] >= 0 ? 'text-blue' : 'text-red' }}">
+                            <span class="amount {{ $data['resultat'] >= 0 ? 'text-green' : 'text-red' }}">
                                 {{ $data['resultat'] >= 0 ? '+' : '' }}{{ number_format($data['resultat'], 0, ',', ' ') }} FCFA
                             </span>
                         </div>
@@ -176,7 +176,7 @@
                 @endif
                 <div class="category-item total">
                     <span>Résultat total</span>
-                    <span class="amount text-blue">+{{ $stats['resultat_net_formatted'] }}</span>
+                    <span class="amount text-green">+{{ $stats['resultat_net_formatted'] }}</span>
                 </div>
             </div>
         </div>
@@ -247,7 +247,7 @@
                     @forelse($transactions as $transaction)
                         @php
                             $isRevenu = $transaction->type === 'REVENU';
-                            $amountClass = $isRevenu ? 'text-blue' : 'text-red';
+                            $amountClass = $isRevenu ? 'text-green' : 'text-red';
                             $sign = $isRevenu ? '+' : '-';
                             $date = $transaction->date ? \Carbon\Carbon::parse($transaction->date)->format('d M Y') : 'N/A';
                             $propertyName = $transaction->property_name ?? 'N/A';
@@ -303,7 +303,7 @@
     });
 
     function initCharts() {
-        // Graphique des revenus
+        // Graphique des revenus (barres)
         const revenueCtx = document.getElementById('revenueChart').getContext('2d');
         revenueChart = new Chart(revenueCtx, {
             type: 'bar',
@@ -313,14 +313,14 @@
                     {
                         label: 'Loyers reçus',
                         data: chartData.map(d => d.received),
-                        backgroundColor: '#3b82f6',
+                        backgroundColor: '#70AE48', // Vert
                         borderRadius: 4,
                         barPercentage: 0.6,
                     },
                     {
                         label: 'Moyenne mensuelle',
                         data: chartData.map(d => d.average),
-                        backgroundColor: '#10b981',
+                        backgroundColor: '#f59e0b', // Orange
                         borderRadius: 4,
                         barPercentage: 0.6,
                     }
@@ -355,7 +355,7 @@
             }
         });
 
-        // Graphique d'occupation (doughnut)
+        // Graphique d'occupation (doughnut) - Vert et Jaune
         const occupancyCtx = document.getElementById('occupancyChart').getContext('2d');
         occupancyChart = new Chart(occupancyCtx, {
             type: 'doughnut',
@@ -363,7 +363,7 @@
                 labels: ['Occupés', 'Vacants'],
                 datasets: [{
                     data: [occupancyData.occupied, occupancyData.vacant],
-                    backgroundColor: ['#3b82f6', '#fbbf24'],
+                    backgroundColor: ['#70AE48', '#fbbf24'], // Vert et Jaune
                     borderWidth: 0,
                     cutout: '70%'
                 }]
@@ -576,7 +576,7 @@
         justify-content: center;
         gap: 0.5rem;
         padding: 0.875rem 1.5rem;
-        background: #3b82f6;
+        background: #70AE48;
         color: white;
         border-radius: 50px;
         text-decoration: none;
@@ -586,9 +586,9 @@
     }
 
     .btn-add:hover {
-        background: #2563eb;
+        background: #5d8f3a;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 4px 12px rgba(112, 174, 72, 0.3);
     }
 
     .stats-grid {
@@ -607,9 +607,9 @@
     }
 
     .stat-primary {
-        background: #3b82f6;
+        background: #70AE48;
         color: white;
-        border-color: #3b82f6;
+        border-color: #70AE48;
     }
 
     .stat-label {
@@ -635,10 +635,10 @@
         color: white;
     }
 
-    .text-blue { color: #3b82f6; }
+    .text-green { color: #70AE48; }
     .text-red { color: #ef4444; }
     .text-yellow { color: #f59e0b; }
-    .text-green { color: #10b981; }
+    .text-blue { color: #3b82f6; }
 
     .stat-variation {
         font-size: 0.8rem;
@@ -687,7 +687,7 @@
     }
 
     .chart-title i {
-        color: #3b82f6;
+        color: #70AE48;
     }
 
     .year-select {
@@ -731,8 +731,7 @@
         border-radius: 50%;
     }
 
-    .dot-blue { background: #3b82f6; }
-    .dot-green { background: #10b981; }
+    .dot-green { background: #70AE48; }
     .dot-orange { background: #f59e0b; }
 
     .occupancy-stats {
@@ -829,7 +828,7 @@
     }
 
     .pill.active {
-        background: #3b82f6;
+        background: #70AE48;
         color: white;
     }
 
@@ -865,7 +864,7 @@
         width: 100%;
         padding: 0.875rem 1rem;
         padding-right: 2.5rem;
-        border: 1px solid #3b82f6;
+        border: 1px solid #70AE48;
         border-radius: 10px;
         font-size: 0.95rem;
         color: #64748b;
@@ -876,8 +875,8 @@
 
     .filter-select:focus {
         outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #5d8f3a;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .select-icon {
@@ -909,13 +908,13 @@
         transform: translateY(-50%);
         width: 20px;
         height: 20px;
-        color: #3b82f6;
+        color: #70AE48;
     }
 
     .search-input {
         width: 100%;
         padding: 0.875rem 1rem 0.875rem 2.75rem;
-        border: 1px solid #3b82f6;
+        border: 1px solid #70AE48;
         border-radius: 10px;
         font-size: 0.95rem;
         color: #374151;
@@ -923,8 +922,8 @@
 
     .search-input:focus {
         outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #5d8f3a;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .transactions-count {
@@ -991,8 +990,8 @@
     }
 
     .badge-revenu {
-        background: #d1fae5;
-        color: #059669;
+        background: #e6f2e0;
+        color: #70AE48;
     }
 
     .badge-charge {

@@ -107,7 +107,7 @@
             <div class="documents-section">
                 <div class="documents-header"
                     style="
-                        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+                        background: #70AE48;
                         color: #ffffff;
                         padding: 16px 20px;
                         border-radius: 14px;
@@ -267,7 +267,7 @@
 
     .button-secondary {
         background: rgba(255, 255, 255, .92);
-        color: #4338ca;
+        color: #70AE48;
         border: 2px solid rgba(67, 56, 202, .20);
     }
 

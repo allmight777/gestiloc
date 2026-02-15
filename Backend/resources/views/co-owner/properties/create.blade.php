@@ -101,7 +101,7 @@
         gap: 0.5rem;
         padding: 0.875rem 1.5rem;
         border: none;
-        background: #377df4;
+        background: #70AE48;
         color: white;
         border-radius: 0.75rem;
         font-weight: 600;
@@ -112,7 +112,7 @@
     }
 
     .btn-submit:hover {
-        background: #084dc4;
+        background: #56b616;
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
     }
@@ -329,7 +329,7 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.75rem 1.25rem;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        background: #70AE48;
         border: none;
         border-radius: 0.75rem;
         color: white;
@@ -342,7 +342,7 @@
     }
 
     .btn-add-amenity:hover {
-        background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+        background: #55a520;
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
     }
@@ -464,10 +464,10 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.75rem 1.5rem;
-        background: white;
-        border: 2px dashed #4f46e5;
+        background: rgb(215, 214, 255);
+        border: 2px dashed #66e546;
         border-radius: 0.75rem;
-        color: #4f46e5;
+        color: #000000;
         font-weight: 600;
         font-size: 0.9rem;
         cursor: pointer;

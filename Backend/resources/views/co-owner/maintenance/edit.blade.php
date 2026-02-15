@@ -3,27 +3,7 @@
 @section('title', 'Modifier l\'intervention - Copropriétaire')
 
 @section('content')
-<br><br>
-<div class="maintenance-container" style="border-radius: 5%;">
-    <!-- Header avec animation -->
-    <div class="page-header">
-        <div class="header-content">
-            <div class="header-title-wrapper">
-                <div class="title-icon animate-float">
-                    <i data-lucide="tool"></i>
-                </div>
-                <div>
-                    <h1>Modifier l'intervention</h1>
-                    <p class="subtitle">Modifiez les informations de la demande de maintenance</p>
-                </div>
-            </div>
-        </div>
-        <a href="{{ route('co-owner.maintenance.index') }}" class="btn-back animate-hover">
-            <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
-            Retour à la liste
-        </a>
-    </div>
-
+<div class="maintenance-container">
     <!-- Form Card avec animation d'entrée -->
     <div class="form-card animate-slide-up">
         <!-- Navigation par onglets -->
@@ -315,10 +295,10 @@
                     <div class="form-group">
                         <label for="estimated_cost" class="form-label">
                             <i data-lucide="credit-card" class="label-icon"></i>
-                            Coût estimé (€)
+                            Coût estimé (FCFA)
                         </label>
                         <div class="input-with-icon">
-                            <i data-lucide="euro" class="input-icon"></i>
+                            <i data-lucide="fcfa" class="input-icon"></i>
                             <input type="number"
                                    name="estimated_cost"
                                    id="estimated_cost"
@@ -338,10 +318,10 @@
                     <div class="form-group">
                         <label for="actual_cost" class="form-label">
                             <i data-lucide="credit-card" class="label-icon"></i>
-                            Coût réel (€)
+                            Coût réel (FCFA)
                         </label>
                         <div class="input-with-icon">
-                            <i data-lucide="euro" class="input-icon"></i>
+                            <i data-lucide="fcfa" class="input-icon"></i>
                             <input type="number"
                                    name="actual_cost"
                                    id="actual_cost"
@@ -463,7 +443,7 @@
                         <i data-lucide="arrow-left"></i>
                         Précédent
                     </button>
-                    <button type="submit" class="btn-submit animate-pulse">
+                    <button type="submit" class="btn-submit">
                         <i data-lucide="save"></i>
                         Enregistrer les modifications
                         <span class="btn-loading" id="btn-loading">
@@ -489,13 +469,11 @@
     </div>
 </div>
 
-<br><br><br>
-
 <style>
     :root {
-        --primary-blue: #3b82f6;
-        --primary-light: #60a5fa;
-        --primary-dark: #2563eb;
+        --primary-green: #70AE48;
+        --primary-light: #8BC34A;
+        --primary-dark: #5d8f3a;
         --secondary-sky: #38bdf8;
         --secondary-cyan: #06b6d4;
         --accent-teal: #14b8a6;
@@ -511,13 +489,13 @@
         --gray-600: #4b5563;
         --gray-700: #374151;
         --gray-800: #1f2937;
-        --gradient-primary: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-sky) 100%);
+        --gradient-primary: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-light) 100%);
         --gradient-secondary: linear-gradient(135deg, var(--secondary-sky) 0%, var(--accent-teal) 100%);
         --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        --shadow-blue: 0 10px 40px rgba(59, 130, 246, 0.2);
+        --shadow-green: 0 10px 40px rgba(112, 174, 72, 0.2);
         --border-radius: 12px;
         --border-radius-lg: 16px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -525,10 +503,8 @@
 
     .maintenance-container {
         max-width: 900px;
-        margin: 0 auto;
-        padding: 2rem;
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%);
-        min-height: 100vh;
+        margin: 2rem auto;
+        padding: 0 1rem;
     }
 
     /* Animations */
@@ -598,9 +574,9 @@
     .page-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 2.5rem;
-        gap: 2rem;
+        align-items: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
     }
 
     .header-content {
@@ -610,38 +586,37 @@
     .header-title-wrapper {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 1rem;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
     }
 
     .title-icon {
-        width: 64px;
-        height: 64px;
+        width: 48px;
+        height: 48px;
         background: var(--gradient-primary);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        box-shadow: var(--shadow-blue);
+        box-shadow: var(--shadow-green);
     }
 
     .title-icon i {
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
     }
 
     .header-content h1 {
-        font-size: 2.25rem;
+        font-size: 2rem;
         font-weight: 800;
-        color: black;
-        margin: 0 0 0.5rem 0;
-
+        color: var(--primary-dark);
+        margin: 0;
     }
 
     .subtitle {
         color: var(--gray-600);
-        font-size: 1.1rem;
+        font-size: 1rem;
         margin: 0;
         font-weight: 500;
     }
@@ -650,14 +625,14 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.875rem 1.5rem;
+        padding: 0.75rem 1.25rem;
         background: white;
         color: var(--gray-600);
         border: 2px solid var(--gray-200);
         border-radius: 50px;
         text-decoration: none;
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         transition: var(--transition);
         box-shadow: var(--shadow-sm);
     }
@@ -665,7 +640,7 @@
     .btn-back:hover {
         background: var(--gray-50);
         border-color: var(--primary-light);
-        color: var(--primary-blue);
+        color: var(--primary-green);
         box-shadow: var(--shadow-md);
     }
 
@@ -674,7 +649,7 @@
         background: white;
         border-radius: var(--border-radius-lg);
         border: 1px solid var(--gray-200);
-        padding: 2.5rem;
+        padding: 2rem;
         box-shadow: var(--shadow-xl);
         position: relative;
         overflow: hidden;
@@ -692,7 +667,7 @@
 
     /* Navigation par onglets */
     .tabs-navigation {
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
     }
 
     .tabs-list {
@@ -707,34 +682,34 @@
         flex-direction: column;
         align-items: center;
         gap: 0.5rem;
-        padding: 1rem;
+        padding: 0.75rem;
         background: none;
         border: none;
         cursor: pointer;
         position: relative;
         transition: var(--transition);
-        min-width: 100px;
+        min-width: 80px;
         z-index: 2;
     }
 
     .tab-btn.active {
-        transform: translateY(-5px);
+        transform: translateY(-3px);
     }
 
     .tab-btn.active .tab-number {
         background: var(--gradient-primary);
         color: white;
-        box-shadow: var(--shadow-blue);
+        box-shadow: var(--shadow-green);
     }
 
     .tab-btn.active .tab-label {
-        color: var(--primary-blue);
+        color: var(--primary-green);
         font-weight: 600;
     }
 
     .tab-number {
-        width: 40px;
-        height: 40px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         background: var(--gray-200);
         color: var(--gray-500);
@@ -742,12 +717,12 @@
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 0.9rem;
         transition: var(--transition);
     }
 
     .tab-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--gray-500);
         transition: var(--transition);
         text-align: center;
@@ -756,9 +731,9 @@
 
     .tab-connector {
         flex: 1;
-        height: 3px;
+        height: 2px;
         background: var(--gray-200);
-        margin: 0 0.5rem;
+        margin: 0 0.25rem;
         position: relative;
         overflow: hidden;
     }
@@ -791,9 +766,9 @@
     .tab-actions {
         display: flex;
         justify-content: space-between;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 2px solid var(--gray-200);
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-200);
     }
 
     .btn-prev,
@@ -801,11 +776,11 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.875rem 1.5rem;
+        padding: 0.75rem 1.25rem;
         border: none;
         border-radius: var(--border-radius);
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         cursor: pointer;
         transition: var(--transition);
     }
@@ -813,7 +788,7 @@
     .btn-prev {
         background: var(--gray-100);
         color: var(--gray-600);
-        border: 2px solid var(--gray-300);
+        border: 1px solid var(--gray-300);
     }
 
     .btn-prev:hover {
@@ -823,9 +798,9 @@
     }
 
     .btn-next {
-        background: var(--primary-blue);
+        background: var(--primary-green);
         color: white;
-        border: 2px solid var(--primary-blue);
+        border: 1px solid var(--primary-green);
     }
 
     .btn-next:hover {
@@ -836,17 +811,17 @@
 
     /* Barre de progression */
     .form-progress {
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 2px solid var(--gray-200);
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-200);
     }
 
     .progress-bar {
-        height: 8px;
+        height: 6px;
         background: var(--gray-200);
-        border-radius: 4px;
+        border-radius: 3px;
         overflow: hidden;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
     }
 
     .progress-fill {
@@ -859,12 +834,12 @@
     .progress-steps {
         display: flex;
         justify-content: space-between;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--gray-500);
     }
 
     .step.active {
-        color: var(--primary-blue);
+        color: var(--primary-green);
         font-weight: 600;
     }
 
@@ -899,7 +874,7 @@
     .label-icon {
         width: 16px;
         height: 16px;
-        color: var(--primary-blue);
+        color: var(--primary-green);
     }
 
     .required {
@@ -913,10 +888,10 @@
 
     .form-select {
         width: 100%;
-        padding: 0.875rem 1rem 0.875rem 2.75rem;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
         border: 2px solid var(--gray-300);
         border-radius: var(--border-radius);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         color: var(--gray-800);
         background: white;
         transition: var(--transition);
@@ -926,8 +901,8 @@
 
     .form-select:focus {
         outline: none;
-        border-color: var(--primary-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: var(--primary-green);
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .select-icon {
@@ -935,15 +910,15 @@
         right: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         color: var(--gray-400);
         pointer-events: none;
         transition: var(--transition);
     }
 
     .form-select:focus + .select-icon {
-        color: var(--primary-blue);
+        color: var(--primary-green);
     }
 
     .property-option {
@@ -958,7 +933,7 @@
     }
 
     .property-city {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: var(--gray-500);
         margin-top: 0.25rem;
     }
@@ -970,21 +945,21 @@
 
     .input-icon {
         position: absolute;
-        left: 1rem;
+        left: 0.75rem;
         top: 50%;
         transform: translateY(-50%);
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         color: var(--gray-400);
         z-index: 1;
     }
 
     .form-input {
         width: 100%;
-        padding: 0.875rem 1rem 0.875rem 2.75rem;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
         border: 2px solid var(--gray-300);
         border-radius: var(--border-radius);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         color: var(--gray-800);
         background: white;
         transition: var(--transition);
@@ -992,8 +967,8 @@
 
     .form-input:focus {
         outline: none;
-        border-color: var(--primary-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: var(--primary-green);
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     /* Textarea */
@@ -1003,32 +978,32 @@
 
     .form-textarea {
         width: 100%;
-        padding: 1rem;
+        padding: 0.75rem;
         border: 2px solid var(--gray-300);
         border-radius: var(--border-radius);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         color: var(--gray-800);
         background: white;
         transition: var(--transition);
         resize: vertical;
-        min-height: 140px;
+        min-height: 120px;
         font-family: inherit;
     }
 
     .form-textarea:focus {
         outline: none;
-        border-color: var(--primary-blue);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: var(--primary-green);
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .textarea-counter {
         position: absolute;
-        bottom: 0.75rem;
-        right: 0.75rem;
-        font-size: 0.75rem;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.7rem;
         color: var(--gray-400);
         background: white;
-        padding: 0.25rem 0.5rem;
+        padding: 0.2rem 0.4rem;
         border-radius: 4px;
     }
 
@@ -1037,14 +1012,14 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: var(--gray-500);
         margin-top: 0.5rem;
     }
 
     .form-hint i {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
     }
 
     /* Priority */
@@ -1079,8 +1054,8 @@
         background: rgba(245, 158, 11, 0.1);
     }
     .status-in_progress {
-        color: var(--primary-blue);
-        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-green);
+        background: rgba(112, 174, 72, 0.1);
     }
     .status-resolved {
         color: var(--success-green);
@@ -1098,14 +1073,14 @@
 
     .photos-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 1rem;
         margin-top: 0.75rem;
     }
 
     .photo-item {
         position: relative;
-        border-radius: 12px;
+        border-radius: 10px;
         overflow: hidden;
         border: 2px solid var(--gray-200);
         transition: var(--transition);
@@ -1113,13 +1088,13 @@
 
     .photo-item:hover {
         transform: translateY(-2px);
-        border-color: var(--primary-blue);
+        border-color: var(--primary-green);
         box-shadow: var(--shadow-md);
     }
 
     .photo-item img {
         width: 100%;
-        height: 150px;
+        height: 120px;
         object-fit: cover;
         display: block;
     }
@@ -1131,13 +1106,13 @@
         right: 0;
         background: rgba(239, 68, 68, 0.95);
         color: white;
-        padding: 0.75rem;
+        padding: 0.5rem;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 500;
         transition: var(--transition);
         opacity: 0;
@@ -1153,10 +1128,10 @@
 
     /* File Upload */
     .file-upload-area {
-        border: 3px dashed var(--gray-300);
+        border: 2px dashed var(--gray-300);
         border-radius: var(--border-radius);
         background: var(--gray-50);
-        padding: 3rem 2rem;
+        padding: 2rem;
         text-align: center;
         transition: var(--transition);
         cursor: pointer;
@@ -1165,8 +1140,8 @@
     }
 
     .file-upload-area:hover {
-        border-color: var(--primary-blue);
-        background: rgba(59, 130, 246, 0.05);
+        border-color: var(--primary-green);
+        background: rgba(112, 174, 72, 0.05);
     }
 
     .file-upload-area.drag-over {
@@ -1189,40 +1164,40 @@
     }
 
     .upload-icon {
-        width: 64px;
-        height: 64px;
+        width: 48px;
+        height: 48px;
         background: var(--gradient-primary);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 1.5rem;
+        margin: 0 auto 1rem;
         color: white;
     }
 
     .upload-icon i {
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
     }
 
     .upload-title {
-        font-size: 1.25rem;
+        font-size: 1rem;
         font-weight: 600;
         color: var(--gray-800);
         margin: 0 0 0.25rem 0;
     }
 
     .upload-subtitle {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         color: var(--gray-500);
-        margin: 0 0 1.5rem 0;
+        margin: 0 0 1rem 0;
     }
 
     .upload-requirements {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: var(--gray-400);
         padding: 0.5rem 1rem;
         background: white;
@@ -1238,14 +1213,14 @@
     /* File Preview */
     .file-preview-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 1rem;
-        margin-top: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
     }
 
     .file-preview {
         position: relative;
-        border-radius: 10px;
+        border-radius: 8px;
         overflow: hidden;
         border: 2px solid var(--gray-200);
         transition: var(--transition);
@@ -1253,23 +1228,23 @@
 
     .file-preview:hover {
         transform: translateY(-2px);
-        border-color: var(--primary-blue);
+        border-color: var(--primary-green);
         box-shadow: var(--shadow-md);
     }
 
     .file-preview img {
         width: 100%;
-        height: 100px;
+        height: 80px;
         object-fit: cover;
         display: block;
     }
 
     .file-preview .remove-btn {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        width: 24px;
-        height: 24px;
+        top: 0.25rem;
+        right: 0.25rem;
+        width: 20px;
+        height: 20px;
         background: var(--error-red);
         color: white;
         border: none;
@@ -1278,7 +1253,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 10px;
         opacity: 0;
         transition: var(--transition);
     }
@@ -1294,10 +1269,11 @@
     /* Alerts */
     .alert-box {
         border-radius: var(--border-radius);
-        padding: 1.25rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
         display: flex;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.75rem;
         border: 1px solid;
     }
 
@@ -1307,8 +1283,8 @@
     }
 
     .alert-icon {
-        width: 24px;
-        height: 24px;
+        width: 20px;
+        height: 20px;
         color: var(--error-red);
         flex-shrink: 0;
     }
@@ -1321,15 +1297,15 @@
         display: block;
         color: var(--gray-800);
         margin-bottom: 0.25rem;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
 
     .alert-content p,
     .alert-content ul {
         color: var(--gray-700);
         margin: 0;
-        font-size: 0.9rem;
-        line-height: 1.5;
+        font-size: 0.85rem;
+        line-height: 1.4;
     }
 
     .alert-content ul {
@@ -1342,28 +1318,28 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--error-red);
         margin-top: 0.25rem;
     }
 
     .error-message i {
-        width: 14px;
-        height: 14px;
+        width: 12px;
+        height: 12px;
     }
 
     /* Submit Button */
     .btn-submit {
         display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 1rem 2rem;
+        gap: 0.5rem;
+        padding: 0.875rem 1.75rem;
         background: var(--gradient-primary);
         color: white;
         border: none;
         border-radius: var(--border-radius);
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
         cursor: pointer;
         transition: var(--transition);
         position: relative;
@@ -1372,7 +1348,7 @@
 
     .btn-submit:hover {
         transform: translateY(-2px);
-        box-shadow: var(--shadow-blue);
+        box-shadow: var(--shadow-green);
     }
 
     .btn-submit::after {
@@ -1397,26 +1373,27 @@
     /* Responsive */
     @media (max-width: 768px) {
         .maintenance-container {
-            padding: 1rem;
+            padding: 0 0.5rem;
         }
 
         .page-header {
             flex-direction: column;
+            align-items: flex-start;
         }
 
         .header-title-wrapper {
             flex-direction: column;
-            text-align: center;
-            gap: 1rem;
+            align-items: flex-start;
+            gap: 0.5rem;
         }
 
         .form-card {
-            padding: 1.5rem;
+            padding: 1.25rem;
         }
 
         .tabs-list {
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.5rem;
         }
 
         .tab-connector {
@@ -1424,16 +1401,16 @@
         }
 
         .tab-btn {
-            min-width: 70px;
+            min-width: 60px;
         }
 
         .tab-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .tab-actions {
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .btn-prev,
@@ -1654,10 +1631,10 @@
         const prioritySelect = document.getElementById('priority');
         const priorityHint = document.getElementById('priority-hint');
         const priorityMessages = {
-            'low': '🟢 Réponse sous 7 jours • Impact minimal sur le locataire',
-            'medium': '🟡 Réponse sous 3 jours • Gênant mais pas urgent',
-            'high': '🟠 Réponse sous 24h • Problème important affectant le confort',
-            'emergency': '🔴 Intervention immédiate • Danger ou dégâts en cours'
+            'low': '🟢 Réponse sous 7 jours • Impact minimal',
+            'medium': '🟡 Réponse sous 3 jours • Gênant',
+            'high': '🟠 Réponse sous 24h • Problème important',
+            'emergency': '🔴 Intervention immédiate • Danger'
         };
 
         if (prioritySelect.value && priorityMessages[prioritySelect.value]) {

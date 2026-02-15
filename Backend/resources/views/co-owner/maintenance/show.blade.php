@@ -297,7 +297,7 @@
     @csrf
     <div class="form-group">
         <label class="form-label">Votre message</label>
-    <textarea name="reply_message" class="form-textarea"  placeholder="Envoyez un message au locataire pour l'informer de l'avancement..." required></textarea> 
+    <textarea name="reply_message" class="form-textarea"  placeholder="Envoyez un message au locataire pour l'informer de l'avancement..." required></textarea>
 
     </div>
 
@@ -474,7 +474,7 @@
     }
 
     .button-primary {
-        background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+        background: #70AE48;
         color: #fff;
         box-shadow: 0 14px 30px rgba(79,70,229,.22);
     }

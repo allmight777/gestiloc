@@ -5,291 +5,255 @@
 @section('content')
     <div class="content-container">
         <div class="content-card">
-
-
             <div class="content-body">
-                <div class="top-actions">
-                    <a href="{{ route('co-owner.notices.index') }}" class="button button-secondary">
-                        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
-                        Retour à la liste
+                <!-- Header avec actions -->
+                <div class="header-actions">
+                    <a href="{{ route('co-owner.notices.index') }}" class="btn btn-outline">
+                        <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                        Retour
                     </a>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <a href="{{ route('co-owner.notices.edit', $notice) }}" class="button button-secondary">
-                            <i data-lucide="edit" style="width: 16px; height: 16px;"></i>
+                    <div class="actions-group">
+                        <a href="{{ route('co-owner.notices.edit', $notice) }}" class="btn btn-outline">
+                            <i data-lucide="edit" style="width: 18px; height: 18px;"></i>
                             Modifier
                         </a>
                         <form action="{{ route('co-owner.notices.destroy', $notice) }}" method="POST"
                             onsubmit="return confirm('Supprimer définitivement ce préavis ?');" style="display: inline;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="button button-danger">
-                                <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+                            <button type="submit" class="btn btn-danger">
+                                <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
                                 Supprimer
                             </button>
                         </form>
                     </div>
                 </div>
 
+                <!-- Alertes -->
                 @if (session('success'))
-                    <div class="alert-box alert-success">
+                    <div class="alert alert-success">
                         <i data-lucide="check-circle" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
                         <div>
                             <strong>Succès</strong>
-                            <p style="margin-top: 4px; font-weight: 650; font-size: 0.9rem;">{{ session('success') }}</p>
+                            <p>{{ session('success') }}</p>
                         </div>
                     </div>
                 @endif
 
                 @if (session('error'))
-                    <div class="alert-box alert-error">
+                    <div class="alert alert-error">
                         <i data-lucide="alert-circle" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
                         <div>
                             <strong>Erreur</strong>
-                            <p style="margin-top: 4px; font-weight: 650; font-size: 0.9rem;">{{ session('error') }}</p>
+                            <p>{{ session('error') }}</p>
                         </div>
                     </div>
                 @endif
 
-                <div class="notice-card">
-                    <div class="notice-header">
-                        <div>
-                            <div class="notice-title">{{ $notice->property->address ?? 'Bien sans nom' }}</div>
-                            <div class="notice-ref">Référence : NOTICE-{{ str_pad($notice->id, 6, '0', STR_PAD_LEFT) }}
-                            </div>
-                        </div>
-                        <span class="badge badge-{{ $notice->status }}">
-                            @if ($notice->status == 'pending')
-                                <i data-lucide="clock" style="width: 14px; height: 14px;"></i> En attente
-                            @elseif($notice->status == 'confirmed')
-                                <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Confirmé
-                            @else
-                                <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Annulé
-                            @endif
-                        </span>
+                <!-- En-tête du préavis -->
+                <div class="notice-header">
+                    <div>
+                        <h1 class="notice-title">{{ $notice->property->address ?? 'Bien sans nom' }}</h1>
+                        <p class="notice-ref">NOTICE-{{ str_pad($notice->id, 6, '0', STR_PAD_LEFT) }}</p>
                     </div>
+                    <span class="badge badge-{{ $notice->status }}">
+                        @if ($notice->status == 'pending')
+                            <i data-lucide="clock" style="width: 14px; height: 14px;"></i> En attente
+                        @elseif($notice->status == 'confirmed')
+                            <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Confirmé
+                        @else
+                            <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Annulé
+                        @endif
+                    </span>
+                </div>
 
-                    <div class="info-grid">
-                        <!-- Informations générales -->
-                        <div class="info-section">
-                            <h3><i data-lucide="info" style="width: 16px; height: 16px;"></i> Informations générales</h3>
-                            <div class="info-item">
-                                <div class="info-label">Type de préavis</div>
-                                <div class="info-value">
+                <!-- Grille d'informations -->
+                <div class="info-grid">
+                    <!-- Carte Informations générales -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+                            <h3>Informations générales</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <div class="info-row">
+                                <span class="info-label">Type de préavis</span>
+                                <span class="info-value">
                                     @if ($notice->type == 'landlord')
                                         <i data-lucide="home" style="width: 14px; height: 14px;"></i> Préavis bailleur
                                     @else
                                         <i data-lucide="user" style="width: 14px; height: 14px;"></i> Préavis locataire
                                     @endif
-                                </div>
+                                </span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Date du préavis</div>
-                                <div class="info-value">
+                            <div class="info-row">
+                                <span class="info-label">Date du préavis</span>
+                                <span class="info-value">
                                     <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
                                     {{ \Carbon\Carbon::parse($notice->notice_date)->format('d/m/Y') }}
-                                </div>
+                                </span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Date de fin</div>
-                                <div class="info-value">
+                            <div class="info-row">
+                                <span class="info-label">Date de fin</span>
+                                <span class="info-value">
                                     <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
                                     {{ \Carbon\Carbon::parse($notice->end_date)->format('d/m/Y') }}
-                                </div>
+                                </span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Créé le</div>
-                                <div class="info-value">
+                            <div class="info-row">
+                                <span class="info-label">Créé le</span>
+                                <span class="info-value">
                                     <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
                                     {{ $notice->created_at->format('d/m/Y H:i') }}
-                                </div>
+                                </span>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Informations du bien -->
-                        <div class="info-section">
-                            <h3><i data-lucide="home" style="width: 16px; height: 16px;"></i> Informations du bien</h3>
-                            <div class="info-item">
-                                <div class="info-label">Adresse</div>
-                                <div class="info-value">{{ $notice->property->address ?? 'Non spécifié' }}</div>
+                    <!-- Carte Informations du bien -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+                            <h3>Informations du bien</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <div class="info-row">
+                                <span class="info-label">Adresse</span>
+                                <span class="info-value">{{ $notice->property->address ?? 'Non spécifié' }}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Ville</div>
-                                <div class="info-value">{{ $notice->property->city ?? 'Non spécifié' }}</div>
+                            <div class="info-row">
+                                <span class="info-label">Ville</span>
+                                <span class="info-value">{{ $notice->property->city ?? 'Non spécifié' }}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Code postal</div>
-                                <div class="info-value">{{ $notice->property->zip_code ?? 'Non spécifié' }}</div>
+                            <div class="info-row">
+                                <span class="info-label">Code postal</span>
+                                <span class="info-value">{{ $notice->property->zip_code ?? 'Non spécifié' }}</span>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Informations du locataire -->
-                        <div class="info-section">
-                            <h3><i data-lucide="user" style="width: 16px; height: 16px;"></i> Locataire concerné</h3>
-                            <div class="info-item">
-                                <div class="info-label">Nom</div>
-                                <div class="info-value">
+                    <!-- Carte Locataire concerné -->
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                            <h3>Locataire concerné</h3>
+                        </div>
+                        <div class="info-card-content">
+                            <div class="info-row">
+                                <span class="info-label">Nom</span>
+                                <span class="info-value">
                                     {{ trim(($notice->tenant->first_name ?? '') . ' ' . ($notice->tenant->last_name ?? '')) ?: 'Non spécifié' }}
-                                </div>
-
+                                </span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Email</div>
-                                <div class="info-value">{{ $notice->tenant->user->email ?? 'Non spécifié' }}</div>
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value">{{ $notice->tenant->user->email ?? 'Non spécifié' }}</span>
                             </div>
-                            <div class="info-item">
-                                <div class="info-label">Téléphone</div>
-                                <div class="info-value">{{ $notice->tenant->user->phone ?? 'Non spécifié' }}</div>
+                            <div class="info-row">
+                                <span class="info-label">Téléphone</span>
+                                <span class="info-value">{{ $notice->tenant->user->phone ?? 'Non spécifié' }}</span>
                             </div>
-                        </div>
-
-                       
-                    </div>
-
-                    <!-- Motif -->
-                    <div style="margin-top: 2rem;">
-                        <h3
-                            style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i data-lucide="message-square" style="width: 16px; height: 16px;"></i> Motif du préavis
-                        </h3>
-                        <div
-                            style="background: rgba(102,126,234,.05); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(102,126,234,.15);">
-                            <div style="font-size: 0.95rem; line-height: 1.6; color: var(--ink); white-space: pre-line;">
-                                {{ $notice->reason }}</div>
                         </div>
                     </div>
-
-                    <!-- Notes -->
-                    @if ($notice->notes)
-                        <div style="margin-top: 2rem;">
-                            <h3
-                                style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i data-lucide="file-text" style="width: 16px; height: 16px;"></i> Notes additionnelles
-                            </h3>
-                            <div
-                                style="background: rgba(148,163,184,.05); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(148,163,184,.15);">
-                                <div
-                                    style="font-size: 0.95rem; line-height: 1.6; color: var(--ink); white-space: pre-line;">
-                                    {{ $notice->notes }}</div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- Actions sur le statut -->
-                    @if ($notice->status == 'pending')
-                        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 2px solid rgba(148,163,184,.15);">
-                            <h3 style="font-size: 1rem; font-weight: 950; color: var(--indigo); margin-bottom: 1rem;">
-                                <i data-lucide="settings" style="width: 16px; height: 16px;"></i> Gérer le statut
-                            </h3>
-                            <div class="status-actions">
-                                <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
-                                    class="status-form">
-                                    @csrf
-                                    <input type="hidden" name="status" value="confirmed">
-                                    <button type="submit" class="button button-primary"
-                                        onclick="return confirm('Confirmer ce préavis ?')">
-                                        <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Confirmer le
-                                        préavis
-                                    </button>
-                                </form>
-                                <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
-                                    class="status-form">
-                                    @csrf
-                                    <input type="hidden" name="status" value="cancelled">
-                                    <button type="submit" class="button button-danger"
-                                        onclick="return confirm('Annuler ce préavis ?')">
-                                        <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> Annuler le
-                                        préavis
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endif
                 </div>
+
+                <!-- Section Motif -->
+                <div class="detail-section">
+                    <div class="detail-section-header">
+                        <i data-lucide="message-square" style="width: 18px; height: 18px;"></i>
+                        <h3>Motif du préavis</h3>
+                    </div>
+                    <div class="detail-section-content">
+                        {{ $notice->reason }}
+                    </div>
+                </div>
+
+                <!-- Section Notes (si existantes) -->
+                @if ($notice->notes)
+                    <div class="detail-section">
+                        <div class="detail-section-header">
+                            <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+                            <h3>Notes additionnelles</h3>
+                        </div>
+                        <div class="detail-section-content">
+                            {{ $notice->notes }}
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Actions sur le statut (si en attente) -->
+                @if ($notice->status == 'pending')
+                    <div class="status-actions-section">
+                        <div class="status-actions-header">
+                            <i data-lucide="settings" style="width: 18px; height: 18px;"></i>
+                            <h3>Gérer le statut</h3>
+                        </div>
+                        <div class="status-actions">
+                            <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
+                                class="status-form">
+                                @csrf
+                                <input type="hidden" name="status" value="confirmed">
+                                <button type="submit" class="btn btn-success"
+                                    onclick="return confirm('Confirmer ce préavis ?')">
+                                    <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Confirmer le préavis
+                                </button>
+                            </form>
+                            <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
+                                class="status-form">
+                                @csrf
+                                <input type="hidden" name="status" value="cancelled">
+                                <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('Annuler ce préavis ?')">
+                                    <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> Annuler le préavis
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
 
     <style>
-        /* Styles spécifiques à la page de détails du préavis */
         :root {
-            --gradA: #667eea;
-            --gradB: #764ba2;
-            --indigo: #4f46e5;
-            --violet: #7c3aed;
-            --emerald: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --ink: #0f172a;
+            --primary: #70AE48;
+            --primary-light: #8BC34A;
+            --primary-dark: #5d8f3a;
+            --primary-soft: rgba(112, 174, 72, 0.1);
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --ink: #1e293b;
             --muted: #64748b;
-            --muted2: #94a3b8;
-            --line: rgba(15, 23, 42, .10);
-            --line2: rgba(15, 23, 42, .08);
-            --shadow: 0 22px 70px rgba(0, 0, 0, .18);
+            --muted-light: #94a3b8;
+            --border: #e2e8f0;
+            --bg-soft: #f8fafc;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         .content-container {
             min-height: 100vh;
-            background: #ffffff;
+            background: #f8fafc;
             padding: 2rem;
-            position: relative;
-        }
-
-        .content-container::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(900px 520px at 12% -8%, rgba(102, 126, 234, .16) 0%, rgba(102, 126, 234, 0) 62%),
-                radial-gradient(900px 520px at 92% 8%, rgba(118, 75, 162, .14) 0%, rgba(118, 75, 162, 0) 64%),
-                radial-gradient(700px 420px at 40% 110%, rgba(16, 185, 129, .10) 0%, rgba(16, 185, 129, 0) 60%);
-            pointer-events: none;
-            z-index: -2;
         }
 
         .content-card {
-            max-width: 1500px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, .92);
-            border-radius: 22px;
-            box-shadow: var(--shadow);
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
-            border: 1px solid rgba(102, 126, 234, .18);
-            position: relative;
-            backdrop-filter: blur(10px);
-        }
-
-        .content-header {
-            background: linear-gradient(135deg, var(--gradA) 0%, var(--gradB) 100%);
-            padding: 2.5rem;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .content-header h1 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin: 0 0 0.6rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            letter-spacing: -0.02em;
-        }
-
-        .content-header p {
-            opacity: 0.9;
-            font-weight: 650;
-            font-size: 0.95rem;
         }
 
         .content-body {
-            padding: 2.5rem;
-            position: relative;
-            z-index: 1;
+            padding: 2rem;
         }
 
-        .top-actions {
+        /* Header Actions */
+        .header-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -298,33 +262,16 @@
             gap: 1rem;
         }
 
-        .alert-box {
-            border-radius: 14px;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid;
-            font-weight: 850;
+        .actions-group {
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            gap: 0.75rem;
         }
 
-        .alert-success {
-            background: rgba(240, 253, 244, .92);
-            border-color: rgba(74, 222, 128, .30);
-            color: #166534;
-        }
-
-        .alert-error {
-            background: rgba(254, 242, 242, .92);
-            border-color: rgba(248, 113, 113, .30);
-            color: #991b1b;
-        }
-
-        .button {
-            padding: 0.9rem 1.35rem;
-            border-radius: 14px;
-            font-weight: 950;
+        /* Boutons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -332,147 +279,322 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            font-family: inherit;
-            white-space: nowrap;
             text-decoration: none;
         }
 
-        .button-primary {
-            background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
-            color: #fff;
-            box-shadow: 0 14px 30px rgba(79, 70, 229, .22);
-        }
-
-        .button-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 34px rgba(79, 70, 229, .28);
-        }
-
-        .button-secondary {
-            background: rgba(255, 255, 255, .92);
-            color: #4338ca;
-            border: 2px solid rgba(67, 56, 202, .20);
-        }
-
-        .button-secondary:hover {
-            background: rgba(67, 56, 202, .06);
-        }
-
-        .button-danger {
-            background: rgba(239, 68, 68, .10);
-            color: var(--red);
-            border: 2px solid rgba(239, 68, 68, .20);
-        }
-
-        .button-danger:hover {
-            background: rgba(239, 68, 68, .15);
-        }
-
-        .notice-card {
+        .btn-outline {
             background: white;
-            border-radius: 18px;
-            padding: 2rem;
-            border: 2px solid rgba(102, 126, 234, .15);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, .08);
-            margin-bottom: 2rem;
+            color: var(--ink);
+            border: 1px solid var(--border);
         }
 
+        .btn-outline:hover {
+            background: var(--bg-soft);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-danger {
+            background: white;
+            color: var(--danger);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--primary);
+            color: white;
+            border: 1px solid var(--primary);
+        }
+
+        .btn-success:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Alertes */
+        .alert {
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.05);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #991b1b;
+        }
+
+        .alert p {
+            margin-top: 0.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* En-tête préavis */
         .notice-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
         }
 
         .notice-title {
-            font-size: 1.5rem;
-            font-weight: 950;
+            font-size: 1.8rem;
+            font-weight: 700;
             color: var(--ink);
+            margin: 0 0 0.25rem 0;
         }
 
         .notice-ref {
             font-size: 0.9rem;
             color: var(--muted);
-            font-weight: 850;
+            font-weight: 500;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .info-section h3 {
-            font-size: 1rem;
-            font-weight: 950;
-            color: var(--indigo);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .info-item {
-            margin-bottom: 1rem;
-        }
-
-        .info-label {
-            font-size: 0.85rem;
-            font-weight: 850;
-            color: var(--muted);
-            margin-bottom: 0.25rem;
-        }
-
-        .info-value {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
+        /* Badges */
         .badge {
-            padding: 0.4rem 1rem;
-            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            border-radius: 100px;
             font-size: 0.85rem;
-            font-weight: 850;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
         }
 
         .badge-pending {
-            background: rgba(245, 158, 11, .15);
-            color: #92400e;
-            border: 1px solid rgba(245, 158, 11, .25);
+            background: rgba(245, 158, 11, 0.1);
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.2);
         }
 
         .badge-confirmed {
-            background: rgba(34, 197, 94, .15);
-            color: #166534;
-            border: 1px solid rgba(34, 197, 94, .25);
+            background: rgba(112, 174, 72, 0.1);
+            color: var(--primary-dark);
+            border: 1px solid rgba(112, 174, 72, 0.2);
         }
 
         .badge-cancelled {
-            background: rgba(148, 163, 184, .15);
-            color: #475569;
-            border: 1px solid rgba(148, 163, 184, .25);
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--muted);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+        }
+
+        /* Grille d'informations */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Cartes d'information */
+        .info-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .info-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
+
+        .info-card-header {
+            background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(139, 195, 74, 0.05) 100%);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-card-header i {
+            color: var(--primary);
+        }
+
+        .info-card-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+
+        .info-card-content {
+            padding: 1.25rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--muted);
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-value i {
+            color: var(--primary);
+        }
+
+        /* Sections de détail */
+        .detail-section {
+            margin-bottom: 2rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .detail-section-header {
+            background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(139, 195, 74, 0.05) 100%);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-section-header i {
+            color: var(--primary);
+        }
+
+        .detail-section-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin: 0;
+        }
+
+        .detail-section-content {
+            padding: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--ink);
+            background: white;
+            white-space: pre-line;
+        }
+
+        /* Section actions statut */
+        .status-actions-section {
+            margin-top: 2.5rem;
+            background: var(--primary-soft);
+            border: 1px solid rgba(112, 174, 72, 0.2);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .status-actions-header {
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-actions-header i {
+            color: var(--primary);
+        }
+
+        .status-actions-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin: 0;
         }
 
         .status-actions {
+            padding: 1.25rem;
             display: flex;
             gap: 1rem;
-            margin-top: 1rem;
             flex-wrap: wrap;
         }
 
         .status-form {
             display: inline;
         }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-container {
+                padding: 1rem;
+            }
+
+            .content-body {
+                padding: 1.5rem;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions-group {
+                justify-content: flex-end;
+            }
+
+            .notice-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .notice-title {
+                font-size: 1.5rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 
     <script>
-        // Scripts spécifiques à cette page
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialiser les icônes Lucide
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }

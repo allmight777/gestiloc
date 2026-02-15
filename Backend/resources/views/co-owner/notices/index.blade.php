@@ -20,7 +20,7 @@
 
             <a href="{{ route('co-owner.notices.create') }}"
                class="btn-create"
-               style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #3B82F6; color: white; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); transition: all 0.2s;">
+               style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: #70AE48; color: white; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); transition: all 0.2s;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -74,22 +74,22 @@
             <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
                 <button type="submit" name="status" value="all"
                         class="filter-btn {{ $statusFilter === 'all' ? 'active' : '' }}"
-                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'all' ? '#3B82F6' : '#E5E7EB' }}; color: {{ $statusFilter === 'all' ? 'white' : '#6B7280' }};">
+                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'all' ? '#70AE48' : '#E5E7EB' }}; color: {{ $statusFilter === 'all' ? 'white' : '#6B7280' }};">
                     Tous
                 </button>
                 <button type="submit" name="status" value="pending"
                         class="filter-btn {{ $statusFilter === 'pending' ? 'active' : '' }}"
-                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'pending' ? '#3B82F6' : '#E5E7EB' }}; color: {{ $statusFilter === 'pending' ? 'white' : '#6B7280' }};">
+                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'pending' ? '#70AE48' : '#E5E7EB' }}; color: {{ $statusFilter === 'pending' ? 'white' : '#6B7280' }};">
                     En attente
                 </button>
                 <button type="submit" name="status" value="confirmed"
                         class="filter-btn {{ $statusFilter === 'confirmed' ? 'active' : '' }}"
-                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'confirmed' ? '#3B82F6' : '#E5E7EB' }}; color: {{ $statusFilter === 'confirmed' ? 'white' : '#6B7280' }};">
+                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'confirmed' ? '#70AE48' : '#E5E7EB' }}; color: {{ $statusFilter === 'confirmed' ? 'white' : '#6B7280' }};">
                     Confirmés
                 </button>
                 <button type="submit" name="status" value="cancelled"
                         class="filter-btn {{ $statusFilter === 'cancelled' ? 'active' : '' }}"
-                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'cancelled' ? '#3B82F6' : '#E5E7EB' }}; color: {{ $statusFilter === 'cancelled' ? 'white' : '#6B7280' }};">
+                        style="padding: 10px 24px; border: none; border-radius: 20px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; background: {{ $statusFilter === 'cancelled' ? '#70AE48' : '#E5E7EB' }}; color: {{ $statusFilter === 'cancelled' ? 'white' : '#6B7280' }};">
                     Annulés
                 </button>
             </div>
@@ -142,7 +142,7 @@
                         <label style="display: block; font-size: 0.75rem; font-weight: 600; color: transparent; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">
                             _
                         </label>
-                        <button type="submit" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #3B82F6; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                        <button type="submit" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #70AE48; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.35-4.35"></path>

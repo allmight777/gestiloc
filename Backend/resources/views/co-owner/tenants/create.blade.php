@@ -427,10 +427,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Revenu annuel (€)</label>
+                            <label class="form-label">Revenu annuel (FCFA)</label>
                             <div class="form-input-icon">
                                 <div class="icon-wrapper">
-                                    <i data-lucide="euro" style="width: 16px; height: 16px;"></i>
+                                    <i data-lucide="fcfa" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <input class="form-input"
                                        type="number"
@@ -445,10 +445,10 @@
 
                         <!-- Revenu mensuel -->
                         <div class="form-group">
-                            <label class="form-label">Revenu mensuel (€)</label>
+                            <label class="form-label">Revenu mensuel (FCFA)</label>
                             <div class="form-input-icon">
                                 <div class="icon-wrapper">
-                                    <i data-lucide="euro" style="width: 16px; height: 16px;"></i>
+                                    <i data-lucide="fcfa" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <input class="form-input"
                                        type="number"
@@ -593,11 +593,11 @@
 
                                 <div class="form-group">
                                     <label class="form-label">
-                                        Revenu annuel (€) <span class="required guarantor-required" style="display:none;">*</span>
+                                        Revenu annuel (FCFA) <span class="required guarantor-required" style="display:none;">*</span>
                                     </label>
                                     <div class="form-input-icon">
                                         <div class="icon-wrapper">
-                                            <i data-lucide="euro" style="width: 16px; height: 16px;"></i>
+                                            <i data-lucide="fcfa" style="width: 16px; height: 16px;"></i>
                                         </div>
                                         <input class="form-input guarantor-input"
                                                type="number"
@@ -612,11 +612,11 @@
                                 <!-- Revenu mensuel garant -->
                                 <div class="form-group">
                                     <label class="form-label">
-                                        Revenu mensuel (€) <span class="required guarantor-required" style="display:none;">*</span>
+                                        Revenu mensuel (FCFA) <span class="required guarantor-required" style="display:none;">*</span>
                                     </label>
                                     <div class="form-input-icon">
                                         <div class="icon-wrapper">
-                                            <i data-lucide="euro" style="width: 16px; height: 16px;"></i>
+                                            <i data-lucide="fcfa" style="width: 16px; height: 16px;"></i>
                                         </div>
                                         <input class="form-input guarantor-input"
                                                type="number"
@@ -903,7 +903,7 @@
     }
 
     .button-primary {
-        background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+        background: #70AE48;
         color: #fff;
         box-shadow: 0 14px 30px rgba(79,70,229,.22);
     }
@@ -915,7 +915,7 @@
 
     .button-secondary {
         background: rgba(255,255,255,.92);
-        color: #4338ca;
+        color: #ca6638;
         border: 2px solid rgba(67,56,202,.20);
     }
 
@@ -983,8 +983,8 @@
     }
 
     .tab-button.active {
-        color: #4338ca;
-        border-color: #4338ca;
+        color: #d86132;
+        border-color: #d86132;
     }
 
     .field-error {

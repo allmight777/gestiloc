@@ -295,7 +295,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: #377df4;
+        background: #70AE48;
         color: white;
         padding: 0.875rem 1.5rem;
         border-radius: 50px;
@@ -309,7 +309,7 @@
     }
 
     .btn-create:hover {
-        background: #6461e4;
+        background: #70AE48;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
     }
@@ -348,7 +348,7 @@
     }
 
     .stat-value.in-progress {
-        color: #2563eb;
+        color: #70AE48;
     }
 
     .stat-value.planned {
@@ -387,7 +387,7 @@
     }
 
     .status-pill.active {
-        background: #1665cc;
+        background: #70AE48;
         color: white;
     }
 

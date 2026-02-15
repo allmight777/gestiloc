@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useForm, Controller, FieldErrors } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,8 +23,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { authService } from "@/services/api";
 
-// Couleur primaire personnalisée
-const PRIMARY_COLOR = "#377df4";
+// Couleur primaire personnalisée - VERT
+const PRIMARY_COLOR = "#70AE48";
 
 // Types d'utilisateur
 const USER_TYPES = [
@@ -77,51 +77,6 @@ type ApiErr = {
   message?: string;
 };
 
-interface User {
-  id?: string | number;
-  email: string;
-  roles?: string[];
-  role?: string;
-  [key: string]: unknown;
-}
-
-interface AuthResponse {
-  access_token?: string;
-  token?: string;
-  user?: User;
-  status?: string;
-  data?: {
-    access_token?: string;
-    user?: User;
-    token?: string;
-  } & Record<string, unknown>;
-  message?: string;
-  [key: string]: unknown;
-}
-
-interface FieldError {
-  type: string;
-  message: string;
-}
-
-interface RegisterPayload {
-  email: string;
-  phone: string;
-  password: string;
-  password_confirmation: string;
-  is_professional: boolean;
-  address: string;
-  id_type: string;
-  id_number: string | null;
-  first_name: string;
-  last_name: string;
-  company_name: string | null;
-  ifu: string | null;
-  rccm: string | null;
-  role: string;
-  accept_terms: boolean;
-}
-
 function normalizeBackendMessage(err: ApiErr, fallback: string) {
   const status = err.response?.status;
 
@@ -149,9 +104,9 @@ function normalizeBackendMessage(err: ApiErr, fallback: string) {
   return fallback;
 }
 
-function applyBackendFieldErrors<T extends Record<string, unknown>>(
+function applyBackendFieldErrors<T extends Record<string, any>>(
   err: ApiErr,
-  setError: (name: keyof T, error: FieldError) => void,
+  setError: (name: any, error: any) => void,
   map: Record<string, keyof T>
 ) {
   const errors = err.response?.data?.errors;
@@ -164,7 +119,7 @@ function applyBackendFieldErrors<T extends Record<string, unknown>>(
     if (!formKey) return;
 
     const msg = Array.isArray(messages) ? messages[0] : "Champ invalide";
-    setError(formKey, { type: "server", message: msg });
+    setError(formKey as any, { type: "server", message: msg });
     applied = true;
   });
 
@@ -234,9 +189,8 @@ export default function Auth() {
     registerForm.clearErrors();
   }, [isLogin]);
 
-  const notifyClientValidation = <T extends Record<string, unknown>>(formErrors: FieldErrors<T>) => {
-    const errorValues = Object.values(formErrors).filter((err) => err != null && typeof err === 'object' && 'message' in err) as Array<{message?: string}>;
-    const first = errorValues[0];
+  const notifyClientValidation = (formErrors: Record<string, any>) => {
+    const first = Object.values(formErrors)?.[0];
     const msg = first?.message || "Vérifiez les champs du formulaire.";
     toast.error(msg);
   };
@@ -247,26 +201,26 @@ export default function Auth() {
     try {
       setIsLoading(true);
 
-      const response = (await authService.login(data.email, data.password)) as unknown as AuthResponse;
+      const response = await authService.login(data.email, data.password);
 
-      const responseData = response.data;
+      const responseData = (response as any).data;
 
       // Gérer les deux formats possibles de réponse
-      let user: User | null = null;
+      let user: any = null;
       let token: string | null = null;
 
       if (responseData?.access_token && responseData?.user) {
         // Format : { data: { access_token, user } }
         token = responseData.access_token;
-        user = responseData.user || null;
+        user = responseData.user;
       } else if (responseData?.access_token) {
         // Format : { access_token, user } à la racine
         token = responseData.access_token;
-        user = responseData.user || null;
-      } else if (response?.access_token && response?.user) {
+        user = responseData.user;
+      } else if ((response as any)?.access_token && (response as any)?.user) {
         // Format : { access_token, user } à la racine
-        token = response.access_token;
-        user = response.user || null;
+        token = (response as any).access_token;
+        user = (response as any).user;
       }
 
       if (token) {
@@ -341,8 +295,7 @@ export default function Auth() {
         role = "agence";
       }
 
-      // ✅ On envoie first_name/last_name TOUJOURS (représentant)
-      const userData: RegisterPayload = {
+      const userData: any = {
         email: data.email.toLowerCase().trim(),
         phone: data.phone,
         password: data.password,
@@ -357,9 +310,9 @@ export default function Auth() {
         accept_terms: data.acceptTerms,
       };
 
-      const response = (await authService.register(userData)) as unknown as AuthResponse;
+      const response = await authService.register(userData);
 
-      if (response?.status === "success" || response?.data?.token || response?.token) {
+      if (response?.status === "success" || response?.data?.token || (response as any)?.token) {
         toast.success("Compte créé avec succès ! Vous allez être redirigé vers la page de connexion.");
 
         setTimeout(() => {
@@ -390,7 +343,7 @@ export default function Auth() {
 
   const selectedUserType = registerForm.watch("userType");
 
-  // Style pour le bouton avec la couleur primaire
+  // Style pour le bouton avec la couleur verte
   const buttonStyle = {
     backgroundColor: PRIMARY_COLOR,
     color: "white",
@@ -463,153 +416,15 @@ export default function Auth() {
                     )}
                   </AnimatePresence>
 
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 0.4, delay: 0.4 }}
-                      >
-                        <Label htmlFor="login-password" className="text-slate-700 font-medium">
-                          Mot de passe
-                        </Label>
-                        <div className="relative mt-2">
-                          <Lock size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                          <Input
-                            id="login-password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            {...loginForm.register("password")}
-                            className="pl-10 pr-10 h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
-                        {loginForm.formState.errors.password && (
-                          <p className="text-sm text-red-600 mt-1">{loginForm.formState.errors.password.message}</p>
-                        )}
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.4, delay: 0.5 }}
-                      >
-                        <Button
-                          type="submit"
-                          className="w-full h-12 text-lg font-medium relative overflow-hidden"
-                          disabled={isLoading}
-                        >
-                          <motion.div
-                            className="flex items-center justify-center gap-2"
-                            animate={isLoading ? { scale: [1, 1.05, 1] } : {}}
-                            transition={{ duration: 1.5, repeat: isLoading ? Infinity : 0 }}
-                          >
-                            {isLoading && (
-                              <motion.div
-                                className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              />
-                            )}
-                            {isLoading ? "Connexion en cours..." : "Se connecter"}
-                          </motion.div>
-                        </Button>
-                      </motion.div>
-                    </form>
-
-                    {/* Section de démo */}
+                  <form
+                    onSubmit={loginForm.handleSubmit(handleLogin, (errs) => notifyClientValidation(errs))}
+                    className="space-y-5"
+                  >
+                    {/* Email */}
                     <motion.div
-                      className="mt-8 pt-6 border-t border-slate-200"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.7 }}
-                    >
-                      <p className="text-xs text-slate-500 text-center mb-3 font-medium uppercase">Accès démo</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <motion.button
-                          onClick={() => {
-                            localStorage.setItem("token", "demo-token");
-                            localStorage.setItem("user", JSON.stringify({ 
-                              id: 1, 
-                              email: "admin@demo.fr", 
-                              roles: ["admin"], 
-                              role: "admin" 
-                            }));
-                            navigate("/admin", { replace: true });
-                          }}
-                          className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-xs font-medium transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                        >
-                          Admin
-                        </motion.button>
-                        <motion.button
-                          onClick={() => {
-                            localStorage.setItem("token", "demo-token");
-                            localStorage.setItem("user", JSON.stringify({ 
-                              id: 2, 
-                              email: "proprietaire@demo.fr", 
-                              roles: ["proprietaire"], 
-                              role: "proprietaire" 
-                            }));
-                            navigate("/proprietaire", { replace: true });
-                          }}
-                          className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md text-xs font-medium transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                        >
-                          Propriétaire
-                        </motion.button>
-                        <motion.button
-                          onClick={() => {
-                            localStorage.setItem("token", "demo-token");
-                            localStorage.setItem("user", JSON.stringify({ 
-                              id: 3, 
-                              email: "locataire@demo.fr", 
-                              roles: ["locataire"], 
-                              role: "locataire" 
-                            }));
-                            navigate("/locataire", { replace: true });
-                          }}
-                          className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-md text-xs font-medium transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                        >
-                          Locataire
-                        </motion.button>
-                        <motion.button
-                          onClick={() => {
-                            localStorage.setItem("token", "demo-token");
-                            localStorage.setItem("user", JSON.stringify({ 
-                              id: 4, 
-                              email: "coproprietaire@demo.fr", 
-                              roles: ["coproprietaire"], 
-                              role: "coproprietaire" 
-                            }));
-                            navigate("/coproprietaire", { replace: true });
-                          }}
-                          className="py-2 px-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-md text-xs font-medium transition-colors"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                        >
-                          Copropriétaire
-                        </motion.button>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      className="mt-6 text-center"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: 0.8 }}
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
                     >
                       <Label htmlFor="login-email" className="text-slate-700 font-medium text-sm">
                         Email
@@ -621,7 +436,7 @@ export default function Auth() {
                           type="email"
                           placeholder="votre@email.fr"
                           {...loginForm.register("email")}
-                          className="pl-10 h-12 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                          className="pl-10 h-12 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                         />
                       </div>
                       {loginForm.formState.errors.email && (
@@ -645,7 +460,7 @@ export default function Auth() {
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           {...loginForm.register("password")}
-                          className="pl-10 pr-10 h-12 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                          className="pl-10 pr-10 h-12 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                         />
                         <button
                           type="button"
@@ -737,105 +552,90 @@ export default function Auth() {
                           className="font-medium hover:underline"
                           style={linkStyle}
                         >
-                          {/* ✅ Représentant / Identité (toujours affiché) */}
-                          <motion.div
-                            className="grid grid-cols-2 gap-4"
-                            variants={{ hidden: { y: 12, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
-                          >
-                            <div className="space-y-2">
-                              <Label htmlFor="firstName" className="text-slate-700 font-medium">
-                                {isProfessional ? "Prénom du représentant *" : "Prénom *"}
-                              </Label>
-                              <Input
-                                id="firstName"
-                                placeholder="Jean"
-                                {...registerForm.register("firstName")}
-                                className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                              />
-                              {registerForm.formState.errors.firstName && (
-                                <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.firstName.message}
-                                </p>
-                              )}
-                            </div>
+                          Cliquez ici
+                        </button>
+                      </p>
+                    </motion.div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            ) : (
+              /* FORMULAIRE D'INSCRIPTION */
+              <motion.div
+                key="register"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div
+                  className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <motion.h2
+                    className="text-2xl font-bold text-slate-800 mb-2"
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                  >
+                    Créer un compte
+                  </motion.h2>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="lastName" className="text-slate-700 font-medium">
-                                {isProfessional ? "Nom du représentant *" : "Nom *"}
-                              </Label>
-                              <Input
-                                id="lastName"
-                                placeholder="Dupont"
-                                {...registerForm.register("lastName")}
-                                className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                              />
-                              {registerForm.formState.errors.lastName && (
-                                <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.lastName.message}
-                                </p>
-                              )}
-                            </div>
-                          </motion.div>
+                  <motion.p
+                    className="mb-6 text-slate-600 text-sm"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.15 }}
+                  >
+                    Créer de meilleures relations entre les propriétaires et les locataires !
+                  </motion.p>
 
-                          {/* Pro */}
-                          {isProfessional && (
-                            <motion.div
-                              className="space-y-4"
-                              variants={{ hidden: { y: 12, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
-                            >
-                              <div className="space-y-2">
-                                <Label htmlFor="companyName" className="text-slate-700 font-medium">
-                                  Raison sociale *
-                                </Label>
-                                <div className="relative mt-1">
-                                  <Building2 size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                  <Input
-                                    id="companyName"
-                                    placeholder="MB Pro Services"
-                                    {...registerForm.register("companyName")}
-                                    className="pl-10 h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                                  />
-                                </div>
-                                {registerForm.formState.errors.companyName && (
-                                  <p className="text-sm text-red-600">
-                                    {registerForm.formState.errors.companyName.message}
-                                  </p>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="ifu" className="text-slate-700 font-medium">
-                                    IFU *
-                                  </Label>
-                                  <Input
-                                    id="ifu"
-                                    placeholder="Ex: 123456789"
-                                    {...registerForm.register("ifu")}
-                                    className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                                  />
-                                  {registerForm.formState.errors.ifu && (
-                                    <p className="text-sm text-red-600">
-                                      {registerForm.formState.errors.ifu.message}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="rccm" className="text-slate-700 font-medium">
-                                    RCCM *
-                                  </Label>
-                                  <Input
-                                    id="rccm"
-                                    placeholder="Ex: RB/ABC/2025"
-                                    {...registerForm.register("rccm")}
-                                    className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                                  />
-                                  {registerForm.formState.errors.rccm && (
-                                    <p className="text-sm text-red-600">
-                                      {registerForm.formState.errors.rccm.message}
-                                    </p>
-                                  )}
+                  {/* Sélection du type d'utilisateur */}
+                  <motion.div
+                    className="space-y-3 mb-6"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                  >
+                    <Label className="text-slate-700 font-medium text-sm block mb-2">
+                      Vous êtes ?
+                    </Label>
+                    <Controller
+                      name="userType"
+                      control={registerForm.control}
+                      render={({ field }) => (
+                        <div className="space-y-2">
+                          {USER_TYPES.map((type) => {
+                            const Icon = type.icon;
+                            const isSelected = field.value === type.value;
+                            return (
+                              <div
+                                key={type.value}
+                                className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                  isSelected 
+                                    ? "border-[#70AE48] bg-green-50" 
+                                    : "border-slate-200 hover:border-slate-300"
+                                }`}
+                                onClick={() => field.onChange(type.value)}
+                              >
+                                <div className="flex items-center flex-1">
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 ${
+                                    isSelected ? "border-[#70AE48]" : "border-slate-400"
+                                  }`}>
+                                    {isSelected && (
+                                      <div className="w-2.5 h-2.5 rounded-full bg-[#70AE48]" />
+                                    )}
+                                  </div>
+                                  <Icon size={18} className={`mr-2 ${
+                                    isSelected ? "text-[#70AE48]" : "text-slate-500"
+                                  }`} />
+                                  <span className={`text-sm ${
+                                    isSelected ? "text-[#70AE48] font-medium" : "text-slate-700"
+                                  }`}>
+                                    {type.label}
+                                  </span>
                                 </div>
                               </div>
                             );
@@ -861,7 +661,7 @@ export default function Auth() {
                               id="firstName"
                               placeholder="Jean"
                               {...registerForm.register("firstName")}
-                              className="h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                              className="h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                             />
                             {registerForm.formState.errors.firstName && (
                               <p className="text-xs text-red-600">
@@ -878,7 +678,7 @@ export default function Auth() {
                               id="lastName"
                               placeholder="Dupont"
                               {...registerForm.register("lastName")}
-                              className="h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                              className="h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                             />
                             {registerForm.formState.errors.lastName && (
                               <p className="text-xs text-red-600">
@@ -900,7 +700,7 @@ export default function Auth() {
                               type="email"
                               placeholder="nom@exemple.fr"
                               {...registerForm.register("email")}
-                              className="pl-10 h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                              className="pl-10 h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                             />
                           </div>
                           {registerForm.formState.errors.email && (
@@ -919,7 +719,7 @@ export default function Auth() {
                               type="tel"
                               placeholder="06 12 34 56 78"
                               {...registerForm.register("phone")}
-                              className="h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                              className="h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                             />
                             {registerForm.formState.errors.phone && (
                               <p className="text-xs text-red-600">{registerForm.formState.errors.phone.message}</p>
@@ -936,130 +736,62 @@ export default function Auth() {
                                 id="address"
                                 placeholder="Paris"
                                 {...registerForm.register("address")}
-                                className="pl-10 h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                                className="pl-10 h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                               />
                             </div>
                             {registerForm.formState.errors.address && (
-                              <p className="text-sm text-red-600">
+                              <p className="text-xs text-red-600">
                                 {registerForm.formState.errors.address.message}
                               </p>
                             )}
                           </div>
                         </div>
 
-                          {/* ID Type + Number */}
-                          <motion.div
-                            className="space-y-3"
-                            variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
-                          >
-                            <div className="space-y-2">
-                              <Label className="text-slate-700 font-medium">Type de pièce d'identité *</Label>
-                              <div className="relative mt-1">
-                                <IdCard size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                                <select
-                                  className="w-full h-12 pl-10 pr-3 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                                  {...registerForm.register("idType")}
-                                >
-                                  {ID_TYPES.map((t) => (
-                                    <option key={t.value} value={t.value}>
-                                      {t.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              {registerForm.formState.errors.idType && (
-                                <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.idType.message}
-                                </p>
-                              )}
-                            </div>
+                        {/* Mot de passe */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="register-password" className="text-slate-700 font-medium text-sm">
+                            ☐ Mot de passe *
+                          </Label>
+                          <div className="relative">
+                            <Lock size={18} className="absolute left-3 top-2.5 text-slate-400" />
+                            <Input
+                              id="register-password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="••••••••"
+                              {...registerForm.register("password")}
+                              className="pl-10 pr-10 h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                            >
+                              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
+                          {registerForm.formState.errors.password && (
+                            <p className="text-xs text-red-600">{registerForm.formState.errors.password.message}</p>
+                          )}
+                        </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="idNumber" className="text-slate-700 font-medium">
-                                Numéro de la pièce (optionnel)
-                              </Label>
-                              <Input
-                                id="idNumber"
-                                placeholder="Ex: AB123456"
-                                {...registerForm.register("idNumber")}
-                                className="h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                              />
-                              {registerForm.formState.errors.idNumber && (
-                                <p className="text-sm text-red-600">
-                                  {registerForm.formState.errors.idNumber.message}
-                                </p>
-                              )}
-                            </div>
-                          </motion.div>
-
-                          {/* Password */}
-                          <motion.div
-                            className="space-y-2"
-                            variants={{ hidden: { x: -10, opacity: 0 }, visible: { x: 0, opacity: 1 } }}
-                          >
-                            <Label htmlFor="register-password" className="text-slate-700 font-medium">
-                              Mot de passe *
-                            </Label>
-                            <div className="relative mt-1">
-                              <Lock size={18} className="absolute left-3 top-3.5 text-slate-400" />
-                              <Input
-                                id="register-password"
-                                type="password"
-                                placeholder="Ex : G3$t!L0c/2026***"
-                                {...registerForm.register("password")}
-                                className="pl-10 h-12 border-slate-300 focus:border-primary focus:ring-primary/20"
-                              />
-                            </div>
-                            <p className="text-xs text-slate-500">
-                              Le mot de passe doit contenir au moins 8 caractères, avec des lettres, des chiffres et des caractères spéciaux.
-                            </p>
-                            {registerForm.formState.errors.password && (
-                              <p className="text-sm text-red-600">{registerForm.formState.errors.password.message}</p>
-                            )}
-                          </motion.div>
-
-                          {/* Confirm Password */}
-                          <motion.div
-                            className="space-y-2"
-                            variants={{ hidden: { x: -10, opacity: 0 }, visible: { x: 0, opacity: 1 } }}
-                          >
-                            <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">
-                              Confirmer le mot de passe *
-                            </Label>
+                        {/* Confirmation mot de passe */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="confirmPassword" className="text-slate-700 font-medium text-sm">
+                            ☑ Confirmer le mot de passe *
+                          </Label>
+                          <div className="relative">
+                            <Lock size={18} className="absolute left-3 top-2.5 text-slate-400" />
                             <Input
                               id="confirmPassword"
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="••••••••"
                               {...registerForm.register("confirmPassword")}
-                              className="pl-10 pr-10 h-11 border-slate-300 focus:border-[#377df4] focus:ring-[#377df4]/20"
+                              className="pl-10 pr-10 h-11 border-slate-300 focus:border-[#70AE48] focus:ring-[#70AE48]/20"
                             />
-                            {registerForm.formState.errors.confirmPassword && (
-                              <p className="text-sm text-red-600">
-                                {registerForm.formState.errors.confirmPassword.message ?? "Champ invalide"}
-                              </p>
-                            )}
-                          </motion.div>
-
-                          {/* Terms */}
-                          <motion.div
-                            className="flex items-start space-x-3"
-                            variants={{ hidden: { y: 10, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
-                          >
-                            <Controller
-                              name="acceptTerms"
-                              control={registerForm.control}
-                              render={({ field }) => (
-                                <Checkbox
-                                  id="terms"
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  className="mt-1"
-                                />
-                              )}
-                            />
-                            <Label
-                              htmlFor="terms"
-                              className="text-sm font-normal leading-relaxed cursor-pointer text-slate-600"
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                             >
                               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
@@ -1197,7 +929,7 @@ export default function Auth() {
         <div className="text-center mt-6">
           <button
             onClick={() => navigate("/")}
-            className="text-sm hover:text-[#377df4] font-medium transition-colors text-slate-500"
+            className="text-sm hover:text-[#70AE48] font-medium transition-colors text-slate-500"
             type="button"
           >
             ← Retour à l'accueil

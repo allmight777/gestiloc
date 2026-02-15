@@ -40,9 +40,10 @@
     <!-- En-tête locataire -->
     <div class="section-card">
         <div class="tenant-header">
-            <div class="tenant-avatar">
-                {{ strtoupper(substr($tenant->first_name, 0, 1)) }}{{ strtoupper(substr($tenant->last_name, 0, 1)) }}
-            </div>
+ <div class="tenant-avatar" style="background: #70AE48 !important;">
+    {{ strtoupper(substr($tenant->first_name, 0, 1)) }}{{ strtoupper(substr($tenant->last_name, 0, 1)) }}
+</div>
+
             <div class="tenant-info">
                 <h1 class="tenant-name">
                     {{ $tenant->first_name }} {{ $tenant->last_name }}
@@ -382,7 +383,7 @@
     }
 
     .button-primary {
-        background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
+        background: #70AE48;
         color: #fff;
         box-shadow: 0 14px 30px rgba(79,70,229,.22);
     }
@@ -394,7 +395,7 @@
 
     .button-secondary {
         background: rgba(255,255,255,.92);
-        color: #4338ca;
+        color: #70AE48;
         border: 2px solid rgba(67,56,202,.20);
     }
 
