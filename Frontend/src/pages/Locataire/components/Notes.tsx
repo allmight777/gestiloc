@@ -119,7 +119,7 @@ export const Notes: React.FC<NotesProps> = ({ notify }) => {
       <button
         onClick={() => setShowCreateForm(true)}
         className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+        style={{ background: 'rgba(82, 157, 33, 1)' }}
       >
         Nouvelle note
       </button>
@@ -134,7 +134,7 @@ export const Notes: React.FC<NotesProps> = ({ notify }) => {
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-          style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+          style={{ background: 'rgba(82, 157, 33, 1)' }}
         >
           <Plus size={18} />
           Une nouvelle note
@@ -344,7 +344,7 @@ export const Notes: React.FC<NotesProps> = ({ notify }) => {
                     checked={newNote.shared}
                     onChange={() => setNewNote({ ...newNote, shared: true })}
                     className="w-4 h-4"
-                    style={{ accentColor: 'rgba(82, 157, 33, 0.82)' }}
+                    style={{ accentColor: 'rgba(82, 157, 33, 1)' }}
                   />
                   <span className="text-sm text-gray-700">Partage</span>
                 </label>
@@ -393,7 +393,7 @@ export const Notes: React.FC<NotesProps> = ({ notify }) => {
             <button
               onClick={handleCreateNote}
               className="px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
-              style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+              style={{ background: 'rgba(82, 157, 33, 1)' }}
             >
               Enregistrer
             </button>

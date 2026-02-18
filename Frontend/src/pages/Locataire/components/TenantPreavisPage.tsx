@@ -346,7 +346,7 @@ export default function TenantPreavisPage({
       <button
         onClick={() => setShowCreateForm(true)}
         className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+        style={{ background: 'rgba(82, 157, 33, 1)' }}
       >
         Ajouter un préavis
       </button>
@@ -371,7 +371,7 @@ export default function TenantPreavisPage({
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-          style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+          style={{ background: 'rgba(82, 157, 33, 1)' }}
         >
           <Plus size={18} />
           Ajouter un préavis
@@ -620,7 +620,7 @@ export default function TenantPreavisPage({
               onClick={handleNewSubmit}
               disabled={busy}
               className="px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90 disabled:opacity-60"
-              style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+              style={{ background: 'rgba(82, 157, 33, 1)' }}
             >
               {busy ? 'Enregistrement...' : 'Enregistrer'}
             </button>

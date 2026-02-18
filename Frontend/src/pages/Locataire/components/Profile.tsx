@@ -224,7 +224,7 @@ export const Profile: React.FC<ProfileProps> = ({ notify }) => {
       {/* Header Banner */}
       <div 
         className="rounded-xl p-6 text-white"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+        style={{ background: 'rgba(82, 157, 33, 1)' }}
       >
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold border-2 border-white/30">
@@ -363,7 +363,7 @@ export const Profile: React.FC<ProfileProps> = ({ notify }) => {
           <button
             onClick={handleSavePersonal}
             className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+            style={{ background: 'rgba(82, 157, 33, 1)' }}
           >
             <Save size={16} />
             Enregistrer les modifications
@@ -440,7 +440,7 @@ export const Profile: React.FC<ProfileProps> = ({ notify }) => {
           <button
             onClick={handleSaveAddress}
             className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+            style={{ background: 'rgba(82, 157, 33, 1)' }}
           >
             <Save size={16} />
             Enregistrer
@@ -496,7 +496,7 @@ export const Profile: React.FC<ProfileProps> = ({ notify }) => {
           <button
             onClick={handleSaveProfessional}
             className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+            style={{ background: 'rgba(82, 157, 33, 1)' }}
           >
             <Save size={16} />
             Enregistrer
@@ -563,7 +563,7 @@ export const Profile: React.FC<ProfileProps> = ({ notify }) => {
           <button
             onClick={handleSaveEmergency}
             className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+            style={{ background: 'rgba(82, 157, 33, 1)' }}
           >
             <Save size={16} />
             Enregistrer

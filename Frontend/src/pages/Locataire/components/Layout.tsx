@@ -108,17 +108,17 @@ export const Layout: React.FC<LayoutProps> = ({
 
   // Menu complet avec tous les items pour l'indicateur
   const menuItems = [
-    { id: 'home', label: 'Tableau de bord', icon: Home },
-    { id: 'location', label: 'Ma location', icon: Key },
-    { id: 'landlord', label: 'Mon propriétaire', icon: Building },
-    { id: 'receipts', label: 'Mes quittances', icon: FileText },
-    { id: 'documents', label: 'Documents', icon: Folder },
-    { id: 'interventions', label: 'Mes interventions', icon: Wrench },
-    { id: 'tasks', label: 'Mes tâches', icon: CheckSquare },
-    { id: 'notes', label: 'Mes notes', icon: StickyNote },
-    { id: 'notice', label: 'Préavis', icon: FileSignature },
-    { id: 'payments', label: 'Paiements', icon: CreditCard },
-    { id: 'settings', label: 'Paramètres', icon: Settings },
+    { id: 'home', label: 'Tableau de bord', image: '/Ressource_gestiloc/tb_locataire.png' },
+    { id: 'location', label: 'Ma location', image: '/Ressource_gestiloc/Ma_location.png' },
+    { id: 'landlord', label: 'Mon propriétaire', image: '/Ressource_gestiloc/mon_proprio.png' },
+    { id: 'receipts', label: 'Mes quittances', image: '/Ressource_gestiloc/Mes_quittances.png' },
+    { id: 'documents', label: 'Documents', image: '/Ressource_gestiloc/Document In Folder.png' },
+    { id: 'interventions', label: 'Mes interventions', image: '/Ressource_gestiloc/Tools.png' },
+    { id: 'tasks', label: 'Mes tâches', image: '/Ressource_gestiloc/Nouvelles_taches.png' },
+    { id: 'notes', label: 'Mes notes', image: '/Ressource_gestiloc/Edit Property.png' },
+    { id: 'notice', label: 'Préavis', image: '/Ressource_gestiloc/preavis.png' },
+    { id: 'payments', label: 'Paiements', image: '/Ressource_gestiloc/paiement.png' },
+    { id: 'settings', label: 'Paramètres', image: '/Ressource_gestiloc/parametre_loc.png' },
   ];
 
   const userInitials =
@@ -138,7 +138,7 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col">
       {/* HEADER - Full width */}
-      <header className="px-4 sm:px-6 py-3 fixed top-0 left-0 right-0 z-[100] h-[60px]" style={{ background: 'rgba(82, 157, 33, 0.82)' }}>
+      <header className="px-4 sm:px-6 py-3 fixed top-0 left-0 right-0 z-[100] h-[60px]" style={{ background: 'rgba(82, 157, 33, 1)' }}>
         <div className="flex justify-between items-center h-full">
           <div className="flex items-center gap-3">
             {activeTab !== 'home' && (
@@ -204,15 +204,31 @@ export const Layout: React.FC<LayoutProps> = ({
       {/* SIDEBAR - HORS du conteneur relative */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-[280px] z-[100]
-          bg-white shadow-2xl
+          fixed top-0 left-0 h-full z-[100]
+          bg-white
           flex flex-col
           transition-transform duration-300 ease-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-64 lg:top-[60px] lg:h-[calc(100vh-60px)] lg:shadow-none lg:border-r lg:border-gray-200 lg:z-40'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:z-40'}
         `}
+        style={
+          isMobileMenuOpen ? {
+            width: '343px',
+            height: '857px',
+            borderRadius: '31px',
+            boxShadow: '0px 5px 8.6px 0px rgba(131, 199, 87, 1)',
+          } : {
+            width: '343px',
+            height: 'auto',
+            borderRadius: '31px',
+            boxShadow: '0px 5px 8.6px 0px rgba(131, 199, 87, 1)',
+            top: '80px',
+            left: '50px',
+            maxHeight: 'calc(100vh - 140px)',
+          }
+        }
       >
         {/* Mobile Header with Close */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200" style={{ background: 'rgba(82, 157, 33, 0.82)' }}>
+        <div className="lg:hidden flex items-center justify-between p-4 border-b-2 border-[#83C757]" style={{ background: 'rgba(82, 157, 33, 1)' }}>
           <h2 className="text-lg font-bold text-white">Menu</h2>
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
@@ -222,64 +238,52 @@ export const Layout: React.FC<LayoutProps> = ({
             <X size={24} className="text-white" />
           </button>
         </div>
-        {/* Menu exact comme sur l'image */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              // Logique simplifiée : actif si l'onglet correspond
+
+        {/* Menu Navigation */}
+        <nav className="flex-1 overflow-y-auto">
+          <div className="space-y-0">
+            {menuItems.map((item, index) => {
               const isActive = activeTab === item.id;
+              const isFirst = index === 0;
+
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavigate(item.id as Tab)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-[#529D21]/20 to-[#F5A623]/20 text-[#529D21] font-semibold border-l-4 border-[#529D21] shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  className={`w-full flex items-center gap-3 px-4 text-sm font-medium transition-all ${
+                    isActive && isFirst
+                      ? 'bg-gradient-to-r from-[rgba(255,213,124,0.87)] to-white text-[#529D21] rounded-t-[31px] rounded-b-none h-[101px] pt-3'
+                      : isActive
+                      ? 'bg-gradient-to-r from-[rgba(255,213,124,0.87)] to-white text-[#529D21] py-3'
+                      : isFirst
+                      ? 'text-gray-900 py-3 rounded-t-[31px] bg-white'
+                      : 'text-gray-700 hover:bg-white/50 py-3'
                   }`}
                 >
-                  <Icon size={18} className={`flex-shrink-0 ${isActive ? 'text-[#529D21]' : 'text-gray-500'}`} />
-                  <span className="truncate">{item.label}</span>
-                  {isActive && (
-                    <div className="ml-auto flex items-center gap-1">
-                      <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-pulse" />
-                      <ChevronRight size={16} className="text-[#529D21]" />
-                    </div>
-                  )}
+                  <img 
+                    src={item.image} 
+                    alt={item.label} 
+                    className="w-6 h-6 flex-shrink-0 object-contain"
+                  />
+                  <span className={`truncate ${
+                    isFirst ? 'font-[Merriweather] text-[18px] leading-[100%] tracking-[-0.17px]' : ''
+                  }`}>{item.label}</span>
                 </button>
               );
             })}
             
+            {/* Logout button at end of menu */}
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all rounded-b-[31px] bg-white"
+            >
+              <LogOut size={18} />
+              <span className="truncate">Déconnexion</span>
+            </button>
           </div>
         </nav>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <div
-            onClick={() => handleNavigate('profile')}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm">
-              {userInitials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{userLabel}</p>
-              <p className="text-xs text-gray-500">Locataire</p>
-            </div>
-          </div>
 
-          <button
-            onClick={() => {
-              handleNavigate('home');
-              window.location.href = '/login';
-            }}
-            className="w-full mt-2 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-          >
-            <LogOut size={16} />
-            Déconnexion
-          </button>
-        </div>
       </aside>
 
       {/* CONTENU PRINCIPAL */}
@@ -292,7 +296,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 flex flex-col ml-0 lg:ml-64 h-full overflow-hidden z-0 relative">
+        <main className="flex-1 flex flex-col ml-0 lg:ml-[400px] h-full overflow-hidden z-0 relative">
           {/* Content */}
           <div id="app-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 scroll-smooth">
             {activeTab === 'landlord' ? (

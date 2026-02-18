@@ -145,7 +145,7 @@ export const Tasks: React.FC<TasksProps> = ({ notify }) => {
       <button
         onClick={() => setShowCreateForm(true)}
         className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+        style={{ background: 'rgba(82, 157, 33, 1)' }}
       >
         Nouvelle tâche
       </button>
@@ -191,7 +191,7 @@ export const Tasks: React.FC<TasksProps> = ({ notify }) => {
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-          style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+          style={{ background: 'rgba(82, 157, 33, 1)' }}
         >
           <Plus size={18} />
           Une nouvelle tâche
@@ -416,7 +416,7 @@ export const Tasks: React.FC<TasksProps> = ({ notify }) => {
                       ? 'text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
-                  style={newTask.priority === p ? { background: 'rgba(82, 157, 33, 0.82)' } : {}}
+                  style={newTask.priority === p ? { background: 'rgba(82, 157, 33, 1)' } : {}}
                 >
                   {getPriorityLabel(p)}
                 </button>
@@ -435,7 +435,7 @@ export const Tasks: React.FC<TasksProps> = ({ notify }) => {
             <button
               onClick={handleCreateTask}
               className="px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
-              style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+              style={{ background: 'rgba(82, 157, 33, 1)' }}
             >
               Créer la tâche
             </button>

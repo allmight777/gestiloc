@@ -24,7 +24,7 @@ export default function HeroSection() {
           {/* Stats Counter */}
           <motion.div 
             className="flex items-center justify-center gap-2 px-6 py-3 rounded-full shadow-md w-fit mx-auto" 
-            style={{ backgroundColor: "#83C75730", color: "#83C757" }}
+            style={{ backgroundColor: "#529D2130", color: "#529D21" }}
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -134,7 +134,7 @@ export default function HeroSection() {
                 className="flex items-center gap-2 transition-colors text-sm font-medium"
                 style={{ fontFamily: "Lora, serif", color: "white" }}
                 whileHover={{ scale: 1.1 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#83C757"}
+                onMouseEnter={(e) => e.currentTarget.style.color = "#529D21"}
                 onMouseLeave={(e) => e.currentTarget.style.color = "white"}
               >
                 <Apple size={18} />
@@ -148,7 +148,7 @@ export default function HeroSection() {
                 className="flex items-center gap-2 transition-colors text-sm font-medium"
                 style={{ fontFamily: "Lora, serif", color: "white" }}
                 whileHover={{ scale: 1.1 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#83C757"}
+                onMouseEnter={(e) => e.currentTarget.style.color = "#529D21"}
                 onMouseLeave={(e) => e.currentTarget.style.color = "white"}
               >
                 <Play size={18} />

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, Apple, Play } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 
@@ -320,12 +320,12 @@ export function Hero() {
   const isMobile = useIsMobile();
 
   return (
-    <section className="relative py-8 sm:py-10 md:py-12 lg:py-16 overflow-hidden bg-gray-200">
+    <section className="relative py-4 sm:py-6 md:py-8 lg:py-10 overflow-hidden bg-gray-200">
       {/* Fond gris léger sur toute la largeur */}
       <div className="absolute inset-0 -z-10 bg-gray-200" />
 
       {/* Contenu centré dans la grille */}
-      <div className="container">
+      <div className="container relative">
         {/* Ligne d'avis tout en haut, centrée comme Rentila */}
 
 
@@ -394,81 +394,68 @@ export function Hero() {
 
             {/* CTA */}
             <motion.div
-              className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2"
+              className="flex flex-col items-start gap-3 pt-2"
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 2.8 }}
             >
               <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Button asChild size="lg" className="text-base px-8">
-                  <Link to="/register">Ouvrir un compte gratuit</Link>
-                </Button>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: "rgba(196, 255, 109, 1)",
+                    color: "rgba(0, 0, 0, 1)",
+                    borderRadius: "7px",
+                    borderBottom: "3px solid rgba(20, 51, 0, 1)",
+                    boxShadow: "0px 4px 4px 0px rgba(0, 0, 0, 0.25)",
+                    width: "200px",
+                    height: "60px",
+                    fontFamily: "Montserrat",
+                    fontWeight: "500",
+                    fontStyle: "Medium",
+                    fontSize: "14px",
+                    lineHeight: "100%",
+                    letterSpacing: "-0.17px",
+                    textAlign: "center",
+                    verticalAlign: "middle"
+                  }}
+                >
+                  Ouvrir un compte gratuit
+                </Link>
               </motion.div>
 
-              <motion.p
-                className="text-sm text-muted-foreground"
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 3.2 }}
+                transition={{ duration: 0.4, delay: 3.0 }}
               >
-                Déjà client ?{" "}
                 <Link
                   to="/login"
-                  className="text-primary hover:underline font-medium"
+                  className="inline-flex items-center justify-center transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 1)",
+                    color: "#31660e",
+                    borderRadius: "7px",
+                    border: "1px solid rgba(49, 102, 14, 1)",
+                    width: "200px",
+                    height: "60px",
+                    fontFamily: "Montserrat",
+                    fontWeight: "500",
+                    fontSize: "14px",
+                    lineHeight: "100%",
+                    textAlign: "center",
+                    verticalAlign: "middle"
+                  }}
                 >
-                  Cliquez ici
+                  Se connecter
                 </Link>
-              </motion.p>
-            </motion.div>
-
-            {/* App Stores */}
-            <motion.div
-              className="flex items-center gap-4 pt-4 text-sm text-muted-foreground"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 3.4 }}
-            >
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 3.6 }}
-              >
-                Disponible sur
-              </motion.span>
-
-              <motion.a
-                className="h-9 rounded-md border bg-background px-3 flex items-center gap-2 shadow-sm"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1, boxShadow: ['0 0 0px rgba(59, 130, 246, 0)', '0 0 20px rgba(59, 130, 246, 0.5)', '0 0 0px rgba(59, 130, 246, 0)'] }}
-                transition={{ duration: 0.4, delay: 3.8, boxShadow: { duration: 2, repeat: Infinity } }}
-              >
-                <Apple className="h-4 w-4 text-black" />
-                <span className="text-xs font-medium">App Store</span>
-              </motion.a>
-
-              <motion.div
-                className="h-5 w-px bg-border/70"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                transition={{ duration: 0.3, delay: 4.0 }}
-              />
-
-              <motion.a
-                className="h-9 rounded-md border bg-background px-3 flex items-center gap-2 shadow-sm"
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1, boxShadow: ['0 0 0px rgba(59, 130, 246, 0)', '0 0 20px rgba(59, 130, 246, 0.5)', '0 0 0px rgba(59, 130, 246, 0)'] }}
-                transition={{ duration: 0.4, delay: 4.2, boxShadow: { duration: 2, repeat: Infinity } }}
-              >
-                <Play className="h-4 w-4 text-green-500" />
-                <span className="text-xs font-medium">Google Play</span>
-              </motion.a>
+              </motion.div>
             </motion.div>
           </div>
 
@@ -525,6 +512,86 @@ export function Hero() {
             </motion.div>
           </motion.div>
         </div>
+
+        {/* App Stores - Positionnement en bas à droite de la section */}
+        <motion.div
+          className="absolute bottom-0 right-4 md:right-8 flex flex-col items-end gap-2 md:gap-3 pb-4 md:pb-6"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 3.4 }}
+        >
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 3.6 }}
+            style={{
+              fontFamily: "Lora",
+              fontWeight: "700",
+              fontStyle: "italic",
+              fontSize: "14px",
+              lineHeight: "100%",
+              letterSpacing: "-0.17px",
+              textAlign: "right",
+              verticalAlign: "middle",
+              color: "#000",
+              whiteSpace: "nowrap"
+            }}
+          >
+            Disponible sur
+          </motion.span>
+
+          <motion.div
+            className="flex items-center gap-2 md:gap-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 3.8 }}
+          >
+            <motion.a
+              href="#"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <img
+                src="/Ressource_gestiloc/Apple Inc.png"
+                alt="App Store"
+                style={{
+                  width: "auto",
+                  height: "16px",
+                  objectFit: "contain",
+                  filter: "brightness(0)"
+                }}
+                className="md:h-[20px]"
+              />
+            </motion.a>
+
+            <motion.div
+              className="h-4 md:h-5 w-px bg-gray-400"
+              initial={{ scaleY: 0 }}
+              animate={{ scaleY: 1 }}
+              transition={{ duration: 0.3, delay: 4.0 }}
+            />
+
+            <motion.a
+              href="#"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <img
+                src="/Ressource_gestiloc/Google Play.png"
+                alt="Google Play"
+                style={{
+                  width: "auto",
+                  height: "16px",
+                  objectFit: "contain",
+                  filter: "brightness(0)"
+                }}
+                className="md:h-[19px]"
+              />
+            </motion.a>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

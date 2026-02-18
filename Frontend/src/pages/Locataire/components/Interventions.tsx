@@ -416,7 +416,7 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
       <button
         onClick={() => setShowCreateForm(true)}
         className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+        style={{ background: 'rgba(82, 157, 33, 1)' }}
       >
         Nouvelle intervention
       </button>
@@ -431,7 +431,7 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
-          style={{ background: 'rgba(82, 157, 33, 0.82)' }}
+          style={{ background: 'rgba(82, 157, 33, 1)' }}
         >
           <Plus size={18} />
           Une nouvelle intervention
