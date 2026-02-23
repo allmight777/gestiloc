@@ -504,6 +504,8 @@ interface FormData {
   bedroom_count: string;   // Nombre de chambres
   bathroom_count: string;  // Nombre de salles de bain
   rent_amount: string;
+  charges_amount: string;  // Charges mensuelles
+  caution: string;         // Caution/Garantie
   status: string;
   reference_code: string;
   // Caractéristiques supplémentaires
@@ -578,6 +580,8 @@ export const AjouterBien = ({
     bedroom_count: "",
     bathroom_count: "",
     rent_amount: "",
+    charges_amount: "",  // Charges mensuelles
+    caution: "",         // Caution/Garantie
     status: "available",
     reference_code: "",
     // Caractéristiques supplémentaires
@@ -668,11 +672,13 @@ export const AjouterBien = ({
 
     if (!formData.name.trim()) errs.name = "Le titre du bien est obligatoire.";
     if (!formData.surface || Number(formData.surface) <= 0) errs.surface = "La surface doit être > 0.";
-    if (!formData.address.trim()) errs.address = "L’adresse est obligatoire.";
+    if (!formData.address.trim()) errs.address = "L'adresse est obligatoire.";
     if (!formData.zip_code.trim()) errs.zip_code = "Le code postal est obligatoire.";
     if (!formData.city.trim()) errs.city = "La ville est obligatoire.";
 
     if (formData.rent_amount && Number(formData.rent_amount) < 0) errs.rent_amount = "Le loyer doit être positif.";
+    if (formData.charges_amount && Number(formData.charges_amount) < 0) errs.charges_amount = "Les charges doivent être positives.";
+    if (formData.caution && Number(formData.caution) < 0) errs.caution = "La caution doit être positive.";
 
     if (formData.reference_code && !/^[A-Z0-9-]+$/.test(formData.reference_code)) {
       errs.reference_code = "Uniquement lettres MAJ, chiffres et tirets.";
@@ -736,7 +742,8 @@ export const AjouterBien = ({
         bathroom_count: formData.bathroom_count ? parseInt(formData.bathroom_count) : null,
 
         rent_amount: formData.rent_amount ? parseFloat(formData.rent_amount) : null,
-        charges_amount: null,
+        charges_amount: formData.charges_amount ? parseFloat(formData.charges_amount) : null,
+        caution: formData.caution ? parseFloat(formData.caution) : null,
         status: formData.status,
 
         reference_code: formData.reference_code || null,
@@ -775,6 +782,8 @@ export const AjouterBien = ({
         if (be.city) mapped.city = be.city?.[0] || "Ville invalide.";
         if (be.reference_code) mapped.reference_code = be.reference_code?.[0] || "Référence invalide.";
         if (be.rent_amount) mapped.rent_amount = be.rent_amount?.[0] || "Loyer invalide.";
+        if (be.charges_amount) mapped.charges_amount = be.charges_amount?.[0] || "Charges invalides.";
+        if (be.caution) mapped.caution = be.caution?.[0] || "Caution invalide.";
         if (be.photos) mapped.photos = be.photos?.[0] || "Photos invalides.";
 
         setFormErrors((p) => ({ ...p, ...mapped }));
@@ -1021,7 +1030,18 @@ export const AjouterBien = ({
                         min="0"
                       />
                     </div>
+                  </div>
 
+                  {/* Section Caractéristiques */}
+                  <div className="sectionHead" style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid rgba(102,126,234,.28)' }}>
+                    <h2 className="sectionTitle">
+                      <Home size={16} />
+                      Caractéristiques
+                    </h2>
+                    <span className="pill">Options</span>
+                  </div>
+
+                  <div className="fields" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Étage</label>
                       <input
@@ -1036,7 +1056,28 @@ export const AjouterBien = ({
                     </div>
 
                     <div className="field">
-                      <label className="label">Caractéristiques</label>
+                      <label className="label">Type de chauffage</label>
+                      <select
+                        name="heating_type"
+                        value={formData.heating_type}
+                        onChange={handleChange}
+                        className="control"
+                      >
+                        <option value="">Sélectionner...</option>
+                        <option value="electric">Électrique</option>
+                        <option value="gas">Gaz</option>
+                        <option value="oil">Fioul</option>
+                        <option value="heat_pump">Pompe à chaleur</option>
+                        <option value="solar">Solaire</option>
+                        <option value="collective">Collectif</option>
+                        <option value="none">Aucun</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="fields one" style={{ marginTop: 12 }}>
+                    <div className="field">
+                      <label className="label">Options et équipements</label>
                       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                           <input
@@ -1094,26 +1135,9 @@ export const AjouterBien = ({
                         </label>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="field">
-                      <label className="label">Type de chauffage</label>
-                      <select
-                        name="heating_type"
-                        value={formData.heating_type}
-                        onChange={handleChange}
-                        className="control"
-                      >
-                        <option value="">Sélectionner...</option>
-                        <option value="electric">Électrique</option>
-                        <option value="gas">Gaz</option>
-                        <option value="oil">Fioul</option>
-                        <option value="heat_pump">Pompe à chaleur</option>
-                        <option value="solar">Solaire</option>
-                        <option value="collective">Collectif</option>
-                        <option value="none">Aucun</option>
-                      </select>
-                    </div>
-
+                  <div className="fields" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Classe énergétique</label>
                       <select
@@ -1132,7 +1156,9 @@ export const AjouterBien = ({
                         <option value="G">G</option>
                       </select>
                     </div>
+                  </div>
 
+                  <div className="fields one" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Référence</label>
                       <input
@@ -1272,7 +1298,51 @@ export const AjouterBien = ({
                           />
                         </div>
                         {formErrors.rent_amount ? <div className="error">{formErrors.rent_amount}</div> : null}
-                        <div className="help">Tu peux laisser vide si tu veux.</div>
+                        
+                      </div>
+                    </div>
+
+                    <div className="fields" style={{ marginTop: 12 }}>
+                      <div className="field">
+                        <label className="label">Charges mensuelles (FCFA)</label>
+                        <div className="iconInput">
+                          <span className="iconLeft">
+                            <Euro size={16} />
+                          </span>
+                          <input
+                            type="number"
+                            name="charges_amount"
+                            value={formData.charges_amount}
+                            onChange={handleChange}
+                            placeholder="0,00"
+                            className="control"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        {formErrors.charges_amount ? <div className="error">{formErrors.charges_amount}</div> : null}
+                        
+                      </div>
+
+                      <div className="field">
+                        <label className="label">Caution/Garantie (FCFA)</label>
+                        <div className="iconInput">
+                          <span className="iconLeft">
+                            <Euro size={16} />
+                          </span>
+                          <input
+                            type="number"
+                            name="caution"
+                            value={formData.caution}
+                            onChange={handleChange}
+                            placeholder="0,00"
+                            className="control"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        {formErrors.caution ? <div className="error">{formErrors.caution}</div> : null}
+                        
                       </div>
                     </div>
                   </div>

@@ -19,7 +19,7 @@ class Lease extends Model
         'uuid', 'property_id', 'tenant_id', 'lease_number', 'type',
         'start_date', 'end_date', 'tacit_renewal',
         'rent_amount', 'charges_amount', 'guarantee_amount', 'prepaid_rent_months',
-        'billing_day', 'payment_frequency', 'penalty_rate',
+        'billing_day', 'payment_frequency', 'payment_method', 'penalty_rate',
         'status', 'contract_file_path', 'terms', 'meta', 'termination_reason' // Ajouté 'meta' ici
     ];
 

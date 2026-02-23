@@ -98,6 +98,7 @@ export interface Property {
 
   rent_amount: string | null;
   charges_amount: string | null;
+  caution: string | null;
   status: string;
 
   amenities: string[] | null;
@@ -139,6 +140,7 @@ export interface CreatePropertyPayload {
 
   rent_amount?: number | null;
   charges_amount?: number | null;
+  caution?: number | null;
   status: string;
 
   reference_code?: string | null;

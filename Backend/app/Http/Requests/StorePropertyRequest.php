@@ -56,6 +56,7 @@ class StorePropertyRequest extends FormRequest
             // Financier
             'rent_amount'    => 'nullable|numeric|min:0|max:999999.99',
             'charges_amount' => 'nullable|numeric|min:0|max:999999.99',
+            'caution'        => 'nullable|numeric|min:0|max:999999.99',
 
             // Statut
             'status' => 'required|in:available,rented,maintenance,off_market',
