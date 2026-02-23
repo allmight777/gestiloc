@@ -282,48 +282,155 @@ export function Stats() {
           })}
         </div>
 
-        {/* VERSION MOBILE : cartes empilées */}
-        <div className="grid gap-6 md:hidden">
-          {cards.map((card) => (
-            <div
-              key={card.id}
-              className="rounded-2xl px-6 py-5 shadow-sm"
-              style={{
-                backgroundColor: card.bgColor,
-                color: card.textColor,
-              }}
-            >
-              {card.kind === "stat" && (
-                <>
-                  <div className="text-3xl font-bold mb-2">
-                    {card.percent}
-                  </div>
-                  <p className="text-base leading-relaxed">
-                    {card.bigText}
-                  </p>
-                </>
-              )}
-              {card.kind === "quote" && (
-                <>
-                  <p className="text-base leading-relaxed mb-3">
-                    {card.bigText}
-                  </p>
-                  {card.author && (
-                    <p className="text-xs font-semibold">
-                      – {card.author}
-                      {card.location && (
-                        <span className="font-normal text-muted-foreground">
-                          , {card.location}
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* VERSION MOBILE : Carousel professionnel avec autoplay */}
+        <MobileStatsCarousel cards={cards} />
       </div>
     </section>
+  );
+}
+
+// Composant carousel mobile séparé - Binômes
+function MobileStatsCarousel({ cards }: { cards: WhyCard[] }) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  
+  // Regrouper les cartes en binômes (2 par slide)
+  const binomes = [];
+  for (let i = 0; i < cards.length; i += 2) {
+    binomes.push(cards.slice(i, i + 2));
+  }
+  const totalSlides = binomes.length;
+
+  // Autoplay - défilement continu gauche-droite
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (carouselRef.current) {
+        let nextIndex = currentIndex + direction;
+        
+        // Changement de direction aux extrémités
+        if (nextIndex >= totalSlides - 1) {
+          nextIndex = totalSlides - 1;
+          setDirection(-1);
+        } else if (nextIndex <= 0) {
+          nextIndex = 0;
+          setDirection(1);
+        }
+        
+        const scrollAmount = carouselRef.current.offsetWidth;
+        carouselRef.current.scrollTo({
+          left: nextIndex * scrollAmount,
+          behavior: 'smooth'
+        });
+        setCurrentIndex(nextIndex);
+      }
+    }, 4000); // 4 secondes par binôme
+
+    return () => clearInterval(interval);
+  }, [currentIndex, direction, totalSlides]);
+
+  const handleScroll = () => {
+    if (carouselRef.current) {
+      const scrollLeft = carouselRef.current.scrollLeft;
+      const slideWidth = carouselRef.current.offsetWidth;
+      const newIndex = Math.round(scrollLeft / slideWidth);
+      setCurrentIndex(newIndex);
+    }
+  };
+
+  const renderCard = (card: WhyCard, index: number) => (
+    <div
+      key={card.id}
+      className="rounded-2xl px-5 py-5 shadow-lg flex-1 flex flex-col justify-center"
+      style={{
+        backgroundColor: card.bgColor,
+        color: card.textColor,
+        minHeight: '200px',
+        transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
+      }}
+    >
+      {card.kind === "stat" && (
+        <>
+          <div className="text-3xl font-bold mb-2">
+            {card.percent}
+          </div>
+          <p className="text-sm leading-relaxed">
+            {card.bigText}
+          </p>
+        </>
+      )}
+      {card.kind === "quote" && (
+        <>
+          <div className="text-xl mb-1 opacity-50">"</div>
+          <p className="text-sm leading-relaxed mb-3 italic">
+            {card.bigText.replace(/"/g, '')}
+          </p>
+          {card.author && (
+            <div className="flex items-center gap-2 mt-auto">
+              <div 
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                style={{ 
+                  backgroundColor: card.textColor === '#FFFFFF' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)',
+                  color: card.textColor 
+                }}
+              >
+                {card.author.charAt(0)}
+              </div>
+              <p className="text-xs">
+                <span className="font-semibold">{card.author}</span>
+                {card.location && (
+                  <span className="opacity-70">, {card.location}</span>
+                )}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="md:hidden">
+      {/* Carousel container avec binômes */}
+      <div 
+        ref={carouselRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-4 gap-4 px-4"
+        style={{ scrollSnapType: 'x mandatory' }}
+      >
+        {binomes.map((binome, slideIndex) => (
+          <div
+            key={slideIndex}
+            className="flex-shrink-0 w-[90vw] max-w-[380px] snap-center flex gap-3"
+          >
+            {binome.map((card, cardIndex) => renderCard(card, slideIndex * 2 + cardIndex))}
+          </div>
+        ))}
+      </div>
+
+      {/* Indicateurs de progression (un par binôme) */}
+      <div className="flex justify-center mt-4 gap-2">
+        {binomes.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              if (carouselRef.current) {
+                carouselRef.current.scrollTo({
+                  left: index * carouselRef.current.offsetWidth,
+                  behavior: 'smooth'
+                });
+                setCurrentIndex(index);
+              }
+            }}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              currentIndex === index 
+                ? 'bg-violet-500 w-8' 
+                : 'bg-gray-300 w-2'
+            }`}
+            aria-label={`Voir binôme ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

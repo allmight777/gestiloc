@@ -299,9 +299,9 @@ export default function Register() {
     <div className="container flex min-h-[calc(100vh-5rem)] items-center justify-center py-12">
       <Card className="w-full max-w-2xl rounded-2xl border-2 border-primary/1 ">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center">
+          <div className="text-center">
             <h1 className="text-primary text-4xl font-bold">Gestiloc</h1>
-          </CardTitle>
+          </div>
           <CardTitle className="text-center text-lg font-semibold">
             Créer un compte
           </CardTitle>

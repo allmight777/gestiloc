@@ -162,9 +162,9 @@ export default function Login() {
       <Card className="w-full max-w-md rounded-2xl border-2 border-primary/50 shadow-md">
         {/* En-tête : logo, titre et sous-titre (aligné Register) */}
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center">
+          <div className="text-center">
             <h1 className="text-4xl font-bold text-primary">Gestiloc</h1>
-          </CardTitle>
+          </div>
           <CardTitle className="text-center text-lg font-semibold text-foreground">
             Connexion à votre compte
           </CardTitle>
