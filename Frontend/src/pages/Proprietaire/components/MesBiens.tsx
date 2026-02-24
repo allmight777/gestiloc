@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Home,
   MapPin,
@@ -18,976 +18,133 @@ import {
   Building2,
   Ruler,
   ArrowLeft,
-  AlertTriangle,
-  Bed,
   Bath,
+  Bed,
   Layers,
   Thermometer,
   Zap,
-  Check,
+  Check
 } from "lucide-react";
-import {
-  propertyService,
-  Property,
-  PaginatedResponse,
-  uploadService,
-} from "@/services/api";
-import api from "@/services/api";
-
-// ✅ STYLES CSS COMPLETS (inchangés)
-const styles = `
-.properties-page {
-  min-height: 100vh;
-  background: #f3f4f6;
-  padding: 2rem;
-}
-
-.properties-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.properties-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.properties-title-block {
-  flex: 1;
-  min-width: 220px;
-}
-
-.properties-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #000000ff;
-}
-
-.properties-subtitle {
-  margin-top: 0.25rem;
-  color: #6b7280;
-  font-size: 0.95rem;
-}
-
-.properties-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 260px;
-}
-
-.search-wrapper {
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.65rem 1rem 0.65rem 2.5rem;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: white;
-  font-size: 0.9rem;
-  color: #111827;
-  outline: none;
-  transition: all 0.15s ease;
-}
-
-.search-input::placeholder {
-  color: #9ca3af;
-}
-
-.search-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.search-icon {
-  position: absolute;
-  left: 0.9rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-}
-
-.button {
-  padding: 0.75rem 1.25rem;
-  border-radius: 999px;
-  border: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  justify-content: center;
-}
-
-.button-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-}
-
-.button-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
-}
-
-.properties-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-}
-
-.property-card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #e5e7eb;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.property-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
-}
-
-.property-image-wrapper {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.property-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.property-status-badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: white;
-  background: #4b5563;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.status-available {
-  background: #16a34a;
-}
-
-.status-rented {
-  background: #2563eb;
-}
-
-.status-maintenance {
-  background: #ea580c;
-}
-
-.status-off_market {
-  background: #6b7280;
-}
-
-.property-body {
-  padding: 1.25rem 1.5rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.property-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.property-type {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-.property-location {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  color: #4b5563;
-  margin-top: 0.25rem;
-}
-
-.property-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.75rem;
-  font-size: 0.85rem;
-  color: #4b5563;
-}
-
-.property-rent {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.property-rent span {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.property-surface {
-  font-size: 0.85rem;
-  color: #4b5563;
-}
-
-.property-footer {
-  padding: 0.85rem 1.5rem 1rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.property-photos-count {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.badge-muted {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.property-actions {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.85rem 1.5rem 1rem;
-  border-top: 1px solid #e5e7eb;
-  justify-content: flex-end;
-}
-
-.btn-view {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: none;
-  background: #f3f4f6;
-  color: #4b5563;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.btn-view:hover {
-  background: #e5e7eb;
-}
-
-.btn-edit {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.btn-edit:hover {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-}
-
-.empty-state,
-.error-state,
-.loading-state {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
-  margin-top: 1rem;
-}
-
-.empty-title,
-.error-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: #111827;
-}
-
-.empty-text,
-.error-text {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-bottom: 1.25rem;
-}
-
-.empty-text-margin {
-  margin-top: 0.75rem;
-}
-
-.loading-icon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ========= BADGES DE DÉLÉGATION ========= */
-.delegation-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 10;
-}
-
-.badge-agency {
-  background: rgba(239, 68, 68, 0.95);
-  color: white;
-}
-
-.badge-coowner {
-  background: rgba(59, 130, 246, 0.95);
-  color: white;
-}
-
-.badge-owner {
-  background: rgba(16, 185, 129, 0.95);
-  color: white;
-}
-
-/* ========= MODALES ========= */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 24px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.2);
-}
-
-.modal-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 100;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  background: #e5e7eb;
-  transform: rotate(90deg);
-}
-
-/* ========= VUE DÉTAILS ========= */
-.view-modal-content {
-  background: white;
-  border-radius: 24px;
-  width: 90%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.view-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  padding: 2rem;
-  color: white;
-  border-radius: 24px 24px 0 0;
-  position: relative;
-}
-
-.view-header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.view-title-section {
-  flex: 1;
-}
-
-.view-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  color: white;
-}
-
-.view-subtitle {
-  opacity: 0.9;
-  margin: 0;
-   color: white;
-}
-
-.view-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.view-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.view-body {
-  padding: 2rem;
-}
-
-.view-section {
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.view-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.view-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  color: #111827;
-}
-
-.view-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.view-field {
-  margin-bottom: 1rem;
-}
-
-.view-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-  display: block;
-}
-
-.view-value {
-  font-size: 1rem;
-  color: #111827;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.feature-item.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.feature-item.inactive {
-  opacity: 0.6;
-}
-
-.view-photos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.view-photo {
-  width: 100%;
-  height: 150px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-  transition: transform 0.2s ease;
-}
-
-.view-photo:hover {
-  transform: scale(1.05);
-}
-
-.view-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.view-actions {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 999px;
-  border: 2px solid #d1d5db;
-  background: white;
-  color: #4b5563;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: #f3f4f6;
-}
-
-.btn-success {
-  padding: 0.75rem 1.5rem;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.btn-success:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-}
-
-/* ========= FORMULAIRE D'ÉDITION ========= */
-.edit-form {
-  background: white;
-  border-radius: 24px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.edit-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  padding: 2rem;
-  color: white;
-  border-radius: 24px 24px 0 0;
-  position: relative;
-}
-
-.edit-header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.edit-title-section {
-  flex: 1;
-}
-
-.edit-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: white;
-}
-
-.edit-subtitle {
-  opacity: 0.9;
-  margin: 0;
-   color: white;
-}
-
-.edit-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.edit-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.edit-body {
-  padding: 2rem;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.form-section {
-  background: rgba(255, 255, 255, 0.72);
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
-}
-
-.form-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  color: #111827;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(102, 126, 234, 0.28);
-}
-
-.form-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.form-required {
-  color: #dc2626;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  color: #111827;
-  background: white;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.form-control:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.form-select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  color: #111827;
-  background: white;
-  cursor: pointer;
-  outline: none;
-}
-
-.form-select:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.form-checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.form-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
-
-.form-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  color: #111827;
-  background: white;
-  min-height: 120px;
-  resize: vertical;
-  outline: none;
-  font-family: inherit;
-}
-
-.form-textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.form-error {
-  color: #dc2626;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-}
-
-.form-actions {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.photos-section {
-  margin-top: 1.5rem;
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  background: rgba(249, 250, 251, 0.8);
-}
-
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.photo-item {
-  position: relative;
-  width: 100%;
-  height: 120px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.photo-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.photo-remove {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.photo-upload {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.photo-upload-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  border: 2px dashed #d1d5db;
-  background: white;
-  color: #6b7280;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.photo-upload-btn:hover {
-  border-color: #6366f1;
-  color: #6366f1;
-}
-
-@media (max-width: 768px) {
-  .properties-page {
-    padding: 1.25rem;
-  }
-  .properties-actions {
-    width: 100%;
-  }
-  .modal-content,
-  .view-modal-content,
-  .edit-form {
-    width: 95%;
-    max-height: 85vh;
-  }
-  .view-header,
-  .edit-header {
-    padding: 1.5rem;
-  }
-  .view-body,
-  .edit-body {
-    padding: 1.5rem;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .form-actions {
-    flex-direction: column;
-  }
-  .btn-secondary,
-  .btn-success {
-    width: 100%;
-    justify-content: center;
-  }
-}
-`;
+import { useNavigate } from "react-router-dom";
+import api from "../../../services/api";
+import { uploadService, propertyService } from "../../../services/api";
+
+// Types
+interface Property {
+  id: number;
+  type: string;
+  name: string;
+  title?: string;
+  description?: string;
+  address: string;
+  city?: string;
+  district?: string;
+  zip_code?: string;
+  surface?: string;
+  room_count?: number;
+  bedroom_count?: number;
+  bathroom_count?: number;
+  rent_amount?: string;
+  status?: string;
+  reference_code?: string;
+  photos?: string[];
+  meta?: {
+    terrace?: boolean;
+    balcony?: boolean;
+    garden?: boolean;
+    parking?: boolean;
+    floor?: number;
+    elevator?: boolean;
+    furnished?: boolean;
+    heating_type?: string;
+    energy_class?: string;
+    [key: string]: any;
+  };
+  delegation_type?: string;
+  delegation_info?: {
+    co_owner_name?: string;
+    co_owner_company?: string;
+    delegated_at?: string;
+    [key: string]: any;
+  };
+  can_edit?: boolean;
+}
+
+interface PaginatedResponse<T> {
+  data: T[];
+  total?: number;
+  page?: number;
+  per_page?: number;
+}
+
+interface MesBiensProps {
+  notify?: (msg: string, type: "success" | "info" | "error") => void;
+  currentUser?: {
+    id: number;
+    email: string;
+    role: "landlord" | "co_owner" | "admin";
+  };
+}
+
+// Données mockées
+const biens = [
+  {
+    id: 1,
+    statut: "Loué",
+    type: "APPARTEMENT",
+    titre: "Appartement 12 - Agla",
+    adresse: "Boulevard de la marina, Cotonou",
+    loyer: "60.000",
+    surface: "65",
+    photos: 1,
+    ref: "PR-WZ6WHU",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+  },
+  {
+    id: 2,
+    statut: "Disponible",
+    type: "MAISON",
+    titre: "Villa moderne - Fidjrossè",
+    adresse: "Rue des Cocotiers, Cotonou",
+    loyer: "150.000",
+    surface: "120",
+    photos: 5,
+    ref: "PR-ABC123",
+    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80",
+  },
+  {
+    id: 3,
+    statut: "Loué",
+    type: "STUDIO",
+    titre: "Studio cosy - Centre-ville",
+    adresse: "Avenue Steinmetz, Cotonou",
+    loyer: "35.000",
+    surface: "28",
+    photos: 3,
+    ref: "PR-XYZ78",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+  },
+];
+
+const filters = ["Tous", "Loué", "Disponible", "En travaux", "Préavis", "Meublé"];
+
+const statutColor: Record<string, string> = {
+  Loué: "#3b82f6",
+  Disponible: "#22c55e",
+  "En travaux": "#f59e0b",
+  Préavis: "#ef4444",
+  Meublé: "#8b5cf6",
+};
 
 // Fonctions utilitaires
-const formatPrice = (value: string | null) => {
+const formatPrice = (value: string | undefined) => {
   if (!value) return "-";
   const num = Number(value);
   if (Number.isNaN(num)) return value;
   return num.toLocaleString("fr-FR", { minimumFractionDigits: 0 }) + " FCFA";
 };
 
-const formatSurface = (value: string | null) => {
+const formatSurface = (value: string | undefined) => {
   if (!value) return "-";
   const num = Number(value);
   if (Number.isNaN(num)) return value;
@@ -1055,15 +212,6 @@ const resolvePhotoUrl = (p?: string | null) => {
   return `${origin}/storage/${normalized}`;
 };
 
-interface MesBiensProps {
-  notify?: (msg: string, type: "success" | "info" | "error") => void;
-  currentUser?: {
-    id: number;
-    email: string;
-    role: "landlord" | "co_owner" | "admin";
-  };
-}
-
 // Interface pour le formulaire d'édition
 interface EditFormData {
   type: string;
@@ -1090,6 +238,577 @@ interface EditFormData {
   heating_type: string;
   energy_class: string;
 }
+
+const styles = `
+  .view-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .view-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .view-body {
+    padding: 2rem;
+  }
+
+  .view-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .view-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .view-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: #111827;
+  }
+
+  .view-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .view-field {
+    margin-bottom: 1rem;
+  }
+
+  .view-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  .view-value {
+    font-size: 1rem;
+    color: #111827;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  .feature-item.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .feature-item.inactive {
+    opacity: 0.6;
+  }
+
+  .view-photos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .view-photo {
+    width: 100%;
+    height: 150px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.2s;
+  }
+
+  .view-photo:hover {
+    transform: scale(1.05);
+  }
+
+  .view-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .view-actions {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: 2px solid #d1d5db;
+    background: white;
+    color: #4b5563;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background: #f3f4f6;
+  }
+
+  .btn-success {
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-success:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+  }
+
+  /* ========= FORMULAIRE D'ÉDITION ========= */
+  .edit-form {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .edit-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 2rem;
+    color: white;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+  }
+
+  .edit-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .edit-title-section {
+    flex: 1;
+  }
+
+  .edit-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+  }
+
+  .edit-subtitle {
+    opacity: 0.9;
+    margin: 0;
+    color: white;
+  }
+
+  .edit-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .edit-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .edit-body {
+    padding: 2rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .form-section {
+    background: rgba(255, 255, 255, 0.72);
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+  }
+
+  .form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: #111827;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.28);
+  }
+
+  .form-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .form-required {
+    color: #dc2626;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #111827;
+    background: white;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .form-control:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .form-select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #111827;
+    background: white;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .form-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .form-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .form-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #111827;
+    background: white;
+    min-height: 120px;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .form-textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .form-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  .form-actions {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  .photos-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(249, 250, 251, 0.8);
+  }
+
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .photo-item {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+
+  .photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .photo-upload {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .photo-upload-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 2px dashed #d1d5db;
+    background: white;
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .photo-upload-btn:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+  }
+
+  .modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .view-modal-content {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .view-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 2rem;
+    color: white;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+  }
+
+  .view-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .view-title-section {
+    flex: 1;
+  }
+
+  .view-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+  }
+
+  .view-subtitle {
+    opacity: 0.9;
+    margin: 0;
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    .properties-page {
+      padding: 1.25rem;
+    }
+    .properties-actions {
+      width: 100%;
+    }
+    .modal-content,
+    .view-modal-content,
+    .edit-form {
+      width: 95%;
+      max-height: 85vh;
+    }
+    .view-header,
+    .edit-header {
+      padding: 1.5rem;
+    }
+    .view-body,
+    .edit-body {
+      padding: 1.5rem;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-actions {
+      flex-direction: column;
+    }
+    .btn-secondary,
+    .btn-success {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+`;
+
+const btnBase = {
+  padding: "10px 20px",
+  borderRadius: "10px",
+  fontSize: "13px",
+  fontWeight: 700,
+  fontFamily: "Manrope, sans-serif",
+  cursor: "pointer",
+  border: "none",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+};
 
 // Composant pour afficher les détails d'un bien
 const PropertyDetailsModal: React.FC<{
@@ -1199,12 +918,12 @@ const PropertyDetailsModal: React.FC<{
                 </span>
               </div>
             )}
-            {property.floor && (
+            {property.meta?.floor && (
               <div className="view-field">
                 <span className="view-label">Étage</span>
                 <span className="view-value">
                   <Layers size={16} />
-                  {property.floor}
+                  {property.meta.floor}
                 </span>
               </div>
             )}
@@ -1390,7 +1109,7 @@ const PropertyDetailsModal: React.FC<{
   );
 };
 
-// Composant pour éditer un bien (inchangé, déjà complet)
+// Composant pour éditer un bien
 const EditPropertyModal: React.FC<{
   property: Property;
   onClose: () => void;
@@ -2050,413 +1769,194 @@ const EditPropertyModal: React.FC<{
   );
 };
 
-export const MesBiens: React.FC<MesBiensProps> = ({ notify, currentUser }) => {
-  const [data, setData] = useState<PaginatedResponse<Property> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function BienCard({ bien }: { bien: typeof biens[0] }) {
+  return (
+    <div style={{
+      background: "#fff",
+      border: "1px solid rgba(131,199,87,0.4)",
+      borderRadius: "16px",
+      overflow: "hidden",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+      transition: "box-shadow 0.2s",
+      cursor: "pointer",
+    }}>
+      {/* Image */}
+      <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
+        <img
+          src={bien.image}
+          alt={bien.titre}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={(e) => { 
+            const img = e.currentTarget;
+            img.style.display = "none"; 
+          }}
+        />
+        <span style={{
+          position: "absolute",
+          top: "14px",
+          left: "14px",
+          background: statutColor[bien.statut] || "#6b7280",
+          color: "#fff",
+          fontSize: "12px",
+          fontWeight: 700,
+          fontFamily: "Manrope, sans-serif",
+          padding: "4px 12px",
+          borderRadius: "6px",
+        }}>
+          {bien.statut}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "18px 20px" }}>
+        <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "1.2px", marginBottom: "4px", fontFamily: "Manrope, sans-serif" }}>
+          {bien.type}
+        </p>
+        <h2 style={{ fontFamily: "Merriweather, serif", fontSize: "16px", fontWeight: 700, color: "#111", marginBottom: "8px", letterSpacing: "0.2px" }}>
+          {bien.titre}
+        </h2>
+        <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px", display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ color: "#ef4444" }}>📍</span> {bien.adresse}
+        </p>
+
+        {/* Loyer + Surface */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div>
+            <span style={{ fontFamily: "Merriweather, serif", fontSize: "22px", fontWeight: 700, color: "rgba(131,199,87,1)" }}>
+              {bien.loyer}
+            </span>
+            <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "Manrope, sans-serif", marginLeft: "4px" }}>
+              FCFA/mois
+            </span>
+          </div>
+          <span style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Manrope, sans-serif" }}>
+            {bien.surface} m²
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "#9ca3af", display: "flex", alignItems: "center", gap: "5px" }}>
+            📷 {bien.photos} Photo{bien.photos > 1 ? "s" : ""}
+          </span>
+          <span style={{ fontSize: "12px", color: "#9ca3af", fontFamily: "Manrope, sans-serif" }}>
+            Réf. {bien.ref}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MesBiens({ notify, currentUser }: MesBiensProps) {
+  const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState("Tous");
   const [search, setSearch] = useState("");
-  
-  // États pour les modales
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
-  const fetchProperties = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await propertyService.listProperties();
-      setData(response);
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      console.error("Erreur chargement propriétés:", err);
-      setError(
-        e?.message ||
-          "Impossible de charger vos biens. Veuillez réessayer dans quelques instants."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProperties();
-  }, []);
-
-  const properties = useMemo(() => data?.data ?? [], [data]);
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return properties;
-    const term = search.toLowerCase();
-    return (properties ?? []).filter((p) => {
-      return (
-        (p.name && p.name.toLowerCase().includes(term)) ||
-        (p.address && p.address.toLowerCase().includes(term)) ||
-        (p.city && p.city.toLowerCase().includes(term)) ||
-        (p.reference_code && p.reference_code.toLowerCase().includes(term))
-      );
-    });
-  }, [properties, search]);
-
-  const handleAddProperty = () => {
-    setSelectedProperty(null);
-    setShowAddModal(true);
-  };
-
-  const handleEditProperty = (property: Property) => {
-    setSelectedProperty(property);
-    setShowEditModal(true);
-  };
-
-  const handleViewProperty = (property: Property) => {
-    setSelectedProperty(property);
-    setShowViewModal(true);
-  };
-
-  const handleOpenProperty = (property: Property) => {
-    if (property.can_edit === false) {
-      handleViewProperty(property);
-      return;
-    }
-    handleEditProperty(property);
-  };
-
-  const handleCloseModal = () => {
-    setShowEditModal(false);
-    setShowViewModal(false);
-    setShowAddModal(false);
-    setSelectedProperty(null);
-  };
-
-  const handlePropertyUpdated = () => {
-    fetchProperties();
-    handleCloseModal();
-    if (notify) {
-      notify("✅ Le bien a été mis à jour avec succès !", "success");
-    }
-  };
-
-  const handlePropertyAdded = () => {
-    fetchProperties();
-    handleCloseModal();
-    if (notify) {
-      notify("✅ Le bien a été ajouté avec succès !", "success");
-    }
-  };
-
-  const getButtonText = (property: Property) => {
-    const canEdit = property.can_edit !== false;
-    const delegationType = property.delegation_type;
-    
-    if (!canEdit) {
-      if (delegationType === 'agency') {
-        return "Voir (Géré par agence)";
-      } else if (delegationType === 'co_owner') {
-        return "Voir (Partagé)";
-      }
-      return "Voir les détails";
-    }
-    return "Modifier";
-  };
+  const filtered = biens.filter((b) => {
+    const matchFilter = activeFilter === "Tous" || b.statut === activeFilter;
+    const matchSearch =
+      b.titre.toLowerCase().includes(search.toLowerCase()) ||
+      b.adresse.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
 
   return (
-    <>
+    <div style={{ background: "#f7f8fa", minHeight: "100vh", padding: "28px 32px", fontFamily: "Manrope, sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
       <style>{styles}</style>
-      <div className="properties-page">
-        <div className="properties-container">
-          <div className="properties-header">
-            <div className="properties-title-block">
-              <div className="properties-title">
-                <Home size={28} />
-                <span>Mes biens</span>
-              </div>
-              <p className="properties-subtitle">
-                Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels…
-              </p>
-            </div>
 
-            <div className="properties-actions">
-              <div className="search-wrapper">
-                <Search size={16} className="search-icon" />
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Rechercher par nom, adresse, ville ou référence…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              {currentUser?.role === "landlord" && (
-                <button
-                  className="button button-primary"
-                  type="button"
-                  onClick={handleAddProperty}
-                >
-                  <Plus size={18} />
-                  Ajouter un bien
-                </button>
-              )}
-            </div>
+      {/* Top bar */}
+      <div className="animate-slideInLeft" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", gap: "16px" }}>
+        <div style={{ background: 'rgba(255, 255, 255, 1)', border: '1px solid rgba(131, 199, 87, 1)', borderRadius: '15px', padding: '16px', marginBottom: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            onClick={() => navigate("/proprietaire/dashboard")}
+            style={{ display: "flex", alignItems: "center", gap: "8px", color: "#374151", background: "none", border: "none", cursor: "pointer" }}
+          >
+            <ArrowLeft size={20} />
+            <span style={{ fontWeight: 500 }}>Retour au tableau de bord</span>
+          </button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end", flex: 1 }}>
+          {/* Search */}
+          <div style={{ position: "relative", width: "280px" }}>
+            <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#83C757", fontSize: "15px" }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Rechercher par nom, adresse..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 14px 10px 36px",
+                borderRadius: "10px",
+                border: "1.5px solid rgba(131,199,87,0.5)",
+                background: "rgba(255,255,255,0.9)",
+                fontSize: "13px",
+                fontFamily: "Manrope, sans-serif",
+                outline: "none",
+                color: "#374151",
+              }}
+            />
           </div>
-
-          {isLoading && (
-            <div className="loading-state">
-              <Loader2 className="loading-icon" size={32} />
-              <p className="empty-text empty-text-margin">
-                Chargement de vos biens en cours...
-              </p>
-            </div>
-          )}
-
-          {!isLoading && error && (
-            <div className="error-state">
-              <AlertCircle size={28} color="#b91c1c" />
-              <p className="error-title">Une erreur est survenue</p>
-              <p className="error-text">{error}</p>
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={fetchProperties}
-              >
-                Réessayer
-              </button>
-            </div>
-          )}
-
-          {!isLoading && !error && properties.length === 0 && (
-            <div className="empty-state">
-              <Home size={32} color="#9ca3af" />
-              <p className="empty-title">
-                Vous n'avez encore aucun bien enregistré
-              </p>
-              <p className="empty-text">
-                Ajoutez votre premier bien pour commencer à suivre vos
-                locations, loyers et locataires dans Gestiloc.
-              </p>
-              {currentUser?.role === "landlord" && (
-                <button
-                  className="button button-primary"
-                  type="button"
-                  onClick={handleAddProperty}
-                >
-                  <Plus size={18} />
-                  Ajouter mon premier bien
-                </button>
-              )}
-            </div>
-          )}
-
-          {!isLoading &&
-            !error &&
-            properties.length > 0 &&
-            filtered.length === 0 && (
-              <div className="empty-state">
-                <Search size={28} color="#9ca3af" />
-                <p className="empty-title">
-                  Aucun bien ne correspond à votre recherche
-                </p>
-                <p className="empty-text">
-                  Essayez avec un autre nom, une adresse ou une ville.
-                </p>
-              </div>
-            )}
-
-          {!isLoading && !error && filtered.length > 0 && (
-            <div className="properties-grid">
-              {filtered.map((property) => {
-                const firstPhoto = resolvePhotoUrl(property.photos?.[0] ?? null);
-                const statusKey = property.status ?? "available";
-                const statusClass = `property-status-badge status-${statusKey}`;
-                const canEdit = property.can_edit !== false;
-                const delegationType = property.delegation_type;
-                
-                let badgeConfig = null;
-                if (delegationType === 'agency') {
-                  badgeConfig = delegationLabel.agency;
-                } else if (delegationType === 'co_owner') {
-                  badgeConfig = delegationLabel.co_owner;
-                }
-
-                return (
-                  <div className="property-card" key={property.id}>
-                    <div
-                      className="property-image-wrapper"
-                      onClick={() =>
-                        canEdit
-                          ? handleOpenProperty(property)
-                          : handleViewProperty(property)
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      {firstPhoto ? (
-                        <img
-                          src={firstPhoto}
-                          alt={property.name || "Photo du bien"}
-                          className="property-image"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
-                      ) : (
-                        <ImageIcon size={40} color="#9ca3af" />
-                      )}
-                      <div className={statusClass}>
-                        {statusLabel[statusKey] ?? property.status}
-                      </div>
-                      
-                      {badgeConfig && (
-                        <div className={`delegation-badge badge-${delegationType}`}>
-                          {badgeConfig.icon}
-                          {badgeConfig.label}
-                        </div>
-                      )}
-
-                      {!delegationType && currentUser?.role === "landlord" && (
-                        <div className="delegation-badge badge-owner">
-                          <ShieldCheck size={11} />
-                          En propriété directe
-                        </div>
-                      )}
-                    </div>
-
-                    <div
-                      className="property-body"
-                      onClick={() =>
-                        canEdit
-                          ? handleOpenProperty(property)
-                          : handleViewProperty(property)
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      <p className="property-type">
-                        {typeLabel[property.type] ?? property.type}
-                      </p>
-                      <h3 className="property-title">
-                        {property.name ||
-                          property.reference_code ||
-                          "Bien sans titre"}
-                      </h3>
-                      <div className="property-location">
-                        <MapPin size={15} />
-                        <span>
-                          {property.address}
-                          {property.city ? `, ${property.city}` : ""}
-                        </span>
-                      </div>
-
-                      <div className="property-meta">
-                        <div className="property-rent">
-                          <Euro size={14} />
-                          <span>{formatPrice(property.rent_amount)}</span>
-                          <span>/ mois</span>
-                        </div>
-                        <div className="property-surface">
-                          {formatSurface(property.surface)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="property-footer">
-                      <div className="property-photos-count">
-                        <ImageIcon size={14} />
-                        <span>
-                          {property.photos?.length
-                            ? `${property.photos.length} photo${
-                                property.photos.length > 1 ? "s" : ""
-                              }`
-                            : "Aucune photo"}
-                        </span>
-                      </div>
-                      {property.reference_code && (
-                        <span className="badge-muted">
-                          Réf. {property.reference_code}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="property-actions">
-                      {canEdit ? (
-                        <button
-                          className="btn-edit"
-                          type="button"
-                          onClick={() => handleEditProperty(property)}
-                        >
-                          <Edit size={14} />
-                          Modifier
-                        </button>
-                      ) : (
-                        <button
-                          className="btn-view"
-                          type="button"
-                          onClick={() => handleViewProperty(property)}
-                        >
-                          <Eye size={14} />
-                          {getButtonText(property)}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Ajouter */}
+          <button 
+            className="animate-scaleIn animate-delay-200"
+            onClick={() => navigate("/proprietaire/ajouter-bien")}
+            style={{ 
+              ...btnBase, 
+              background: "rgba(131,199,87,1)", 
+              color: "#fff", 
+              borderRadius: "10px", 
+              padding: "10px 22px",
+              width: "280px"
+            }}
+          >
+            + Ajouter un bien
+          </button>
         </div>
       </div>
 
-      {/* Modal d'édition */}
-      {showEditModal && selectedProperty && (
-        <div className="modal-overlay">
-          <EditPropertyModal
-            property={selectedProperty}
-            onClose={handleCloseModal}
-            onSuccess={handlePropertyUpdated}
-            notify={notify}
-          />
-        </div>
-      )}
+      {/* Page title */}
+      <div className="animate-fadeInUp animate-delay-100" style={{ marginBottom: "20px" }}>
+        <h1 style={{ fontFamily: "Merriweather, serif", fontSize: "26px", fontWeight: 700, color: "#111", marginBottom: "6px", display: "flex", alignItems: "center", gap: "10px" }}>
+          🏘️ Mes biens
+        </h1>
+        <p style={{ fontSize: "16px", color: "#6b7280" }}>
+          Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels...
+        </p>
+      </div>
 
-      {/* Modal de visualisation */}
-      {showViewModal && selectedProperty && (
-        <div className="modal-overlay">
-          <PropertyDetailsModal
-            property={selectedProperty}
-            onClose={handleCloseModal}
-            onEdit={() => {
-              setShowViewModal(false);
-              handleEditProperty(selectedProperty);
+      {/* Filters */}
+      <div className="animate-fadeInUp animate-delay-200" style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+        {["Tous", "Disponible", "Loué", "En travaux", "Préavis"].map((f) => (
+          <button
+            key={f}
+            onClick={() => setActiveFilter(f)}
+            style={{
+              padding: "9px 20px",
+              borderRadius: "10px",
+              fontSize: "13px",
+              fontWeight: 600,
+              fontFamily: "Manrope, sans-serif",
+              cursor: "pointer",
+              border: activeFilter === f ? "none" : "1.5px solid #e5e7eb",
+              background: activeFilter === f ? "rgba(131,199,87,1)" : "#fff",
+              color: activeFilter === f ? "#fff" : "#374151",
+              transition: "all 0.15s",
             }}
-            canEdit={selectedProperty.can_edit !== false}
-          />
-        </div>
-      )}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
 
-      {/* Modal d'ajout */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <button className="modal-close" onClick={handleCloseModal}>
-              <X size={20} />
-            </button>
-            <div style={{ padding: "2rem", textAlign: "center" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Ajouter un bien</h3>
-              <p>Le formulaire d'ajout sera intégré ici.</p>
-              <button
-                className="btn-success"
-                onClick={handleCloseModal}
-                style={{ marginTop: "1rem" }}
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      {/* Grid */}
+      <div className="animate-fadeInUp animate-delay-300" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "22px" }}>
+        {filtered.map((bien) => (
+          <BienCard key={bien.id} bien={bien} />
+        ))}
+      </div>
+    </div>
   );
-};
-
-export default MesBiens;
+}

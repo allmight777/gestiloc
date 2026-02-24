@@ -1,270 +1,508 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Save,
-  FileText,
-  Loader2,
-  AlertTriangle,
-  X,
-  Building,
-  User,
-  ShieldAlert,
-  Users,
-  Key,
-  CheckCircle, // Import de l'icône de succès
-} from "lucide-react";
 
-import {
-  propertyService,
-  tenantService,
-  leaseService,
-  type Property,
-  type TenantIndexResponse,
-} from "@/services/api";
-
-// Styles existants conservés
-const styles = `
-  .form-container { min-height: 100vh; background:#fff; padding:2rem; }
-  .form-card { max-width:1200px; margin:0 auto; background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden; }
-  .form-header { background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); padding:2.5rem; color:#fff;  }
-  .form-header h1{ font-size:2rem; font-weight:700; margin:0 0 .5rem 0; display:flex; align-items:center; gap:.75rem;  color: white; }
-  .form-header p{ margin:0; opacity:.9; font-size:1rem;  color: white; }
-
-  .form-body{ padding:2.5rem; }
-  .section{ margin-bottom:2.5rem; background:#f8f9fa; padding:2rem; border-radius:12px; border:1px solid #e9ecef; }
-  .section-title{ font-size:1.25rem; font-weight:600; color:#2d3748; margin:0 0 1.5rem 0; padding-bottom:.75rem; border-bottom:2px solid #667eea; display:flex; align-items:center; gap:.5rem; }
-
-  .form-grid{ display:grid; gap:1.5rem; }
-  .form-grid-2{ grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
-  .form-group{ display:flex; flex-direction:column; gap:.5rem; }
-  .form-label{ font-size:.875rem; font-weight:600; color:#4a5568; display:flex; align-items:center; gap:.25rem; }
-  .required{ color:#e53e3e; }
-
-  .form-input,.form-select,.form-textarea{
-    width:100%; padding:.75rem 1rem; border:2px solid #e2e8f0; border-radius:8px;
-    font-size:1rem; color:#2d3748; background:#fff; transition:all .2s ease; font-family:inherit;
-  }
-  .top-actions{ display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
-  .button{
-    padding:.75rem 1.5rem; border-radius:8px; font-weight:600; font-size:.875rem;
-    cursor:pointer; transition:all .2s ease; border:none; display:inline-flex; align-items:center; gap:.5rem;
-  }
-  .button-primary{ background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; }
-  .button-secondary{ background:#fff; color:#667eea; border:2px solid #667eea; }
-
-  .banner{
-    border-radius:12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display:flex;
-    align-items:flex-start; justify-content:space-between; gap: 12px; border: 1px solid rgba(102,126,234,.25);
-    background: rgba(102,126,234,.08); color:#2d3748;
-  }
-  .banner-danger{ border-color:#fed7d7; background:#fff5f5; color:#742a2a; }
-  .banner-success{ border-color:#c6f6d5; background:#f0fff4; color:#22543d; }
-  .banner-title{ font-weight:800; display:flex; align-items:center; gap:10px; }
-  .banner-text{ margin-top: 4px; font-size:.95rem; font-weight:600; opacity:.9; }
-  .banner-close{ background:transparent; border:none; cursor:pointer; color:inherit; }
-
-  .stats-container { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; margin-bottom: 20px; }
-  .stat-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; }
-  .stat-badge-available { background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: white; }
-`;
-
-// --- Composants Internes ---
-const CheckIcon = () => <CheckCircle size={18} />;
-
-export const NouvelleLocation: React.FC = () => {
+const NouvelleLocation = () => {
   const navigate = useNavigate();
+  const [typeBail, setTypeBail] = useState("nu");
+  const [statutBail, setStatutBail] = useState("actif");
+  const [renouvellement, setRenouvellement] = useState(true);
+  const [loyer, setLoyer] = useState("");
+  const [depot, setDepot] = useState("");
+  const [dateDebut, setDateDebut] = useState("");
+  const [duree, setDuree] = useState("");
+  const [datePaiement, setDatePaiement] = useState("1");
+  const [periodicite, setPeriodicite] = useState("Mensuel");
+  const [modePaiement, setModePaiement] = useState("Espèce");
+  const [details, setDetails] = useState("");
+  const [bien, setBien] = useState("");
+  const [locataire, setLocataire] = useState("");
 
-  const [properties, setProperties] = useState<any[]>([]);
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [isLoadingLists, setIsLoadingLists] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [apiErrors, setApiErrors] = useState<any | null>(null);
+  const statuts = [
+    { value: "actif", label: "Actif", color: "#22c55e" },
+    { value: "en_attente", label: "En attente", color: "#94a3b8" },
+    { value: "resilié", label: "Résilié", color: "#f97316" },
+    { value: "expiré", label: "Expiré", color: "#ef4444" },
+  ];
 
-  const [banner, setBanner] = useState<{
-    kind: "error" | "success" | "info";
-    title: string;
-    text?: string;
-  } | null>(null);
+  const BOLD_FONT = "'Merriweather', Georgia, serif";
+  const SMALL_FONT = "'Manrope', sans-serif";
 
-  const [formData, setFormData] = useState({
-    propertyId: "",
-    tenantId: "",
-    startDate: "",
-    endDate: "",
-    rent: "",
-    deposit: "",
-    type: "nu" as "nu" | "meuble",
-    status: "active", // ✅ Statut forcé à "active" (Loué) pour éviter le mode "Disponible"
-    details: "",
-  });
-
-  const propertyRef = useRef<HTMLSelectElement | null>(null);
-
-  // Chargement des données
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoadingLists(true);
-        const [propsRes, tenantsRes] = await Promise.all([
-          propertyService.listProperties(),
-          tenantService.listTenants()
-        ]);
-
-        const propsArray = propsRes.data ?? [];
-        setProperties(propsArray.map((p: any) => ({
-          id: p.id,
-          // ✅ Utilisation du nom/label si dispo, sinon adresse
-          label: p.name || `${p.address}${p.city ? `, ${p.city}` : ""}`,
-          suggestedRent: p.rent_amount,
-          category: p.delegation_type === 'agency' ? 'delegated_agency' : (p.current_tenants?.length > 0 ? 'occupied' : 'available'),
-          isAvailable: p.delegation_type !== 'agency' && (p.current_tenants?.length === 0 || p.delegation_type === 'co_owner')
-        })));
-
-        setTenants((tenantsRes.tenants ?? []).map((t: any) => ({
-          id: t.id,
-          label: `${t.first_name ?? ""} ${t.last_name ?? ""}`.trim() || t.email
-        })));
-      } catch (e) {
-        setBanner({ kind: "error", title: "Erreur", text: "Impossible de charger les données." });
-      } finally {
-        setIsLoadingLists(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setIsSubmitting(true);
-    setApiErrors(null);
-
-    try {
-      const payload = {
-        property_id: Number(formData.propertyId),
-        tenant_id: Number(formData.tenantId),
-        start_date: formData.startDate,
-        end_date: formData.endDate || null,
-        rent_amount: Number(formData.rent),
-        deposit: formData.deposit ? Number(formData.deposit) : null,
-        type: formData.type,
-        status: "active", // ✅ On s'assure que le bien passe en statut "Loué" côté API
-        terms: formData.details ? [formData.details] : [],
-      };
-
-      await leaseService.createLease(payload as any);
-
-      // ✅ Modification du message de succès selon le style demandé
-      setBanner({
-        kind: "success",
-        title: "✅ Contrat enregistré avec succès",
-        text: "Le bien est désormais marqué comme loué et le bail a été ajouté à votre dossier.",
-      });
-
-      // Petite tempo pour laisser voir le message avant redirection
-      setTimeout(() => navigate("/proprietaire"), 2000);
-    } catch (e: any) {
-      setBanner({ kind: "error", title: "Erreur", text: "Une erreur est survenue lors de la création." });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const styles: Record<string, React.CSSProperties> = {
+    page: {
+      fontFamily: SMALL_FONT,
+      background: "#f8faf8",
+      minHeight: "100vh",
+      padding: "0",
+    },
+    topBar: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "18px 32px",
+      marginBottom: "8px",
+    },
+    backBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      background: "white",
+      border: "1.5px solid #d1d5db",
+      borderRadius: "8px",
+      padding: "9px 18px",
+      fontSize: "13px",
+      color: "#374151",
+      cursor: "pointer",
+      fontWeight: 500,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+    },
+    topActions: {
+      display: "flex",
+      gap: "12px",
+    },
+    cancelBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      background: "white",
+      border: "1.5px solid #ef4444",
+      borderRadius: "8px",
+      padding: "9px 20px",
+      fontSize: "13px",
+      color: "#ef4444",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+    },
+    createBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      background: "#16a34a",
+      border: "none",
+      borderRadius: "8px",
+      padding: "9px 22px",
+      fontSize: "13px",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+      boxShadow: "0 2px 8px rgba(22,163,74,0.25)",
+    },
+    headerSection: {
+      padding: "0 32px 20px",
+    },
+    title: {
+      fontSize: "26px",
+      fontWeight: 800,
+      color: "#111827",
+      margin: "0 0 4px 0",
+      fontFamily: BOLD_FONT,
+      letterSpacing: "-0.3px",
+    },
+    subtitle: {
+      fontSize: "16px",
+      color: "#6b7280",
+      margin: 0,
+      fontFamily: SMALL_FONT,
+    },
+    card: {
+      background: "white",
+      borderRadius: "16px",
+      border: "1px solid #e5e7eb",
+      padding: "32px",
+      margin: "0 32px 32px",
+      boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
+    },
+    cardTitle: {
+      fontSize: "17px",
+      fontWeight: 700,
+      color: "#111827",
+      marginBottom: "28px",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      fontFamily: BOLD_FONT,
+    },
+    grid2: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "28px 40px",
+    },
+    fieldGroup: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    },
+    label: {
+      fontSize: "13px",
+      fontWeight: 600,
+      color: "#374151",
+      fontFamily: SMALL_FONT,
+    },
+    select: {
+      width: "100%",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#6b7280",
+      background: "white",
+      appearance: "none",
+      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 12px center",
+      cursor: "pointer",
+      boxSizing: "border-box",
+      outline: "none",
+      fontFamily: SMALL_FONT,
+    },
+    input: {
+      width: "100%",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#111827",
+      background: "white",
+      boxSizing: "border-box",
+      outline: "none",
+      transition: "border-color 0.15s",
+      fontFamily: SMALL_FONT,
+    },
+    radioGroup: {
+      display: "flex",
+      gap: "20px",
+      alignItems: "center",
+      marginTop: "4px",
+    },
+    radioLabel: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      fontSize: "13px",
+      color: "#374151",
+      cursor: "pointer",
+      fontWeight: 500,
+      fontFamily: SMALL_FONT,
+    },
+    statutGroup: {
+      display: "flex",
+      gap: "16px",
+      flexWrap: "wrap",
+      marginTop: "4px",
+    },
+    checkboxRow: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginTop: "6px",
+    },
+    checkboxLabel: {
+      fontSize: "12px",
+      color: "#6b7280",
+      cursor: "pointer",
+      fontFamily: SMALL_FONT,
+    },
+    textarea: {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#111827",
+      background: "white",
+      boxSizing: "border-box",
+      outline: "none",
+      resize: "vertical",
+      minHeight: "110px",
+      fontFamily: SMALL_FONT,
+      transition: "border-color 0.15s",
+    },
+    note: {
+      fontSize: "12px",
+      color: "#9ca3af",
+      marginTop: "12px",
+      fontFamily: SMALL_FONT,
+    },
+    bottomActions: {
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: "12px",
+      marginTop: "24px",
+      paddingTop: "20px",
+      borderTop: "1px solid #f3f4f6",
+    },
+    fullWidth: {
+      gridColumn: "1 / -1",
+    },
   };
 
   return (
     <>
-      <style>{styles}</style>
-      <div className="form-container">
-        <div className="form-card">
-          <div className="form-header">
-            <h1><FileText size={32} /> Nouveau contrat de location</h1>
-            <p>Enregistrez une nouvelle mise en location pour l'un de vos biens</p>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;800;900&family=Manrope:wght@400;500;600&display=swap');
+      `}</style>
+      <div style={styles.page} className="animate-fadeInUp">
+        {/* Top Action Bar */}
+        <div style={styles.topBar} className="animate-slideInLeft">
+          <button 
+            style={styles.backBtn}
+            onClick={() => navigate("/proprietaire/dashboard")}
+          >
+            ← Retour au tableau de bord
+          </button>
+          <div style={styles.topActions}>
+            <button 
+              style={styles.cancelBtn}
+              onClick={() => navigate("/proprietaire/biens")}
+            >
+              ✕ Annuler
+            </button>
+            <button 
+              style={styles.createBtn}
+              onClick={() => {
+                // Logique de création du contrat ici
+                console.log("Création du contrat de location");
+              }}
+            >
+              Créer le contrat
+            </button>
+          </div>
+        </div>
+
+        {/* Header */}
+        <div style={styles.headerSection} className="animate-fadeInUp animate-delay-100">
+          <h1 style={styles.title}>Nouveau contrat de location</h1>
+          <p style={styles.subtitle}>Créez un nouveau contrat entre un bien et un locataire</p>
+        </div>
+
+        {/* Main Card */}
+        <div style={styles.card} className="animate-scaleIn animate-delay-200">
+          <div style={styles.cardTitle}>
+            <span>🏠</span> Informations de location
           </div>
 
-          <div className="form-body">
-            {/* Bannière de succès ou d'erreur */}
-            {banner && (
-              <div className={`banner banner-${banner.kind}`}>
-                <div>
-                  <div className="banner-title">
-                    {banner.kind === "success" ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
-                    <span>{banner.title}</span>
-                  </div>
-                  {banner.text && <div className="banner-text">{banner.text}</div>}
-                </div>
-                <button className="banner-close" onClick={() => setBanner(null)}><X size={18} /></button>
-              </div>
-            )}
+          <div style={styles.grid2}>
 
-            <div className="top-actions">
-              <button className="button button-secondary" onClick={() => navigate("/proprietaire")}>
-                <ArrowLeft size={16} /> Retour
-              </button>
-              <button className="button button-primary" onClick={() => handleSubmit()} disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                {isSubmitting ? "Création..." : "Confirmer la location"}
-              </button>
+            {/* Bien à louer */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Bien à louer</label>
+              <select 
+                style={styles.select} 
+                value={bien} 
+                onChange={e => setBien(e.target.value)}
+              >
+                <option value="">Sélectionner un bien</option>
+                <option value="bien1">Appartement T3 - Centre ville</option>
+                <option value="bien2">Villa - Quartier résidentiel</option>
+              </select>
             </div>
 
-            <form>
-              <div className="section">
-                <h2 className="section-title"><Key size={20} /> Créer une nouvelle location</h2>
-                
-                <div className="form-grid form-grid-2">
-                  <div className="form-group">
-                    {/* ✅ "Nom du bien" au lieu de "Adresse" */}
-                    <label className="form-label">Nom du bien <span className="required">*</span></label>
-                    <select
-                      className="form-select"
-                      value={formData.propertyId}
-                      onChange={(e) => setFormData({...formData, propertyId: e.target.value})}
-                    >
-                      <option value="">Choisir un bien...</option>
-                      {properties.map(p => (
-                        <option key={p.id} value={p.id} disabled={!p.isAvailable}>
-                          {p.label} {!p.isAvailable ? "(Déjà loué ou indisponible)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            {/* Locataire */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Locataire</label>
+              <select 
+                style={styles.select} 
+                value={locataire} 
+                onChange={e => setLocataire(e.target.value)}
+              >
+                <option value="">Sélectionner un locataire</option>
+                <option value="loc1">Jean Dupont</option>
+                <option value="loc2">Marie Martin</option>
+              </select>
+            </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Locataire <span className="required">*</span></label>
-                    <select
-                      className="form-select"
-                      value={formData.tenantId}
-                      onChange={(e) => setFormData({...formData, tenantId: e.target.value})}
-                    >
-                      <option value="">Choisir le locataire...</option>
-                      {tenants.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Loyer mensuel (FCFA) <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.rent}
-                      onChange={(e) => setFormData({...formData, rent: e.target.value})}
-                      placeholder="Ex: 150000"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Date de début <span className="required">*</span></label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                    />
-                  </div>
-                </div>
+            {/* Type de bail */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Type de bail</label>
+              <div style={styles.radioGroup}>
+                <label style={styles.radioLabel}>
+                  <input 
+                    type="radio" 
+                    name="typeBail" 
+                    value="nu" 
+                    checked={typeBail === "nu"} 
+                    onChange={() => setTypeBail("nu")} 
+                    style={{ accentColor: "#16a34a" }} 
+                  />
+                  Bail nu
+                </label>
+                <label style={styles.radioLabel}>
+                  <input 
+                    type="radio" 
+                    name="typeBail" 
+                    value="meuble" 
+                    checked={typeBail === "meuble"} 
+                    onChange={() => setTypeBail("meuble")} 
+                    style={{ accentColor: "#16a34a" }} 
+                  />
+                  Bail meublé
+                </label>
               </div>
-            </form>
+            </div>
+
+            {/* Statut du bail */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Statut du bail</label>
+              <div style={styles.statutGroup}>
+                {statuts.map(s => (
+                  <label key={s.value} style={{ ...styles.radioLabel, fontSize: "13px" }}>
+                    <input
+                      type="radio"
+                      name="statutBail"
+                      value={s.value}
+                      checked={statutBail === s.value}
+                      onChange={() => setStatutBail(s.value)}
+                      style={{ accentColor: s.color }}
+                    />
+                    {s.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Loyer mensuel */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Loyer mensuel (FCFA)</label>
+              <input 
+                type="number" 
+                style={styles.input} 
+                placeholder="40.000" 
+                value={loyer} 
+                onChange={e => setLoyer(e.target.value)} 
+              />
+            </div>
+
+            {/* Date de début */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Date de début</label>
+              <input 
+                type="date" 
+                style={styles.input} 
+                value={dateDebut} 
+                onChange={e => setDateDebut(e.target.value)} 
+              />
+            </div>
+
+            {/* Dépôt de garantie */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Dépôt de garantie (FCFA)</label>
+              <input 
+                type="number" 
+                style={styles.input} 
+                placeholder="20.000" 
+                value={depot} 
+                onChange={e => setDepot(e.target.value)} 
+              />
+            </div>
+
+            {/* Durée du bail */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Durée du bail</label>
+              <input 
+                type="text" 
+                style={styles.input} 
+                placeholder="Ex: 2 ans" 
+                value={duree} 
+                onChange={e => setDuree(e.target.value)} 
+              />
+              <div style={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="renouvellement"
+                  checked={renouvellement}
+                  onChange={e => setRenouvellement(e.target.checked)}
+                  style={{ accentColor: "#16a34a", width: "14px", height: "14px" }}
+                />
+                <label htmlFor="renouvellement" style={styles.checkboxLabel}>
+                  Renouvellement par tacite · cochez la case
+                </label>
+              </div>
+            </div>
+
+            {/* Date de paiement */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Date de paiement</label>
+              <select 
+                style={styles.select} 
+                value={datePaiement} 
+                onChange={e => setDatePaiement(e.target.value)}
+              >
+                {Array.from({ length: 28 }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Périodicité */}
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Périodicité</label>
+              <select 
+                style={styles.select} 
+                value={periodicite} 
+                onChange={e => setPeriodicite(e.target.value)}
+              >
+                <option>Mensuel</option>
+                <option>Trimestriel</option>
+                <option>Annuel</option>
+              </select>
+            </div>
+
+            {/* Mode de paiement */}
+            <div style={{ ...styles.fieldGroup, ...styles.fullWidth }}>
+              <label style={styles.label}>Mode de paiement</label>
+              <select 
+                style={styles.select} 
+                value={modePaiement} 
+                onChange={e => setModePaiement(e.target.value)}
+              >
+                <option>Espèce</option>
+                <option>Virement bancaire</option>
+                <option>Chèque</option>
+                <option>Mobile Money</option>
+              </select>
+            </div>
+
+            {/* Détails / conditions particulières */}
+            <div style={{ ...styles.fieldGroup, ...styles.fullWidth }}>
+              <label style={styles.label}>Détails / conditions particulières</label>
+              <textarea
+                style={styles.textarea}
+                placeholder="Ex: Charges comprises, Interdictions de fumer etc.."
+                value={details}
+                onChange={e => setDetails(e.target.value)}
+              />
+            </div>
+
+          </div>
+
+          <p style={styles.note}>Ces informations seront envoyées dans le champ termes du bail.</p>
+
+          {/* Bottom actions */}
+          <div style={styles.bottomActions}>
+            <button 
+              style={styles.cancelBtn}
+              onClick={() => navigate("/proprietaire/biens")}
+            >
+              ✕ Annuler
+            </button>
+            <button 
+              style={styles.createBtn}
+              onClick={() => {
+                // Logique de création du contrat ici
+                console.log("Création du contrat de location");
+              }}
+            >
+              Créer le contrat
+            </button>
           </div>
         </div>
       </div>
     </>
   );
 };
+
+export default NouvelleLocation;
