@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { Tab, Notification, ToastMessage } from '../types';
 import { Toast } from './ui/Toast';
+import { AnimatedPage } from './AnimatedPage';
+import '../animations.css';
 
 interface UserData {
   id: number;
@@ -293,7 +295,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Notifications */}
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30 btn-hover"
             style={{
               background: 'rgba(255,255,255,0.18)',
               border: '1.5px solid rgba(255,255,255,0.45)',
@@ -309,7 +311,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Notifications mobile */}
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30 btn-hover"
             style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
             aria-label="Notifications"
           >
@@ -319,7 +321,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Aide */}
           <button
             onClick={() => setShowHelp(!showHelp)}
-            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30 btn-hover"
             style={{
               background: 'rgba(255,255,255,0.18)',
               border: '1.5px solid rgba(255,255,255,0.45)',
@@ -335,7 +337,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Aide mobile */}
           <button
             onClick={() => setShowHelp(!showHelp)}
-            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30 btn-hover"
             style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
             aria-label="Aide"
           >
@@ -345,7 +347,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Mon compte */}
           <button
             onClick={() => handlePageChange('profil')}
-            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30 btn-hover"
             style={{
               background: 'rgba(255,255,255,0.18)',
               border: '1.5px solid rgba(255,255,255,0.45)',
@@ -361,7 +363,7 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Mon compte mobile */}
           <button
             onClick={() => handlePageChange('profil')}
-            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30 btn-hover"
             style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
             aria-label="Mon compte"
           >
@@ -408,7 +410,7 @@ export const Layout: React.FC<LayoutProps> = ({
         {/* Menu sections */}
         <nav className="flex-1 overflow-y-auto py-3">
           {menuSections.map((section, si) => (
-            <div key={section.label}>
+            <div key={section.label} className={`menu-section-enter animate-delay-${si * 100}`}>
               {/* Section label */}
               <div style={{
                 fontSize: '0.67rem',
@@ -424,12 +426,13 @@ export const Layout: React.FC<LayoutProps> = ({
                 {section.label}
               </div>
               {/* Section items */}
-              {section.items.map((item) => {
+              {section.items.map((item, ii) => {
                 const isActive = activeTab === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => item.id === 'logout' ? onLogout() : handleNavigate(item.id as Tab)}
+                    className={`menu-item menu-item-enter animate-delay-${(si * 100) + (ii * 50)}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -483,7 +486,9 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Content */}
           <div id="app-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 scroll-smooth">
             <div className="p-4 sm:p-6 pt-6 sm:pt-8 max-w-7xl mx-auto">
-              {children}
+              <AnimatedPage animation="fadeInUp" delay={100}>
+                {children}
+              </AnimatedPage>
             </div>
           </div>
         </main>
@@ -491,12 +496,12 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Notifications Dropdown - Adaptive position and size */}
       {showNotifications && (
-        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto animate-in slide-in-from-bottom sm:slide-in-from-top duration-300">
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto dropdown-enter">
           <div className="p-4 border-b border-gray-200 flex flex-shrink-0 items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 font-merriweather">Notifications</h3>
             <button
               onClick={() => setShowNotifications(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors btn-hover"
               aria-label="Fermer"
             >
               <X size={24} className="text-gray-500" />
@@ -504,8 +509,8 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            {notifications.map((notif) => (
-              <div key={notif.id} className="p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-0 active:bg-gray-100">
+            {notifications.map((notif, idx) => (
+              <div key={notif.id} className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-0 active:bg-gray-100 menu-item-enter animate-delay-${idx * 100}`}>
                 <div className="flex items-start gap-4">
                   <div className={`w-3 h-3 rounded-full mt-1.5 flex-shrink-0 ${notif.type === 'critical' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]'}`} />
                   <div className="flex-1">
@@ -524,7 +529,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
-            <button className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98]">
+            <button className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98] btn-hover">
               Voir toutes les notifications
             </button>
           </div>
@@ -533,12 +538,12 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Help Dropdown - Adaptive position and size */}
       {showHelp && (
-        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto animate-in slide-in-from-bottom sm:slide-in-from-top duration-300">
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto dropdown-enter">
           <div className="p-4 border-b border-gray-200 flex flex-shrink-0 items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 font-merriweather">Aide & Support</h3>
             <button
               onClick={() => setShowHelp(false)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors btn-hover"
               aria-label="Fermer"
             >
               <X size={24} className="text-gray-500" />
@@ -551,7 +556,7 @@ export const Layout: React.FC<LayoutProps> = ({
               { title: "Centre d'aide complet", desc: 'Accédez à tous nos guides', color: 'bg-blue-500' },
               { title: 'Contactez le support', desc: 'Notre équipe est là pour vous aider', color: 'bg-purple-500' },
             ].map((help, idx) => (
-              <div key={idx} className="p-4 m-1 hover:bg-gray-50 rounded-xl transition-all cursor-pointer border border-transparent hover:border-gray-100 active:bg-gray-100">
+              <div key={idx} className={`p-4 m-1 hover:bg-gray-50 rounded-xl transition-all cursor-pointer border border-transparent hover:border-gray-100 active:bg-gray-100 menu-item-enter animate-delay-${idx * 100}`}>
                 <div className="flex items-start gap-4">
                   <div className={`w-3 h-3 ${help.color} rounded-full mt-2 flex-shrink-0 shadow-lg`} />
                   <div className="flex-1">
@@ -567,7 +572,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
             <button
               onClick={() => setShowHelp(false)}
-              className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98]"
+              className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98] btn-hover"
             >
               Consulter toute l'aide
             </button>
