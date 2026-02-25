@@ -239,7 +239,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
           font-family: 'Manrope', sans-serif;
           font-weight: 500;
           color: #6b7280;
-          background: #fff;
+          background: transparent;
           outline: none;
           appearance: none;
           background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");

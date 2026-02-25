@@ -134,6 +134,10 @@ const ComptabilitePage: React.FC<ComptaProps> = ({ notify }) => {
                 .cp-filter-row { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1rem; }
                 @media (min-width: 640px) { .cp-filter-row { grid-template-columns: repeat(2, 1fr); } }
                 
+                .cp-select { width: 100%; padding: 10px 14px; border-radius: 12px; border: 1.5px solid #eef2ee; background: transparent; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: #374151; outline: none; box-sizing: border-box; cursor: pointer; }
+                .cp-select:focus { border-color: #83C757; }
+                .cp-select option { background: white; color: #374151; }
+                
                 .cp-table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 20px; border: 1.5px solid #eef2ee; background: #fff; }
                 .cp-table { width: 100%; border-collapse: collapse; min-width: 850px; }
                 .cp-table th { text-align: left; font-size: 0.65rem; font-weight: 800; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; padding: 16px; border-bottom: 1px solid #f9fafb; background: #fafbfc; }
@@ -146,7 +150,7 @@ const ComptabilitePage: React.FC<ComptaProps> = ({ notify }) => {
                 .cp-donut-v { font-size: 1.2rem; font-weight: 850; margin: 0; }
                 .cp-donut-l { font-size: 0.7rem; color: #9ca3af; margin: 0; font-weight: 700; }
                 
-                .cp-search { width: 100%; padding: 12px 16px; borderRadius: 12px; border: 1.5px solid #83C757; color: #83C757; font-weight: 600; outline: none; box-sizing: border-box; }
+                .cp-search { width: 100%; padding: 12px 16px; borderRadius: 12px; border: 1.5px solid #83C757; background: transparent; color: #374151; font-weight: 600; outline: none; box-sizing: border-box; }
                 .cp-search::placeholder { color: #83C757; opacity: 0.7; }
             `}</style>
 
@@ -208,8 +212,12 @@ const ComptabilitePage: React.FC<ComptaProps> = ({ notify }) => {
             <div className="cp-filter-card">
                 <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>Filtrer les transactions</p>
                 <div className="cp-filter-row">
-                    <select className="cp-select" style={{ border: '1.5px solid #eef2ee', borderRadius: 12, padding: '10px 14px' }}><option>Tous les biens</option></select>
-                    <select className="cp-select" style={{ border: '1.5px solid #eef2ee', borderRadius: 12, padding: '10px 14px' }}><option>Toutes les catégories</option></select>
+                    <select className="cp-select">
+                        <option>Tous les biens</option>
+                    </select>
+                    <select className="cp-select">
+                        <option>Toutes les catégories</option>
+                    </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <input className="cp-search" placeholder="Rechercher une transaction..." />

@@ -353,12 +353,11 @@ export const AjouterLocataire: React.FC = () => {
           width: 100%;
           padding: 0.65rem 0.85rem;
           border: 1.5px solid #d1d5db;
-          border-radius: 10px;
-          font-size: 0.85rem;
-          font-family: 'Manrope', sans-serif;
+          border-radius: 0.5rem;
+          background: transparent;
+          font-size: 0.875rem;
           font-weight: 500;
-          color: #1a1a1a;
-          background: #fff;
+          color: #374151;
           outline: none;
           box-sizing: border-box;
           transition: all 0.2s ease;

@@ -281,7 +281,7 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
               <h3 className="font-merriweather text-lg sm:text-xl font-black text-gray-900">Suivi des Loyers</h3>
             </div>
             <div className="relative w-full sm:w-auto">
-              <select className="appearance-none w-full sm:w-auto bg-gray-50 border border-gray-100 rounded-xl px-5 py-2.5 pr-10 text-xs font-bold font-manrope text-gray-600 hover:border-gray-200 focus:outline-none transition-all cursor-pointer shadow-sm">
+              <select className="appearance-none w-full sm:w-auto bg-transparent border border-gray-100 rounded-xl px-5 py-2.5 pr-10 text-xs font-bold font-manrope text-gray-600 hover:border-gray-200 focus:outline-none transition-all cursor-pointer shadow-sm">
                 <option>Cette année</option>
                 <option>Année précédente</option>
               </select>
