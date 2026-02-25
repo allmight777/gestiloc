@@ -77,6 +77,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
         construction_year: property.construction_year || '',
         rent_amount: property.rent_amount || '',
         charges_amount: property.charges_amount || '',
+        caution: property.caution || '',
         description: property.description || '',
         property_type: property.property_type || 'apartment',
         reference_code: property.reference_code || '',
@@ -186,6 +187,8 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
     if (!formData.zip_code?.trim()) errors.zip_code = 'Le code postal est obligatoire';
     if (!formData.city?.trim()) errors.city = 'La ville est obligatoire';
     if (formData.rent_amount && Number(formData.rent_amount) < 0) errors.rent_amount = 'Le loyer doit être positif';
+    if (formData.charges_amount && Number(formData.charges_amount) < 0) errors.charges_amount = 'Les charges doivent être positives';
+    if (formData.caution && Number(formData.caution) < 0) errors.caution = 'La caution doit être positive';
     if (!formData.property_type) errors.property_type = 'Le type de bien est obligatoire';
     
     return errors;
@@ -223,7 +226,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
       const numberFields = [
         'surface', 'floor', 'total_floors', 'room_count', 'bedroom_count',
         'bathroom_count', 'wc_count', 'construction_year', 
-        'rent_amount', 'charges_amount'
+        'rent_amount', 'charges_amount', 'caution'
       ];
       
       // Liste des champs booléens
@@ -349,11 +352,11 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
     <>
       <style>{`
         :root{
-          --gradA:#667eea;
-          --gradB:#764ba2;
-          --indigo:#4f46e5;
-          --violet:#7c3aed;
-          --emerald:#10b981;
+          --gradA: #70AE48;
+          --gradB: #8BC34A;
+          --indigo: #70AE48;
+          --violet: #8BC34A;
+          --emerald: #10b981;
 
           --bg:#ffffff;
           --ink:#0f172a;
@@ -367,7 +370,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           --shadow2: 0 12px 35px rgba(15,23,42,.10);
           --shadow3: 0 8px 18px rgba(15,23,42,.08);
 
-          --ring: 0 0 0 4px rgba(79,70,229,.14);
+          --ring: 0 0 0 4px rgba(112,174,72,.14);
         }
 
         *{ box-sizing:border-box; }
@@ -408,7 +411,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           border-radius: 22px;
           box-shadow: var(--shadow);
           overflow: hidden;
-          border: 1px solid rgba(102,126,234,.18);
+          border: 1px solid rgba(112,174,72,.18);
           position: relative;
           backdrop-filter: blur(10px);
           overflow-y: auto;
@@ -421,8 +424,8 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           inset:0;
           pointer-events:none;
           background:
-            radial-gradient(circle at 14% 18%, rgba(102,126,234,.10), rgba(102,126,234,0) 58%),
-            radial-gradient(circle at 88% 30%, rgba(118,75,162,.10), rgba(118,75,162,0) 58%),
+            radial-gradient(circle at 14% 18%, rgba(112,174,72,.10), rgba(112,174,72,0) 58%),
+            radial-gradient(circle at 88% 30%, rgba(139,195,74,.10), rgba(139,195,74,0) 58%),
             radial-gradient(circle at 50% 95%, rgba(16,185,129,.08), rgba(16,185,129,0) 55%);
           z-index: 0;
         }
@@ -526,7 +529,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           align-items:flex-start;
           padding: 14px 16px;
           background:
-            radial-gradient(700px 220px at 20% 0%, rgba(79,70,229,.10), transparent 60%),
+            radial-gradient(700px 220px at 20% 0%, rgba(112,174,72,.10), transparent 60%),
             linear-gradient(180deg, rgba(255,255,255,0.74), rgba(255,255,255,0.50));
           border: 1px solid rgba(15,23,42,.10);
           border-radius: 16px;
@@ -568,8 +571,8 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           position:absolute;
           inset:0;
           background:
-            radial-gradient(900px 260px at 90% 0%, rgba(124,58,237,.06), transparent 62%),
-            radial-gradient(900px 260px at 10% 0%, rgba(79,70,229,.07), transparent 62%);
+            radial-gradient(900px 260px at 90% 0%, rgba(112,174,72,.06), transparent 62%),
+            radial-gradient(900px 260px at 10% 0%, rgba(139,195,74,.07), transparent 62%);
           pointer-events:none;
         }
         .modal-section > *{ position: relative; }
@@ -581,7 +584,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           gap: 10px;
           margin-bottom: 12px;
           padding-bottom: 12px;
-          border-bottom: 2px solid rgba(102,126,234,.28);
+          border-bottom: 2px solid rgba(112,174,72,.28);
         }
 
         .modal-section-title{
@@ -601,9 +604,9 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           gap: .45rem;
           padding: .25rem .6rem;
           border-radius: 999px;
-          background: rgba(79,70,229,.10);
-          border: 1px solid rgba(79,70,229,.18);
-          color: #4338ca;
+          background: rgba(112,174,72,.10);
+          border: 1px solid rgba(112,174,72,.18);
+          color: #5d8f3a;
           font-weight: 950;
           font-size: .78rem;
           white-space: nowrap;
@@ -644,11 +647,11 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           font-family: inherit;
         }
         .modal-control:hover{
-          border-color: rgba(79,70,229,.30);
+          border-color: rgba(112,174,72,.30);
           background: rgba(255,255,255,.96);
         }
         .modal-control:focus{
-          border-color: rgba(79,70,229,.75);
+          border-color: rgba(112,174,72,.75);
           box-shadow: var(--ring);
           background: rgba(255,255,255,1);
         }
@@ -688,7 +691,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           padding: 16px;
           border-top: 1px solid rgba(148,163,184,.35);
           background:
-            radial-gradient(900px 220px at 12% 0%, rgba(102,126,234,.10), transparent 58%),
+            radial-gradient(900px 220px at 12% 0%, rgba(112,174,72,.10), transparent 58%),
             linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.54));
           border-radius: 18px;
         }
@@ -706,7 +709,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           display:inline-flex;
           align-items:center;
           gap: 8px;
-          border: 1px dashed rgba(79,70,229,.35);
+          border: 1px dashed rgba(112,174,72,.35);
           border-radius: 999px;
           padding: 9px 12px;
           font-weight: 950;
@@ -714,12 +717,12 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           cursor:pointer;
           background: rgba(255,255,255,0.92);
           transition: 180ms ease;
-          box-shadow: 0 14px 34px rgba(79,70,229,.14);
+          box-shadow: 0 14px 34px rgba(112,174,72,.14);
         }
         .modal-upload-label:hover{
           transform: translateY(-1px);
-          border-color: rgba(79,70,229,.55);
-          box-shadow: 0 18px 40px rgba(79,70,229,.18);
+          border-color: rgba(112,174,72,.55);
+          box-shadow: 0 18px 40px rgba(112,174,72,.18);
         }
 
         .modal-previews{ display:flex; flex-wrap: wrap; gap: 10px; }
@@ -766,9 +769,9 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
         }
 
         .modal-btn{
-          border: 2px solid rgba(67,56,202,.20);
+          border: 2px solid rgba(112,174,72,.20);
           background: rgba(255,255,255,.92);
-          color: #4338ca;
+          color: #5d8f3a;
           border-radius: 14px;
           padding: 10px 12px;
           font-weight: 950;
@@ -784,7 +787,7 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
         }
         .modal-btn:hover:not(:disabled){
           transform: translateY(-1px);
-          background: rgba(67,56,202,.06);
+          background: rgba(112,174,72,.06);
         }
         .modal-btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
 
@@ -798,10 +801,10 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
           border: none;
           color:#fff;
           background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
-          box-shadow: 0 14px 30px rgba(79,70,229,.22);
+          box-shadow: 0 14px 30px rgba(112,174,72,.22);
         }
         .modal-btn-primary:hover:not(:disabled){
-          box-shadow: 0 18px 34px rgba(79,70,229,.28);
+          box-shadow: 0 18px 34px rgba(112,174,72,.28);
         }
 
         .close-btn{
@@ -1305,6 +1308,37 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
                               step="0.01"
                             />
                           </div>
+                          {formErrors.charges_amount && (
+                            <div className="modal-error">{formErrors.charges_amount}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Nouveau champ Caution */}
+                      <div className="modal-fields" style={{ marginTop: 12 }}>
+                        <div className="modal-field">
+                          <label className="modal-label">Caution (FCFA)</label>
+                          <div className="modal-icon-input">
+                            <span className="modal-icon-left">
+                              <DollarSign size={16} />
+                            </span>
+                            <input
+                              type="number"
+                              name="caution"
+                              value={formData.caution || ''}
+                              onChange={handleChange}
+                              placeholder="0,00"
+                              className="modal-control"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          {formErrors.caution && (
+                            <div className="modal-error">{formErrors.caution}</div>
+                          )}
+                          <div className="modal-help">
+                            Montant de la caution déposée par le locataire
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1452,11 +1486,12 @@ export const PropertyEditModal: React.FC<PropertyEditModalProps> = ({
                             alignItems: 'center',
                             gap: '6px',
                             padding: '6px 12px',
-                            background: 'rgba(79,70,229,.10)',
-                            border: '1px solid rgba(79,70,229,.18)',
+                            background: 'rgba(112,174,72,.10)',
+                            border: '1px solid rgba(112,174,72,.18)',
                             borderRadius: '999px',
                             fontSize: '13px',
                             fontWeight: 600,
+                            color: '#5d8f3a',
                           }}
                         >
                           {amenity}

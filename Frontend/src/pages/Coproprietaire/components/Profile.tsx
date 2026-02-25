@@ -106,7 +106,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'XOF',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -148,7 +150,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
       <div className="text-center py-16 animate-fade-in">
         <div className="relative inline-block">
           <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4 animate-bounce" />
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full blur-xl opacity-30 animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full blur-xl opacity-30 animate-pulse"></div>
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2 animate-slide-up">
           Profil non trouvé
@@ -158,7 +160,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
         </p>
         <Button 
           onClick={fetchProfile} 
-          className="mt-6 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
+          className="mt-6 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] hover:from-[#5d8f3a] hover:to-[#70AE48] text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
         >
           Réessayer
         </Button>
@@ -168,8 +170,8 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header avec dégradé */}
-      <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl">
+      {/* Header avec dégradé vert */}
+      <div className="bg-gradient-to-r from-[#70AE48] via-[#8BC34A] to-[#70AE48] rounded-2xl p-6 text-white shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -183,11 +185,10 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                 )}
               </div>
               <div>
-              <h1 className="text-3xl font-bold text-white">
-  Mon Profil
-</h1>
-
-                <p className="text-blue-100">
+                <h1 className="text-3xl font-bold text-white">
+                  Mon Profil
+                </h1>
+                <p className="text-green-100">
                   {isAgency ? 'Agence immobilière' : isProfessional ? 'Professionnel' : 'Copropriétaire'} • Gérez vos informations
                 </p>
               </div>
@@ -221,51 +222,48 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </Button>
             ) : (
               <div className="flex gap-3 animate-slide-up">
-<Button
-  variant="secondary"
-  onClick={() => {
-    setIsEditing(false);
-    setFormData({
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      email: profile.email,
-      phone: profile.phone,
-      address: profile.address,
-      date_of_birth: profile.date_of_birth,
-      id_number: profile.id_number,
-      company_name: profile.company_name,
-      address_billing: profile.address_billing,
-      license_number: profile.license_number,
-      ifu: profile.ifu,
-      rccm: profile.rccm,
-      vat_number: profile.vat_number,
-    });
-  }}
-  disabled={saving}
-  className="text-white
-  bg-gradient-to-r from-pink-600 via-purple-800 to-blue-800
-  hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
-  border border-white/20 backdrop-blur-sm
-  transition-all duration-200"
->
-  <X className="w-4 h-4 mr-2" />
-  Annuler
-</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData({
+                      first_name: profile.first_name,
+                      last_name: profile.last_name,
+                      email: profile.email,
+                      phone: profile.phone,
+                      address: profile.address,
+                      date_of_birth: profile.date_of_birth,
+                      id_number: profile.id_number,
+                      company_name: profile.company_name,
+                      address_billing: profile.address_billing,
+                      license_number: profile.license_number,
+                      ifu: profile.ifu,
+                      rccm: profile.rccm,
+                      vat_number: profile.vat_number,
+                    });
+                  }}
+                  disabled={saving}
+                  className="text-white
+                    bg-gradient-to-r from-[#70AE48] to-[#8BC34A]
+                    hover:from-[#5d8f3a] hover:to-[#70AE48]
+                    border border-white/20 backdrop-blur-sm
+                    transition-all duration-200"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Annuler
+                </Button>
 
-
-<Button
-  onClick={handleSave}
-  disabled={saving}
-  className="flex items-center gap-2 text-white 
-  bg-gradient-to-r from-pink-800 via-purple-800 to-blue-800 
-  hover:from-pink-600 hover:via-purple-600 hover:to-blue-600
-  hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
->
-  <Save className="w-4 h-4" />
-  {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-</Button>
-
-
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 text-white 
+                    bg-gradient-to-r from-[#70AE48] to-[#8BC34A]
+                    hover:from-[#5d8f3a] hover:to-[#70AE48]
+                    hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                </Button>
               </div>
             )}
           </div>
@@ -274,9 +272,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
 
       {/* Statistics Cards avec animations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-white border border-blue-100 hover:border-blue-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up">
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-white border border-green-100 hover:border-green-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-xl shadow-lg">
               <Building className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -286,12 +284,12 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </p>
             </div>
           </div>
-          <div className="mt-4 h-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
+          <div className="mt-4 h-1 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full"></div>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-green-50 to-white border border-green-100 hover:border-green-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up delay-75">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
+            <div className="p-3 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-xl shadow-lg">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -301,13 +299,14 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </p>
             </div>
           </div>
-          <div className="mt-4 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-full"></div>
+          <div className="mt-4 h-1 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full"></div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-white border border-purple-100 hover:border-purple-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up delay-100">
+        <Card className="p-6 bg-gradient-to-br from-green-50 to-white border border-green-100 hover:border-green-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up delay-100">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg">
-              <DollarSign className="w-6 h-6 text-white" />
+            <div className="p-3 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-xl shadow-lg">
+             <span className="text-white font-bold text-lg">FCFA</span>
+
             </div>
             <div>
               <p className="text-sm text-gray-600 font-medium">Loyers collectés</p>
@@ -316,7 +315,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </p>
             </div>
           </div>
-          <div className="mt-4 h-1 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full"></div>
+          <div className="mt-4 h-1 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full"></div>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-amber-50 to-white border border-amber-100 hover:border-amber-200 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 animate-slide-up delay-125">
@@ -327,7 +326,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
             <div>
               <p className="text-sm text-gray-600 font-medium">Statut</p>
               <div className="flex items-center gap-2 mt-1">
-                <div className={`w-2 h-2 rounded-full ${profile.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${profile.status === 'active' ? 'bg-[#70AE48] animate-pulse' : 'bg-yellow-500'}`}></div>
                 <p className="text-2xl font-bold text-gray-900 capitalize">
                   {profile.status || 'Actif'}
                 </p>
@@ -344,8 +343,8 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           <button
             onClick={() => setActiveTab('personal')}
             className={`flex-1 py-4 px-6 text-center font-medium transition-all duration-200 ${activeTab === 'personal' 
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-              : 'text-gray-600 hover:text-blue-500 hover:bg-gray-50'
+              ? 'text-[#70AE48] border-b-2 border-[#70AE48] bg-green-50' 
+              : 'text-gray-600 hover:text-[#70AE48] hover:bg-gray-50'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -356,8 +355,8 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           <button
             onClick={() => setActiveTab('professional')}
             className={`flex-1 py-4 px-6 text-center font-medium transition-all duration-200 ${activeTab === 'professional' 
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-              : 'text-gray-600 hover:text-blue-500 hover:bg-gray-50'
+              ? 'text-[#70AE48] border-b-2 border-[#70AE48] bg-green-50' 
+              : 'text-gray-600 hover:text-[#70AE48] hover:bg-gray-50'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -368,8 +367,8 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           <button
             onClick={() => setActiveTab('account')}
             className={`flex-1 py-4 px-6 text-center font-medium transition-all duration-200 ${activeTab === 'account' 
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
-              : 'text-gray-600 hover:text-blue-500 hover:bg-gray-50'
+              ? 'text-[#70AE48] border-b-2 border-[#70AE48] bg-green-50' 
+              : 'text-gray-600 hover:text-[#70AE48] hover:bg-gray-50'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -384,9 +383,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           {activeTab === 'personal' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border border-blue-100">
+                <div className="bg-gradient-to-r from-green-50 to-white p-4 rounded-xl border border-green-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
+                    <User className="w-5 h-5 text-[#70AE48]" />
                     Identité
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -399,7 +398,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="text"
                           value={formData.first_name || ''}
                           onChange={(e) => handleInputChange('first_name', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="Votre prénom"
                         />
                       ) : (
@@ -418,7 +417,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="text"
                           value={formData.last_name || ''}
                           onChange={(e) => handleInputChange('last_name', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="Votre nom"
                         />
                       ) : (
@@ -430,9 +429,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border border-blue-100">
+                <div className="bg-gradient-to-r from-green-50 to-white p-4 rounded-xl border border-green-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <Calendar className="w-5 h-5 text-[#70AE48]" />
                     Informations de naissance
                   </h3>
                   <div>
@@ -444,7 +443,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="date"
                         value={formData.date_of_birth || ''}
                         onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200"
                       />
                     ) : (
                       <div className="p-3 bg-white border border-gray-200 rounded-xl flex items-center gap-3">
@@ -457,9 +456,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
               </div>
 
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border border-blue-100">
+                <div className="bg-gradient-to-r from-green-50 to-white p-4 rounded-xl border border-green-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-blue-600" />
+                    <Mail className="w-5 h-5 text-[#70AE48]" />
                     Contact
                   </h3>
                   <div className="space-y-4">
@@ -472,7 +471,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="email"
                           value={formData.email || ''}
                           onChange={(e) => handleInputChange('email', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="votre@email.com"
                         />
                       ) : (
@@ -492,7 +491,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="tel"
                           value={formData.phone || ''}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="+229 XX XX XX XX"
                         />
                       ) : (
@@ -512,7 +511,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="text"
                           value={formData.address || ''}
                           onChange={(e) => handleInputChange('address', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="Votre adresse complète"
                         />
                       ) : (
@@ -532,7 +531,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                           type="text"
                           value={formData.id_number || ''}
                           onChange={(e) => handleInputChange('id_number', e.target.value)}
-                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+                          className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                           placeholder="Numéro d'identité"
                         />
                       ) : (
@@ -550,13 +549,13 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           {/* Informations professionnelles */}
           {activeTab === 'professional' && (
             <div className="animate-fade-in">
-              <div className="bg-gradient-to-r from-purple-50 to-white p-6 rounded-xl border border-purple-100 mb-6">
+              <div className="bg-gradient-to-r from-green-50 to-white p-6 rounded-xl border border-green-100 mb-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
                     {isAgency ? (
-                      <Building2 className="w-5 h-5 text-purple-600" />
+                      <Building2 className="w-5 h-5 text-[#70AE48]" />
                     ) : (
-                      <Briefcase className="w-5 h-5 text-purple-600" />
+                      <Briefcase className="w-5 h-5 text-[#70AE48]" />
                     )}
                     <h3 className="text-lg font-semibold text-gray-900">
                       {isAgency ? 'Informations de l\'agence' : 'Informations professionnelles'}
@@ -572,16 +571,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                 </div>
                 
                 {isSimpleCoOwner && isEditing && (
-                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
                     <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-[#70AE48] mt-0.5" />
                       <div>
-                        <p className="font-medium text-blue-800">
+                        <p className="font-medium text-[#70AE48]">
                           Informations professionnelles non modifiables
                         </p>
-                        <p className="text-sm text-blue-700 mt-1">
+                        <p className="text-sm text-[#70AE48] mt-1">
                           En tant que copropriétaire simple, vous ne pouvez pas modifier les informations professionnelles.
-                       
                         </p>
                       </div>
                     </div>
@@ -598,7 +596,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.company_name || ''}
                         onChange={(e) => handleInputChange('company_name', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Nom de l'entreprise"
                       />
                     ) : (
@@ -617,7 +615,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.address_billing || ''}
                         onChange={(e) => handleInputChange('address_billing', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Adresse de facturation"
                       />
                     ) : (
@@ -636,7 +634,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.license_number || ''}
                         onChange={(e) => handleInputChange('license_number', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Numéro de licence"
                       />
                     ) : (
@@ -655,7 +653,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.ifu || ''}
                         onChange={(e) => handleInputChange('ifu', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Numéro IFU"
                       />
                     ) : (
@@ -674,7 +672,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.rccm || ''}
                         onChange={(e) => handleInputChange('rccm', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Numéro RCCM"
                       />
                     ) : (
@@ -693,7 +691,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                         type="text"
                         value={formData.vat_number || ''}
                         onChange={(e) => handleInputChange('vat_number', e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-purple-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 placeholder-gray-500"
+                        className="w-full px-4 py-2.5 bg-white text-gray-900 border border-green-300 rounded-xl focus:ring-2 focus:ring-[#70AE48] focus:border-[#70AE48] transition-all duration-200 placeholder-gray-500"
                         placeholder="Numéro TVA"
                       />
                     ) : (
@@ -704,9 +702,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-gradient-to-r from-purple-100 to-white rounded-xl border border-purple-200">
+                <div className="mt-6 p-4 bg-gradient-to-r from-green-100 to-white rounded-xl border border-green-200">
                   <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-purple-600" />
+                    <Shield className="w-5 h-5 text-[#70AE48]" />
                     <div>
                       <p className="font-medium text-gray-900">
                         Statut: {isAgency ? 'Agence Immobilière' : isProfessional ? 'Professionnel' : 'Copropriétaire Simple'}
@@ -728,9 +726,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
           {/* Informations du compte */}
           {activeTab === 'account' && (
             <div className="animate-fade-in">
-              <div className="bg-gradient-to-r from-emerald-50 to-white p-6 rounded-xl border border-emerald-100">
+              <div className="bg-gradient-to-r from-green-50 to-white p-6 rounded-xl border border-green-100">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-emerald-600" />
+                  <CreditCard className="w-5 h-5 text-[#70AE48]" />
                   Informations du compte
                 </h3>
                 
@@ -749,10 +747,10 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                       {profile.user?.email_verified_at ? (
                         <>
                           <div className="relative">
-                            <CheckCircle className="w-5 h-5 text-emerald-500" />
-                            <div className="absolute inset-0 bg-emerald-500 rounded-full blur-sm animate-ping opacity-75"></div>
+                            <CheckCircle className="w-5 h-5 text-[#70AE48]" />
+                            <div className="absolute inset-0 bg-[#70AE48] rounded-full blur-sm animate-ping opacity-75"></div>
                           </div>
-                          <span className="text-emerald-600 font-medium">Vérifié</span>
+                          <span className="text-[#70AE48] font-medium">Vérifié</span>
                         </>
                       ) : (
                         <>
@@ -784,9 +782,9 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-white rounded-xl border border-blue-200">
+                <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-white rounded-xl border border-green-200">
                   <h4 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
-                    <FileSignature className="w-4 h-4 text-blue-600" />
+                    <FileSignature className="w-4 h-4 text-[#70AE48]" />
                     Sécurité du compte
                   </h4>
                   <p className="text-sm text-gray-600">
@@ -794,7 +792,7 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
                   </p>
                   <Button 
                     variant="outline" 
-                    className="mt-3 border-blue-200 text-blue-600 hover:bg-blue-50"
+                    className="mt-3 border-green-200 text-[#70AE48] hover:bg-green-50"
                     onClick={() => notify('Fonctionnalité en développement', 'info')}
                   >
                     Modifier le mot de passe
@@ -809,11 +807,11 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, notify }) => {
       {/* Message d'état en édition */}
       {isEditing && (
         <div className="fixed bottom-6 right-6 animate-slide-up">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3">
+          <div className="bg-gradient-to-r from-[#70AE48] to-[#8BC34A] text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3">
             <Edit2 className="w-5 h-5 animate-pulse" />
             <div>
-             <p className="font-medium text-white">Mode édition activé</p>
-              <p className="text-sm text-blue-100">N'oubliez pas d'enregistrer vos modifications</p>
+              <p className="font-medium text-white">Mode édition activé</p>
+              <p className="text-sm text-green-100">N'oubliez pas d'enregistrer vos modifications</p>
             </div>
           </div>
         </div>

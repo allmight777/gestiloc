@@ -28,7 +28,7 @@ class Property extends Model
         'uuid', 'landlord_id', 'user_id', 'type', 'name', 'description', 'reference_code',
         'address', 'district', 'city', 'state', 'zip_code', 'latitude', 'longitude',
         'surface', 'room_count', 'bedroom_count', 'bathroom_count',
-        'rent_amount', 'charges_amount', 'status', 'amenities', 'photos', 'meta'
+        'rent_amount', 'charges_amount', 'status', 'amenities', 'photos', 'meta', 'caution'
     ];
 
     protected $casts = [
@@ -38,9 +38,9 @@ class Property extends Model
         'surface' => 'decimal:2',
         'rent_amount' => 'decimal:2',
         'charges_amount' => 'decimal:2',
+        'caution' => 'decimal:2',
     ];
 
-    // Génération automatique de l'UUID et du reference_code
     protected static function boot()
     {
         parent::boot();
@@ -61,6 +61,11 @@ class Property extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function landlord(): BelongsTo
     {
         return $this->belongsTo(Landlord::class);
@@ -71,9 +76,6 @@ class Property extends Model
         return $this->hasMany(Lease::class);
     }
 
-    /**
-     * ✅ NOUVELLE RELATION : Locataires via property_user
-     */
     public function tenants(): BelongsToMany
     {
         return $this->belongsToMany(Tenant::class, 'property_user', 'property_id', 'tenant_id')
@@ -81,17 +83,11 @@ class Property extends Model
                     ->withTimestamps();
     }
 
-    /**
-     * ✅ NOUVELLE RELATION : Assignations property_user
-     */
     public function propertyAssignments(): HasMany
     {
         return $this->hasMany(PropertyUser::class, 'property_id');
     }
 
-    /**
-     * ✅ Locataires actuellement actifs sur le bien
-     */
     public function currentTenants(): BelongsToMany
     {
         return $this->tenants()
@@ -102,9 +98,6 @@ class Property extends Model
             });
     }
 
-    /**
-     * ✅ Anciens locataires du bien
-     */
     public function pastTenants(): BelongsToMany
     {
         return $this->tenants()
@@ -117,17 +110,11 @@ class Property extends Model
             });
     }
 
-    /**
-     * ✅ Vérifie si le bien est actuellement occupé
-     */
     public function isCurrentlyOccupied(): bool
     {
         return $this->currentTenants()->exists();
     }
 
-    /**
-     * ✅ Récupère l'historique complet d'occupation
-     */
     public function getOccupancyHistory()
     {
         return $this->tenants()
@@ -135,25 +122,16 @@ class Property extends Model
             ->get();
     }
 
-    /**
-     * États des lieux du bien.
-     */
     public function conditionReports(): HasMany
     {
         return $this->hasMany(PropertyConditionReport::class);
     }
 
-    /**
-     * Copropriétaire gestionnaire du bien (via délégation - relation polymorphe)
-     */
     public function managingCoOwner(): MorphTo
     {
         return $this->morphTo();
     }
 
-    /**
-     * Délégations de gestion pour ce bien
-     */
     public function delegations(): HasMany
     {
         return $this->hasMany(PropertyDelegation::class);
@@ -171,32 +149,20 @@ class Property extends Model
         return $query->where('city', $city);
     }
 
-    /**
-     * ✅ NOUVEAU SCOPE : Biens avec locataires actifs
-     */
     public function scopeOccupied($query)
     {
         return $query->whereHas('currentTenants');
     }
 
-    /**
-     * ✅ NOUVEAU SCOPE : Biens disponibles (sans locataires actifs)
-     */
     public function scopeVacant($query)
     {
         return $query->whereDoesntHave('currentTenants');
     }
 
-    /**
-     * ✅ NOUVEAU SCOPE : Biens d'un locataire spécifique
-     */
     public function scopeOfTenant($query, $tenantId)
     {
         return $query->whereHas('tenants', function($q) use ($tenantId) {
             $q->where('tenants.id', $tenantId);
         });
     }
-
-
-    
 }

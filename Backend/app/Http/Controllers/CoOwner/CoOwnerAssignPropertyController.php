@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Str;
 
 class CoOwnerAssignPropertyController extends Controller
 {
@@ -42,13 +43,22 @@ class CoOwnerAssignPropertyController extends Controller
             return redirect()->route('login')->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        // Récupérer TOUS les biens délégués (pas de filtre sur les baux)
+        // Récupérer TOUS les biens délégués disponibles (pas déjà loués)
         $delegatedProperties = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
-            ->with('property') // Charge la relation property
+            ->with('property')
             ->get()
             ->filter(function ($delegation) {
-                return $delegation->property !== null; // Vérifie seulement que la propriété existe
+                // Vérifier que la propriété existe et n'est pas déjà louée
+                if (!$delegation->property) {
+                    return false;
+                }
+
+                $isRented = Lease::where('property_id', $delegation->property->id)
+                    ->where('status', 'active')
+                    ->exists();
+
+                return !$isRented;
             })
             ->map(function ($delegation) {
                 return $delegation->property;
@@ -90,7 +100,7 @@ class CoOwnerAssignPropertyController extends Controller
             return back()->with('error', 'Profil co-propriétaire non trouvé')->withInput();
         }
 
-        // Validation
+        // Validation - MODIFIÉ : 'nu' et 'meuble' au lieu de 'residential' et 'seasonal'
         $validated = $request->validate([
             'property_id' => [
                 'required',
@@ -136,38 +146,58 @@ class CoOwnerAssignPropertyController extends Controller
                     }
                 }
             ],
+            // MODIFICATION ICI : 'nu' et 'meuble' au lieu de 'residential' et 'seasonal'
+            'lease_type' => 'required|in:nu,meuble',
+            'lease_status' => 'required|in:draft,active,pending_signature',
             'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
+            'duration' => 'nullable|string|max:100',
             'rent_amount' => 'required|numeric|min:1',
-            'deposit_amount' => 'nullable|numeric|min:0',
-            'type' => 'required|in:nu,meuble',
-            'charges_amount' => 'nullable|numeric|min:0',
-            'payment_day' => 'required|integer|min:1|max:28',
-            'notice_period' => 'nullable|integer|min:0',
-            'furniture_inventory' => 'nullable|string',
-            'special_conditions' => 'nullable|string',
+            'guarantee_amount' => 'nullable|numeric|min:0',
+            'billing_day' => 'required|integer|min:1|max:28',
+            'payment_frequency' => 'required|in:monthly,quarterly,annually',
+            'payment_mode' => 'nullable|string|max:100',
+            'special_conditions' => 'nullable|string|max:5000',
         ]);
 
         try {
             DB::beginTransaction();
 
+            // Générer un numéro de bail unique
+            $leaseNumber = 'BAIL-' . date('Y') . '-' . str_pad(Lease::count() + 1, 4, '0', STR_PAD_LEFT);
+
+            // Calculer la date de fin si une durée est spécifiée
+            $endDate = null;
+            if (!empty($validated['duration'])) {
+                // Extraire le nombre d'années de la durée (ex: "2 ans" -> 2)
+                preg_match('/(\d+)/', $validated['duration'], $matches);
+                if (!empty($matches[1])) {
+                    $years = (int) $matches[1];
+                    $endDate = date('Y-m-d', strtotime($validated['start_date'] . ' + ' . $years . ' years'));
+                }
+            }
+
             // 1. Créer le bail
             $lease = Lease::create([
+                'uuid' => Str::uuid(),
                 'property_id' => $validated['property_id'],
                 'tenant_id' => $validated['tenant_id'],
+                'lease_number' => $leaseNumber,
+                'type' => $validated['lease_type'], // Ici aussi : 'nu' ou 'meuble'
                 'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
+                'end_date' => $endDate,
+                'tacit_renewal' => true,
                 'rent_amount' => $validated['rent_amount'],
-                'deposit_amount' => $validated['deposit_amount'] ?? 0,
-                'type' => $validated['type'],
-                'charges_amount' => $validated['charges_amount'] ?? 0,
-                'payment_day' => $validated['payment_day'],
-                'notice_period' => $validated['notice_period'] ?? 30,
-                'status' => 'active',
-                'meta' => [
-                    'created_by_co_owner' => $coOwner->id,
-                    'furniture_inventory' => $validated['furniture_inventory'] ?? null,
+                'charges_amount' => 0,
+                'guarantee_amount' => $validated['guarantee_amount'] ?? 0,
+                'prepaid_rent_months' => 0,
+                'billing_day' => $validated['billing_day'],
+                'payment_frequency' => $validated['payment_frequency'],
+                'penalty_rate' => 0,
+                'status' => $validated['lease_status'],
+                'terms' => [
+                    'payment_mode' => $validated['payment_mode'] ?? 'Espèce',
                     'special_conditions' => $validated['special_conditions'] ?? null,
+                    'created_by_co_owner' => $coOwner->id,
                 ],
             ]);
 
@@ -182,32 +212,37 @@ class CoOwnerAssignPropertyController extends Controller
                 'role' => 'tenant',
                 'share_percentage' => 100,
                 'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'status' => 'active',
+                'end_date' => $endDate,
+                'status' => $validated['lease_status'] === 'active' ? 'active' : 'pending',
             ]);
 
-            // 3. Mettre à jour le statut du bien
-            $property = Property::find($validated['property_id']);
-            $property->status = 'rented';
-            $property->save();
+            // 3. Mettre à jour le statut du bien si le bail est actif
+            if ($validated['lease_status'] === 'active') {
+                $property = Property::find($validated['property_id']);
+                $property->status = 'rented';
+                $property->save();
 
-            // 4. Mettre à jour le statut du locataire
-            $tenant->status = 'active';
-            $tenant->save();
+                // 4. Mettre à jour le statut du locataire
+                $tenant->status = 'active';
+                $tenant->save();
+            }
 
             DB::commit();
 
             Log::info('=== BAIL CRÉÉ PAR COPRIO ===', [
                 'lease_id' => $lease->id,
+                'lease_number' => $leaseNumber,
                 'property_id' => $validated['property_id'],
                 'tenant_id' => $validated['tenant_id'],
                 'co_owner_id' => $coOwner->id,
                 'rent_amount' => $validated['rent_amount'],
+                'status' => $validated['lease_status'],
             ]);
 
+            // REDIRECTION VERS LA MÊME PAGE avec message de succès
             return redirect()
-                ->route('co-owner.tenants.index')
-                ->with('success', 'Bien assigné au locataire avec succès ! Le bail a été créé.');
+                ->route('co-owner.assign-property.create')
+                ->with('success', 'Contrat de location créé avec succès ! Numéro de bail: ' . $leaseNumber);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -219,7 +254,7 @@ class CoOwnerAssignPropertyController extends Controller
             ]);
 
             return back()
-                ->with('error', 'Erreur lors de la création du bail: ' . $e->getMessage())
+                ->with('error', 'Erreur lors de la création du contrat: ' . $e->getMessage())
                 ->withInput();
         }
     }

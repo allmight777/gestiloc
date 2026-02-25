@@ -7,26 +7,24 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Property;
 use App\Models\PropertyDelegation;
-use App\Models\PropertyUser;
 use App\Models\TenantInvitation;
+use App\Models\Lease;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class CoOwnerTenantController extends Controller
 {
     /**
-     * Afficher la liste des locataires
+     * Afficher la liste des locataires avec filtres
      */
     public function index(Request $request)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         Log::info('=== ACCÈS PAGE LARAVEL (COPRIO) ===', [
@@ -40,22 +38,89 @@ class CoOwnerTenantController extends Controller
             return redirect()->route('login')->with('error', 'Veuillez vous connecter');
         }
 
-        // Vérifier que c'est un co-propriétaire
         if (!$user->hasRole('co_owner')) {
             return view('co-owner.unauthorized')->with('error', 'Accès réservé aux co-propriétaires');
         }
 
-        // Récupérer le co-propriétaire lié à l'utilisateur
         $coOwner = $user->coOwner;
         if (!$coOwner) {
             return view('co-owner.unauthorized')->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        // Liste des locataires gérés par ce co-propriétaire (via landlord_id dans meta)
-        $tenants = Tenant::where('meta->landlord_id', $coOwner->landlord_id)
-            ->get();
+        // Récupérer les paramètres de filtrage
+        $status = $request->get('status', 'active');
+        $perPage = $request->get('per_page', 100);
+        $search = $request->get('search', '');
+        $propertyId = $request->get('property_id', '');
 
-        return view('co-owner.tenants.index', compact('tenants', 'user'));
+        // Récupérer les IDs des biens délégués
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('status', 'active')
+            ->pluck('property_id')
+            ->toArray();
+
+        // Requête de base : uniquement les locataires que le co-propriétaire a créés OU qui sont dans ses biens délégués
+        $query = Tenant::where(function($q) use ($coOwner, $delegatedPropertyIds) {
+            // Locataires créés par le co-propriétaire
+            $q->where('meta->co_owner_id', $coOwner->id)
+              // OU locataires ayant un bail dans un bien délégué
+              ->orWhereHas('leases', function($subQuery) use ($delegatedPropertyIds) {
+                  $subQuery->whereIn('property_id', $delegatedPropertyIds);
+              });
+        });
+
+        // Filtre par statut (active/archived)
+        if ($status === 'archived') {
+            $query->where('status', 'archived');
+        } else {
+            $query->where('status', '!=', 'archived');
+        }
+
+        // Filtre par bien
+        if (!empty($propertyId)) {
+            $query->whereHas('leases', function($q) use ($propertyId) {
+                $q->where('property_id', $propertyId);
+            });
+        }
+
+        // Filtre par recherche
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('first_name', 'LIKE', "%{$search}%")
+                  ->orWhere('last_name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('meta->email', 'LIKE', "%{$search}%")
+                  ->orWhereHas('user', function($subQuery) use ($search) {
+                      $subQuery->where('email', 'LIKE', "%{$search}%")
+                               ->orWhere('phone', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        // Récupérer les locataires avec pagination
+        $tenants = $query->with(['user', 'leases.property'])
+                        ->orderBy('created_at', 'desc')
+                        ->paginate($perPage)
+                        ->withQueryString();
+
+        // Récupérer la liste des biens délégués pour le filtre
+        $delegatedProperties = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('status', 'active')
+            ->with('property')
+            ->get()
+            ->pluck('property')
+            ->filter()
+            ->unique('id');
+
+        return view('co-owner.tenants.index', compact(
+            'tenants',
+            'user',
+            'status',
+            'perPage',
+            'search',
+            'propertyId',
+            'delegatedProperties'
+        ));
     }
 
     /**
@@ -63,7 +128,6 @@ class CoOwnerTenantController extends Controller
      */
     public function create(Request $request)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         Log::info('=== FORMULAIRE CRÉATION LARAVEL (COPRIO) ===', [
@@ -75,7 +139,6 @@ class CoOwnerTenantController extends Controller
             return redirect()->route('login')->with('error', 'Veuillez vous connecter');
         }
 
-        // Vérifier que c'est un co-propriétaire
         if (!$user->hasRole('co_owner')) {
             return redirect()->route('login')->with('error', 'Accès réservé aux co-propriétaires');
         }
@@ -89,11 +152,10 @@ class CoOwnerTenantController extends Controller
     }
 
     /**
-     * Enregistrement locataire - SIMILAIRE AU BAILIEUR
+     * Enregistrement locataire
      */
     public function store(Request $request)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         Log::info('=== ENREGISTREMENT LOCATAIRE LARAVEL (COPRIO) ===', [
@@ -103,7 +165,6 @@ class CoOwnerTenantController extends Controller
             'user_roles' => $user ? $user->getRoleNames() : null,
         ]);
 
-        // Vérifier l'authentification
         if (!$user) {
             Log::error('Aucun utilisateur authentifié trouvé');
             return back()
@@ -111,7 +172,6 @@ class CoOwnerTenantController extends Controller
                 ->withInput();
         }
 
-        // Vérifier que c'est un co-propriétaire
         if (!$user->hasRole('co_owner')) {
             Log::error('Utilisateur non autorisé', [
                 'user_id' => $user->id,
@@ -122,7 +182,6 @@ class CoOwnerTenantController extends Controller
                 ->withInput();
         }
 
-        // Récupérer le co-propriétaire
         $coOwner = $user->coOwner;
         if (!$coOwner) {
             return back()
@@ -130,18 +189,20 @@ class CoOwnerTenantController extends Controller
                 ->withInput();
         }
 
-        // Validation - SIMILAIRE AU BAILIEUR
+        // Validation
         $validated = $request->validate([
+            'tenant_type' => 'required|string|max:50',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => 'required|email',
-            'phone' => 'nullable|string|max:20',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20|unique:users,phone',
             'birth_date' => 'required|date',
             'birth_place' => 'required|string|max:200',
             'marital_status' => 'nullable|string',
             'profession' => 'required|string|max:200',
             'employer' => 'nullable|string|max:200',
             'annual_income' => 'nullable|numeric|min:0',
+            'monthly_income' => 'nullable|numeric|min:0',
             'contract_type' => 'nullable|string',
             'address' => 'required|string|max:255',
             'zip_code' => 'required|string|max:10',
@@ -149,17 +210,25 @@ class CoOwnerTenantController extends Controller
             'country' => 'required|string|max:100',
             'emergency_contact_name' => 'nullable|string|max:200',
             'emergency_contact_phone' => 'nullable|string|max:20',
+            'emergency_contact_email' => 'nullable|email|max:200',
             'notes' => 'nullable|string',
             'guarantor_name' => 'nullable|string|max:200',
             'guarantor_phone' => 'nullable|string|max:20',
             'guarantor_email' => 'nullable|email',
             'guarantor_profession' => 'nullable|string|max:200',
             'guarantor_income' => 'nullable|numeric|min:0',
+            'guarantor_monthly_income' => 'nullable|numeric|min:0',
             'guarantor_address' => 'nullable|string|max:255',
+            'guarantor_birth_date' => 'nullable|date',
+            'guarantor_birth_place' => 'nullable|string|max:200',
+            'document_type' => 'nullable|string|max:50',
+            'document_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'email.unique' => 'Cet email est déjà utilisé par un autre utilisateur.',
+            'phone.unique' => 'Ce numéro de téléphone est déjà utilisé par un autre utilisateur.',
         ]);
 
         try {
-            // DÉBUT DE LA TRANSACTION - SIMILAIRE AU BAILIEUR
             return DB::transaction(function () use ($validated, $user, $coOwner, $request) {
                 Log::info('Début création locataire par co-propriétaire', [
                     'co_owner_id' => $coOwner->id,
@@ -167,14 +236,19 @@ class CoOwnerTenantController extends Controller
                     'tenant_email' => $validated['email']
                 ]);
 
-                // 1. Vérifier si l'email existe déjà (comme le bailleur)
+                // Gestion du fichier document
+                $documentPath = null;
+                if ($request->hasFile('document_file')) {
+                    $documentPath = $request->file('document_file')->store('tenant_documents', 'public');
+                }
+
+                // 1. Vérifier si l'email existe déjà
                 $existingUser = User::where('email', $validated['email'])->first();
 
                 if ($existingUser) {
-                    // Si un utilisateur existe déjà avec cet email
                     $tenantUser = $existingUser;
                 } else {
-                    // Créer un user temporaire avec un mot de passe aléatoire
+                    // Créer un user temporaire
                     $tempPassword = Hash::make(bin2hex(random_bytes(16)));
 
                     $tenantUser = User::create([
@@ -185,13 +259,12 @@ class CoOwnerTenantController extends Controller
                         'email_verified_at' => null,
                     ]);
 
-                    // Assigner le rôle de locataire
                     $tenantUser->assignRole('tenant');
                 }
 
-                // 2. Créer l'invitation (comme le bailleur)
+                // 2. Créer l'invitation
                 $invitation = TenantInvitation::create([
-                    'landlord_id'    => $coOwner->landlord_id, // Landlord du co-propriétaire
+                    'landlord_id'    => $coOwner->landlord_id,
                     'tenant_user_id' => $tenantUser->id,
                     'email'          => $validated['email'],
                     'name'           => trim($validated['first_name'] . ' ' . $validated['last_name']),
@@ -206,48 +279,53 @@ class CoOwnerTenantController extends Controller
                     ],
                 ]);
 
-                // 3. Créer le locataire AVEC user_id = utilisateur locataire (comme le bailleur)
+                // 3. Créer le locataire
                 $tenant = Tenant::create([
-                    'user_id' => $tenantUser->id, // ✅ User du LOCATAIRE, pas du co-propriétaire
+                    'user_id' => $tenantUser->id,
+                    'tenant_type' => $validated['tenant_type'],
                     'first_name' => $validated['first_name'],
                     'last_name' => $validated['last_name'],
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'] ?? null,
                     'birth_date' => $validated['birth_date'],
                     'birth_place' => $validated['birth_place'],
                     'marital_status' => $validated['marital_status'] ?? 'single',
                     'profession' => $validated['profession'],
                     'employer' => $validated['employer'] ?? null,
                     'annual_income' => $validated['annual_income'] ?? null,
+                    'monthly_income' => $validated['monthly_income'] ?? null,
                     'contract_type' => $validated['contract_type'] ?? null,
                     'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
                     'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
+                    'emergency_contact_email' => $validated['emergency_contact_email'] ?? null,
                     'notes' => $validated['notes'] ?? null,
-                    'status' => 'candidate', // Comme le bailleur
+                    'status' => 'candidate',
                     'address' => $validated['address'],
                     'zip_code' => $validated['zip_code'],
                     'city' => $validated['city'],
                     'country' => $validated['country'],
+                    'guarantor_name' => $validated['guarantor_name'] ?? null,
+                    'guarantor_phone' => $validated['guarantor_phone'] ?? null,
+                    'guarantor_email' => $validated['guarantor_email'] ?? null,
+                    'guarantor_profession' => $validated['guarantor_profession'] ?? null,
+                    'guarantor_income' => $validated['guarantor_income'] ?? null,
+                    'guarantor_monthly_income' => $validated['guarantor_monthly_income'] ?? null,
+                    'guarantor_address' => $validated['guarantor_address'] ?? null,
+                    'guarantor_birth_date' => $validated['guarantor_birth_date'] ?? null,
+                    'guarantor_birth_place' => $validated['guarantor_birth_place'] ?? null,
+                    'document_type' => $validated['document_type'] ?? null,
+                    'document_path' => $documentPath,
                     'meta' => [
                         'landlord_id' => $coOwner->landlord_id,
                         'invitation_email' => $validated['email'],
                         'phone' => $validated['phone'] ?? null,
                         'invitation_id' => $invitation->id,
-                        'invitation_status' => 'invited',
+                        'invitation_status' => 'pending',
                         'invited_by_co_owner' => $coOwner->id,
                         'co_owner_id' => $coOwner->id,
-                        'guarantor' => [
-                            'name' => $validated['guarantor_name'] ?? null,
-                            'phone' => $validated['guarantor_phone'] ?? null,
-                            'email' => $validated['guarantor_email'] ?? null,
-                            'profession' => $validated['guarantor_profession'] ?? null,
-                            'income' => $validated['guarantor_income'] ?? null,
-                            'address' => $validated['guarantor_address'] ?? null,
-                        ],
+                        'email' => $validated['email'],
                     ],
                 ]);
 
-                // 4. Générer le lien d'invitation (comme le bailleur)
+                // 4. Générer le lien d'invitation
                 $signedUrl = URL::temporarySignedRoute(
                     'api.auth.accept-invitation',
                     now()->addDays(7),
@@ -256,15 +334,15 @@ class CoOwnerTenantController extends Controller
 
                 Log::info('Locataire créé avec succès par co-propriétaire', [
                     'tenant_id' => $tenant->id,
-                    'tenant_email' => $tenant->email,
+                    'tenant_email' => $validated['email'],
                     'tenant_user_id' => $tenant->user_id,
                     'co_owner_id' => $coOwner->id,
                     'co_owner_email' => $user->email,
                     'invitation_id' => $invitation->id,
                 ]);
 
-                // 5. Envoyer l'email d'invitation (comme le bailleur)
-                $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user);
+                // 5. Envoyer l'email d'invitation
+                $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user, $validated['email']);
 
                 return redirect()
                     ->route('co-owner.tenants.index')
@@ -272,6 +350,8 @@ class CoOwnerTenantController extends Controller
 
             });
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Erreur création locataire par co-propriétaire', [
                 'error' => $e->getMessage(),
@@ -286,18 +366,17 @@ class CoOwnerTenantController extends Controller
     }
 
     /**
-     * Envoyer l'email d'invitation - CORRIGÉ
+     * Envoyer l'email d'invitation
      */
-    private function sendInvitationEmail($tenant, $invitation, $signedUrl, $coOwnerUser)
+    private function sendInvitationEmail($tenant, $invitation, $signedUrl, $coOwnerUser, $tenantEmail)
     {
         try {
             $appName = config('app.name', 'Gestiloc');
             $frontendUrl = rtrim(config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
 
             $ref = 'INV-' . str_pad((string) $invitation->id, 6, '0', STR_PAD_LEFT);
-            $toTenant = $tenant->email;
+            $toTenant = $tenantEmail;
 
-            // VÉRIFIER que l'email n'est pas null
             if (empty($toTenant)) {
                 Log::error('Email du locataire est vide', [
                     'tenant_id' => $tenant->id,
@@ -306,7 +385,6 @@ class CoOwnerTenantController extends Controller
                 return;
             }
 
-            $title = 'Invitation à créer votre compte ✉️';
             $subject = "✉️ Invitation $appName : $ref";
 
             $content = <<<HTML
@@ -320,7 +398,7 @@ class CoOwnerTenantController extends Controller
   <div style="padding:14px;background:#f9fafb;">
     <div style="font-size:14px;font-weight:900;color:#111827;">Invitation</div>
     <div style="font-size:13px;color:#6b7280;margin-top:4px;">Locataire : {$tenant->first_name} {$tenant->last_name}</div>
-    <div style="font-size:13px;color:#6b7280;margin-top:4px;">Email : {$tenant->email}</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:4px;">Email : {$tenantEmail}</div>
   </div>
   <div style="padding:14px;">
     <div style="font-size:13px;color:#374151;line-height:1.6;">
@@ -338,7 +416,6 @@ class CoOwnerTenantController extends Controller
 </a>
 HTML;
 
-            // Envoyer l'email avec vérification
             Mail::html($content, function ($message) use ($toTenant, $subject) {
                 if (empty($toTenant)) {
                     throw new \Exception("L'adresse email est vide");
@@ -355,12 +432,9 @@ HTML;
             Log::error('Erreur envoi email invitation', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $tenant->id,
-                'tenant_email' => $tenant->email ?? 'null',
+                'tenant_email' => $tenantEmail ?? 'null',
                 'invitation_id' => $invitation->id
             ]);
-
-            // Ne pas propager l'erreur, juste la logger
-            // L'utilisateur est créé même si l'email échoue
         }
     }
 
@@ -369,7 +443,6 @@ HTML;
      */
     public function show(Request $request, $tenantId)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user || !$user->hasRole('co_owner')) {
@@ -381,8 +454,20 @@ HTML;
             return redirect()->route('login')->with('error', 'Profil co-propriétaire non trouvé');
         }
 
+        // Récupérer les IDs des biens délégués
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('status', 'active')
+            ->pluck('property_id')
+            ->toArray();
+
+        // Vérifier que le locataire appartient au co-propriétaire ou est dans un bien délégué
         $tenant = Tenant::where('id', $tenantId)
-            ->where('meta->landlord_id', $coOwner->landlord_id) // Vérifier que le locataire appartient au même landlord
+            ->where(function($q) use ($coOwner, $delegatedPropertyIds) {
+                $q->where('meta->co_owner_id', $coOwner->id)
+                  ->orWhereHas('leases', function($subQuery) use ($delegatedPropertyIds) {
+                      $subQuery->whereIn('property_id', $delegatedPropertyIds);
+                  });
+            })
             ->firstOrFail();
 
         Log::info('=== AFFICHAGE LOCATAIRE (COPRIO) ===', [
@@ -394,48 +479,10 @@ HTML;
     }
 
     /**
-     * Formulaire assignation propriété
+     * Archiver un locataire
      */
-    public function showAssignProperty(Request $request, $tenantId)
+    public function archive(Request $request, $tenantId)
     {
-        // Récupérer l'utilisateur depuis Sanctum
-        $user = $this->getAuthenticatedUser($request);
-
-        if (!$user || !$user->hasRole('co_owner')) {
-            return redirect()->route('login')->with('error', 'Non autorisé');
-        }
-
-        $coOwner = $user->coOwner;
-        if (!$coOwner) {
-            return redirect()->route('login')->with('error', 'Profil co-propriétaire non trouvé');
-        }
-
-        $tenant = Tenant::where('id', $tenantId)
-            ->where('meta->landlord_id', $coOwner->landlord_id)
-            ->firstOrFail();
-
-        // Récupérer les propriétés déléguées à ce co-propriétaire
-        $delegatedProperties = PropertyDelegation::where('co_owner_id', $coOwner->id)
-            ->where('status', 'active')
-            ->with('property')
-            ->get()
-            ->pluck('property');
-
-        Log::info('=== FORMULAIRE ASSIGNATION (COPRIO) ===', [
-            'tenant_id' => $tenantId,
-            'co_owner_id' => $user->id,
-            'properties_count' => $delegatedProperties->count(),
-        ]);
-
-        return view('co-owner.tenants.assign-property', compact('tenant', 'delegatedProperties', 'user'));
-    }
-
-    /**
-     * Assigner une propriété
-     */
-    public function assignProperty(Request $request, $tenantId)
-    {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user || !$user->hasRole('co_owner')) {
@@ -447,71 +494,56 @@ HTML;
             return back()->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        $validated = $request->validate([
-            'property_id' => 'required|exists:properties,id',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after:start_date',
-        ]);
-
-        // Vérifier que la propriété est déléguée à ce co-propriétaire
-        $delegation = PropertyDelegation::where('property_id', $validated['property_id'])
-            ->where('co_owner_id', $coOwner->id)
+        // Récupérer les IDs des biens délégués
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
-            ->first();
+            ->pluck('property_id')
+            ->toArray();
 
-        if (!$delegation) {
-            return back()
-                ->with('error', 'Cette propriété ne vous est pas déléguée')
-                ->withInput();
-        }
-
-        // Vérifier que le locataire appartient au même landlord
         $tenant = Tenant::where('id', $tenantId)
-            ->where('meta->landlord_id', $coOwner->landlord_id)
+            ->where(function($q) use ($coOwner, $delegatedPropertyIds) {
+                $q->where('meta->co_owner_id', $coOwner->id)
+                  ->orWhereHas('leases', function($subQuery) use ($delegatedPropertyIds) {
+                      $subQuery->whereIn('property_id', $delegatedPropertyIds);
+                  });
+            })
             ->firstOrFail();
 
         try {
-            // Assigner la propriété au locataire
-            PropertyUser::assignPropertyToTenant(
-                $validated['property_id'],
-                $tenant->user_id,
-                $tenant->id,
-                null, // lease_id
-                'tenant', // role
-                null, // share_percentage
-                $validated['start_date'] ?? now(),
-                $validated['end_date'] ?? null
-            );
+            // CORRECTION CRITIQUE : Utiliser DB::statement pour éviter l'interprétation de constantes
+            $statusValue = 'archived'; // Variable explicite
+            DB::statement('UPDATE tenants SET status = ?, updated_at = ? WHERE id = ?', [
+                $statusValue,
+                now(),
+                $tenantId
+            ]);
 
-            Log::info('=== ASSIGNATION PROPRIÉTÉ (COPRIO) ===', [
+            Log::info('=== LOCATAIRE ARCHIVÉ (COPRIO) ===', [
                 'tenant_id' => $tenantId,
-                'property_id' => $validated['property_id'],
                 'co_owner_id' => $user->id,
+                'status_set' => $statusValue
             ]);
 
             return redirect()
-                ->route('co-owner.tenants.show', $tenantId)
-                ->with('success', 'Bien assigné avec succès.');
+                ->route('co-owner.tenants.index', ['status' => 'active'])
+                ->with('success', 'Locataire archivé avec succès.');
 
         } catch (\Exception $e) {
-            Log::error('Erreur assignation propriété', [
+            Log::error('Erreur archivage locataire', [
                 'error' => $e->getMessage(),
                 'tenant_id' => $tenantId,
-                'property_id' => $validated['property_id']
+                'trace' => $e->getTraceAsString()
             ]);
 
-            return back()
-                ->with('error', 'Erreur lors de l\'assignation: ' . $e->getMessage())
-                ->withInput();
+            return back()->with('error', 'Erreur lors de l\'archivage: ' . $e->getMessage());
         }
     }
 
     /**
-     * Désassigner une propriété
+     * Restaurer un locataire archivé
      */
-    public function unassignProperty(Request $request, $tenantId, $propertyId)
+    public function restore(Request $request, $tenantId)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user || !$user->hasRole('co_owner')) {
@@ -523,56 +555,56 @@ HTML;
             return back()->with('error', 'Profil co-propriétaire non trouvé');
         }
 
-        // Vérifier que la propriété est déléguée à ce co-propriétaire
-        $delegation = PropertyDelegation::where('property_id', $propertyId)
-            ->where('co_owner_id', $coOwner->id)
+        // Récupérer les IDs des biens délégués
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
             ->where('status', 'active')
-            ->first();
+            ->pluck('property_id')
+            ->toArray();
 
-        if (!$delegation) {
-            return back()->with('error', 'Cette propriété ne vous est pas déléguée');
-        }
-
-        // Vérifier que le locataire appartient au même landlord
         $tenant = Tenant::where('id', $tenantId)
-            ->where('meta->landlord_id', $coOwner->landlord_id)
+            ->where(function($q) use ($coOwner, $delegatedPropertyIds) {
+                $q->where('meta->co_owner_id', $coOwner->id)
+                  ->orWhereHas('leases', function($subQuery) use ($delegatedPropertyIds) {
+                      $subQuery->whereIn('property_id', $delegatedPropertyIds);
+                  });
+            })
             ->firstOrFail();
 
         try {
-            // Terminer l'attribution
-            $terminated = PropertyUser::terminateAssignment($propertyId, $tenant->user_id);
-
-            if ($terminated) {
-                Log::info('=== DÉSASSIGNATION (COPRIO) ===', [
-                    'tenant_id' => $tenantId,
-                    'property_id' => $propertyId,
-                    'co_owner_id' => $user->id,
-                ]);
-
-                return redirect()
-                    ->route('co-owner.tenants.show', $tenantId)
-                    ->with('success', 'Bien désassigné avec succès.');
-            }
-
-            return back()->with('error', 'Aucune attribution active trouvée');
-
-        } catch (\Exception $e) {
-            Log::error('Erreur désassignation', [
-                'error' => $e->getMessage(),
-                'tenant_id' => $tenantId,
-                'property_id' => $propertyId
+            // CORRECTION CRITIQUE : Utiliser DB::statement pour éviter l'interprétation de constantes
+            $statusValue = 'active'; // Variable explicite
+            DB::statement('UPDATE tenants SET status = ?, updated_at = ? WHERE id = ?', [
+                $statusValue,
+                now(),
+                $tenantId
             ]);
 
-            return back()->with('error', 'Erreur lors de la désassignation: ' . $e->getMessage());
+            Log::info('=== LOCATAIRE RESTAURÉ (COPRIO) ===', [
+                'tenant_id' => $tenantId,
+                'co_owner_id' => $user->id,
+                'status_set' => $statusValue
+            ]);
+
+            return redirect()
+                ->route('co-owner.tenants.index', ['status' => 'archived'])
+                ->with('success', 'Locataire restauré avec succès.');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur restauration locataire', [
+                'error' => $e->getMessage(),
+                'tenant_id' => $tenantId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'Erreur lors de la restauration: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Renvoyer invitation
+        /**
+     * Renvoyer l'invitation à un locataire
      */
     public function resendInvitation(Request $request, $tenantId)
     {
-        // Récupérer l'utilisateur depuis Sanctum
         $user = $this->getAuthenticatedUser($request);
 
         if (!$user || !$user->hasRole('co_owner')) {
@@ -584,41 +616,94 @@ HTML;
             return back()->with('error', 'Profil co-propriétaire non trouvé');
         }
 
+        // Récupérer les IDs des biens délégués
+        $delegatedPropertyIds = PropertyDelegation::where('co_owner_id', $coOwner->id)
+            ->where('status', 'active')
+            ->pluck('property_id')
+            ->toArray();
+
+        // Vérifier que le locataire appartient au co-propriétaire ou est dans un bien délégué
         $tenant = Tenant::where('id', $tenantId)
-            ->where('meta->landlord_id', $coOwner->landlord_id)
+            ->where(function($q) use ($coOwner, $delegatedPropertyIds) {
+                $q->where('meta->co_owner_id', $coOwner->id)
+                  ->orWhereHas('leases', function($subQuery) use ($delegatedPropertyIds) {
+                      $subQuery->whereIn('property_id', $delegatedPropertyIds);
+                  });
+            })
             ->firstOrFail();
 
-        $invitation = TenantInvitation::where('email', $tenant->email)
-            ->whereNull('accepted_at')
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$invitation) {
-            return back()->with('error', 'Aucune invitation valide trouvée');
-        }
-
         try {
-            // Régénérer le lien
+            Log::info('=== RENVOI INVITATION LOCATAIRE (COPRIO) ===', [
+                'tenant_id' => $tenantId,
+                'tenant_email' => $tenant->email ?? $tenant->meta['email'] ?? null,
+                'co_owner_id' => $coOwner->id,
+                'user_id' => $user->id
+            ]);
+
+            // Vérifier s'il existe une invitation en attente
+            $invitation = TenantInvitation::where('email', $tenant->email ?? $tenant->meta['email'] ?? null)
+                ->where('expires_at', '>', now())
+                ->latest()
+                ->first();
+
+            if (!$invitation) {
+                // Créer une nouvelle invitation
+                $invitation = TenantInvitation::create([
+                    'landlord_id'    => $coOwner->landlord_id,
+                    'tenant_user_id' => $tenant->user_id,
+                    'email'          => $tenant->email ?? $tenant->meta['email'] ?? null,
+                    'name'           => trim(($tenant->first_name ?? '') . ' ' . ($tenant->last_name ?? '')),
+                    'token'          => TenantInvitation::makeToken(),
+                    'expires_at'     => now()->addDays(7),
+                    'meta'           => [
+                        'first_name' => $tenant->first_name,
+                        'last_name'  => $tenant->last_name,
+                        'phone'      => $tenant->phone ?? $tenant->meta['phone'] ?? null,
+                        'invited_by' => 'co_owner',
+                        'co_owner_id' => $coOwner->id,
+                    ],
+                ]);
+
+                Log::info('Nouvelle invitation créée', [
+                    'invitation_id' => $invitation->id
+                ]);
+            } else {
+                // Mettre à jour l'invitation existante
+                $invitation->update([
+                    'token' => TenantInvitation::makeToken(),
+                    'expires_at' => now()->addDays(7),
+                ]);
+
+                Log::info('Invitation existante mise à jour', [
+                    'invitation_id' => $invitation->id
+                ]);
+            }
+
+            // Générer le lien d'invitation
             $signedUrl = URL::temporarySignedRoute(
                 'api.auth.accept-invitation',
                 now()->addDays(7),
                 ['invitationId' => $invitation->id]
             );
 
-            // Renvoyer l'email
-            $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user);
+            // Envoyer l'email d'invitation
+            $tenantEmail = $tenant->email ?? $tenant->meta['email'] ?? null;
 
-            Log::info('=== RENVOI INVITATION (COPRIO) ===', [
-                'tenant_id' => $tenantId,
-                'co_owner_id' => $user->id,
-            ]);
+            if (empty($tenantEmail)) {
+                return back()->with('error', 'Adresse email du locataire introuvable.');
+            }
 
-            return back()->with('success', 'Invitation renvoyée avec succès.');
+            $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user, $tenantEmail);
+
+            return redirect()
+                ->route('co-owner.tenants.show', $tenantId)
+                ->with('success', 'Invitation renvoyée avec succès !');
 
         } catch (\Exception $e) {
-            Log::error('Erreur renvoi invitation', [
+            Log::error('Erreur renvoi invitation locataire', [
                 'error' => $e->getMessage(),
-                'tenant_id' => $tenantId
+                'tenant_id' => $tenantId,
+                'trace' => $e->getTraceAsString()
             ]);
 
             return back()->with('error', 'Erreur lors du renvoi de l\'invitation: ' . $e->getMessage());
@@ -627,31 +712,20 @@ HTML;
 
     /**
      * Méthode utilitaire pour récupérer l'utilisateur authentifié
-     * depuis Sanctum (token) ou session web
      */
     private function getAuthenticatedUser(Request $request)
     {
-        // 1. Vérifier l'authentification Sanctum (API)
         if ($request->bearerToken()) {
             $token = $request->bearerToken();
             $sanctumToken = PersonalAccessToken::findToken($token);
 
             if ($sanctumToken) {
                 $user = $sanctumToken->tokenable;
-
-                // Connecter l'utilisateur dans la session web
                 auth('web')->login($user);
-
-                Log::debug('Utilisateur récupéré depuis Sanctum', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                ]);
-
                 return $user;
             }
         }
 
-        // 2. Vérifier le token en paramètre (pour les liens)
         if ($request->has('api_token')) {
             $token = $request->get('api_token');
             $sanctumToken = PersonalAccessToken::findToken($token);
@@ -659,27 +733,14 @@ HTML;
             if ($sanctumToken) {
                 $user = $sanctumToken->tokenable;
                 auth('web')->login($user);
-
-                Log::debug('Utilisateur récupéré depuis token param', [
-                    'user_id' => $user->id,
-                ]);
-
                 return $user;
             }
         }
 
-        // 3. Vérifier l'authentification web (session)
         if (auth()->check()) {
-            $user = auth()->user();
-
-            Log::debug('Utilisateur récupéré depuis session web', [
-                'user_id' => $user->id,
-            ]);
-
-            return $user;
+            return auth()->user();
         }
 
-        // 4. Essayer de récupérer depuis le header Authorization (fallback)
         $authHeader = $request->header('Authorization');
         if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
             $token = str_replace('Bearer ', '', $authHeader);
@@ -688,21 +749,9 @@ HTML;
             if ($sanctumToken) {
                 $user = $sanctumToken->tokenable;
                 auth('web')->login($user);
-
-                Log::debug('Utilisateur récupéré depuis header Auth', [
-                    'user_id' => $user->id,
-                ]);
-
                 return $user;
             }
         }
-
-        Log::warning('Aucun utilisateur authentifié trouvé', [
-            'has_bearer_token' => $request->bearerToken() ? 'yes' : 'no',
-            'has_api_token_param' => $request->has('api_token') ? 'yes' : 'no',
-            'auth_check' => auth()->check() ? 'yes' : 'no',
-            'has_auth_header' => $authHeader ? 'yes' : 'no',
-        ]);
 
         return null;
     }

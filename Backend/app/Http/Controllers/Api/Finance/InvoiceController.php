@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\Finance;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\InvoiceResource; // À créer
+use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use App\Mail\PaymentReminderMail; // Mailable à créer
+use App\Mail\PaymentReminderMail; 
 
 class InvoiceController extends Controller
 {
@@ -51,7 +51,7 @@ class InvoiceController extends Controller
                 })
                 ->where('status', 'accepted')
                 ->exists();
-                
+
             if (!$hasDelegation) {
                 return response()->json(['message' => 'Vous ne pouvez pas créer de facture pour cette location.'], 403);
             }
@@ -148,7 +148,7 @@ class InvoiceController extends Controller
 
         // Si payé = Quittance, Sinon = Avis d'échéance
         $type = $invoice->status === 'paid' ? 'quittance' : 'avis_echeance';
-        
+
         try {
             // Génération du PDF via le service
             $tempPath = $pdfService->generateInvoicePdf($invoice, $type);
@@ -175,7 +175,7 @@ class InvoiceController extends Controller
         $invoice = Invoice::findOrFail($id);
 
         // Vérification : Seul le propriétaire peut relancer
-        $this->authorize('manage', $invoice->lease->property); 
+        $this->authorize('manage', $invoice->lease->property);
 
         if ($invoice->status === 'paid') {
             return response()->json(['message' => 'Cette facture est déjà payée.'], 400);

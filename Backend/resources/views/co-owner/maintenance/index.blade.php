@@ -1,1140 +1,72 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demandes de maintenance - Copropriétaire</title>
-     <link rel="shortcut icon" href="{{ asset('images/logo.webp') }}" type="image/x-icon">
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <style>
-        :root {
-            --gradA: #667eea;
-            --gradB: #764ba2;
-            --indigo: #4f46e5;
-            --violet: #7c3aed;
-            --emerald: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --ink: #0f172a;
-            --muted: #64748b;
-            --muted2: #94a3b8;
-            --line: rgba(15,23,42,.10);
-            --line2: rgba(15,23,42,.08);
-            --shadow: 0 22px 70px rgba(0,0,0,.18);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            min-height: 100vh;
-            background-color: white;
-        }
-
-        .app-container {
-            display: flex;
-            height: 100vh;
-            background: white;
-        }
-
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            width: 256px;
-            flex-shrink: 0;
-            background: white;
-            border-right: 1px solid #e5e7eb;
-        }
-
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            height: 64px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .sidebar-header h1 {
-            font-size: 1.25rem;
-            font-weight: bold;
-            background: linear-gradient(to right, #4f46e5, #7c3aed);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 1.5rem 1rem;
-            overflow-y: auto;
-        }
-
-        .menu-item {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.875rem 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-            border-radius: 1rem;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-            cursor: pointer;
-            background: transparent;
-            color: #374151;
-        }
-
-        .menu-item:hover {
-            background: #eff6ff;
-            color: #2563eb;
-            border-color: #dbeafe;
-        }
-
-        .menu-item.active {
-            background: linear-gradient(to right, #2563eb, #3b82f6);
-            color: white;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-        }
-
-        .menu-item-content {
-            display: flex;
-            align-items: center;
-            gap: 0.875rem;
-        }
-
-        .submenu {
-            padding-left: 2rem;
-            display: none;
-        }
-
-        .submenu-item {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.25rem;
-            font-size: 0.875rem;
-            border-radius: 0.75rem;
-            background: transparent;
-            color: #374151;
-            cursor: pointer;
-            border: none;
-            text-align: left;
-        }
-
-        .submenu-item:hover {
-            background: #f3f4f6;
-            color: #2563eb;
-        }
-
-        .submenu-item.active {
-            background: linear-gradient(to right, #2563eb, #3b82f6);
-            color: white;
-        }
-
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .user-avatar {
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 9999px;
-            background: linear-gradient(to right, #3b82f6, #2563eb);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.875rem;
-            font-weight: bold;
-        }
-
-        .user-info {
-            flex: 1;
-        }
-
-        .user-name {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #111827;
-        }
-
-        .user-role {
-            font-size: 0.75rem;
-            color: #6b7280;
-        }
-
-        .top-bar {
-            height: 64px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            padding: 0 1rem;
-        }
-
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            background: white;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                left: -100%;
-                top: 0;
-                height: 100vh;
-                z-index: 50;
-                transition: left 0.3s ease;
-                box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            }
-            .sidebar.active {
-                left: 0;
-            }
-            .overlay {
-                position: fixed;
-                inset: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 40;
-                display: none;
-            }
-            .overlay.active {
-                display: block;
-            }
-            .mobile-menu-btn {
-                display: block;
-            }
-        }
-
-        .content-container {
-            min-height: 100vh;
-            background: #ffffff;
-            padding: 2rem;
-            position: relative;
-        }
-
-        .content-container::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(900px 520px at 12% -8%, rgba(102,126,234,.16) 0%, rgba(102,126,234,0) 62%),
-                radial-gradient(900px 520px at 92% 8%, rgba(118,75,162,.14) 0%, rgba(118,75,162,0) 64%),
-                radial-gradient(700px 420px at 40% 110%, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 60%);
-            pointer-events: none;
-            z-index: -2;
-        }
-
-        .content-card {
-            max-width: 1500px;
-            margin: 0 auto;
-            background: rgba(255,255,255,.92);
-            border-radius: 22px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            border: 1px solid rgba(102,126,234,.18);
-            position: relative;
-            backdrop-filter: blur(10px);
-        }
-
-        .content-header {
-            background: linear-gradient(135deg, var(--gradA) 0%, var(--gradB) 100%);
-            padding: 2.5rem;
-            color: white;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .content-header h1 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin: 0 0 0.6rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            letter-spacing: -0.02em;
-        }
-
-        .content-header p {
-            opacity: 0.9;
-            font-weight: 650;
-            font-size: 0.95rem;
-        }
-
-        .content-body {
-            padding: 2.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .top-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .top-actions-right {
-            display: flex;
-            gap: .75rem;
-            flex-wrap: wrap;
-        }
-
-        .alert-box {
-            border-radius: 14px;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid;
-            font-weight: 850;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .alert-info {
-            background: rgba(239,246,255,.92);
-            border-color: rgba(59,130,246,.30);
-            color: #1e40af;
-        }
-
-        .alert-warning {
-            background: rgba(254,252,232,.92);
-            border-color: rgba(245,158,11,.30);
-            color: #92400e;
-        }
-
-        .alert-error {
-            background: rgba(254,242,242,.92);
-            border-color: rgba(248,113,113,.30);
-            color: #991b1b;
-        }
-
-        .alert-success {
-            background: rgba(240,253,244,.92);
-            border-color: rgba(74,222,128,.30);
-            color: #166534;
-        }
-
-        .button {
-            padding: 0.9rem 1.35rem;
-            border-radius: 14px;
-            font-weight: 950;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: inherit;
-            white-space: nowrap;
-            text-decoration: none;
-        }
-
-        .button-primary {
-            background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
-            color: #fff;
-            box-shadow: 0 14px 30px rgba(79,70,229,.22);
-        }
-
-        .button-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 34px rgba(79,70,229,.28);
-        }
-
-        .button-secondary {
-            background: rgba(255,255,255,.92);
-            color: #4338ca;
-            border: 2px solid rgba(67,56,202,.20);
-        }
-
-        .button-secondary:hover {
-            background: rgba(67,56,202,.06);
-        }
-
-        .button-danger {
-            background: rgba(239,68,68,.10);
-            color: var(--red);
-            border: 2px solid rgba(239,68,68,.20);
-        }
-
-        .button-danger:hover {
-            background: rgba(239,68,68,.15);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,.95);
-            border: 2px solid rgba(102,126,234,.15);
-            border-radius: 16px;
-            padding: 1.75rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,.05);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0,0,0,.08);
-            border-color: rgba(102,126,234,.25);
-        }
-
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .stat-icon.blue {
-            background: rgba(59,130,246,.15);
-            color: #1d4ed8;
-        }
-
-        .stat-icon.yellow {
-            background: rgba(245,158,11,.15);
-            color: #92400e;
-        }
-
-        .stat-icon.green {
-            background: rgba(34,197,94,.15);
-            color: #166534;
-        }
-
-        .stat-icon.purple {
-            background: rgba(168,85,247,.15);
-            color: #7c3aed;
-        }
-
-        .stat-icon.red {
-            background: rgba(239,68,68,.15);
-            color: #991b1b;
-        }
-
-        .stat-info {
-            flex: 1;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 950;
-            color: var(--ink);
-            line-height: 1;
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            font-weight: 850;
-            color: var(--muted);
-        }
-
-        .notices-list {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .notice-card {
-            background: rgba(255,255,255,.95);
-            border: 2px solid rgba(148,163,184,.15);
-            border-radius: 16px;
-            padding: 1.5rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr auto;
-            gap: 1rem;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-            .notice-card {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .notice-card:hover {
-            border-color: rgba(102,126,234,.35);
-            box-shadow: 0 10px 30px rgba(102,126,234,.15);
-            transform: translateY(-2px);
-        }
-
-        .notice-info {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .notice-title {
-            font-size: 1.1rem;
-            font-weight: 950;
-            color: var(--ink);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .notice-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.85rem;
-            color: var(--muted);
-            font-weight: 650;
-            flex-wrap: wrap;
-        }
-
-        .notice-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .notice-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            border: 2px dashed rgba(148,163,184,.35);
-            border-radius: 16px;
-            background: rgba(255,255,255,.72);
-        }
-
-        .empty-state-icon {
-            margin: 0 auto 1rem;
-            width: 64px;
-            height: 64px;
-            color: #94a3b8;
-        }
-
-        .empty-state-title {
-            font-size: 1.1rem;
-            font-weight: 950;
-            color: #475569;
-            margin-bottom: 0.5rem;
-        }
-
-        .empty-state-text {
-            color: #64748b;
-            font-weight: 650;
-            margin-bottom: 1.5rem;
-        }
-
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 850;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .badge-open {
-            background: rgba(245,158,11,.15);
-            color: #92400e;
-            border: 1px solid rgba(245,158,11,.25);
-        }
-
-        .badge-in_progress {
-            background: rgba(59,130,246,.15);
-            color: #1d4ed8;
-            border: 1px solid rgba(59,130,246,.25);
-        }
-
-        .badge-resolved {
-            background: rgba(34,197,94,.15);
-            color: #166534;
-            border: 1px solid rgba(34,197,94,.25);
-        }
-
-        .badge-cancelled {
-            background: rgba(148,163,184,.15);
-            color: #475569;
-            border: 1px solid rgba(148,163,184,.25);
-        }
-
-        .badge-emergency {
-            background: rgba(239,68,68,.15);
-            color: #991b1b;
-            border: 1px solid rgba(239,68,68,.25);
-        }
-
-        .badge-high {
-            background: rgba(245,158,11,.15);
-            color: #92400e;
-            border: 1px solid rgba(245,158,11,.25);
-        }
-
-        .badge-medium {
-            background: rgba(59,130,246,.15);
-            color: #1d4ed8;
-            border: 1px solid rgba(59,130,246,.25);
-        }
-
-        .badge-low {
-            background: rgba(34,197,94,.15);
-            color: #166534;
-            border: 1px solid rgba(34,197,94,.25);
-        }
-
-        .filters {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            background: rgba(255,255,255,.9);
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 2px solid rgba(102,126,234,.10);
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            min-width: 180px;
-        }
-
-        .filter-label {
-            font-size: 0.875rem;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
-        .filter-select {
-            padding: 0.75rem 1rem;
-            border-radius: 10px;
-            border: 1px solid rgba(102,126,234,.25);
-            background: white;
-            color: var(--ink);
-            font-size: 0.875rem;
-            cursor: pointer;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px rgba(79,70,229,.15);
-        }
-
-        .top-bar-content {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .logout-btn {
-            background: transparent;
-            border: 1px solid rgba(100, 116, 139, 0.2);
-            color: #64748b;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="overlay" id="overlay"></div>
-
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1>GestiLoc</h1>
-            </div>
-
-            <nav class="sidebar-nav">
-                <!-- Tableau de bord -->
-                <button class="menu-item" onclick="goToReact('/coproprietaire/dashboard')">
-                    <div class="menu-item-content">
-                        <i data-lucide="layout-dashboard"></i>
-                        <span>Tableau de bord</span>
-                    </div>
-                </button>
-
-                <!-- Gestion des Biens -->
-                <div class="menu-item has-submenu" onclick="toggleSubmenu('biens-menu')">
-                    <div class="menu-item-content">
-                        <i data-lucide="building"></i>
-                        <span>Gestion des Biens</span>
-                    </div>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="submenu" id="biens-menu" style="display: none;">
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/biens')">
-                        <span>Mes biens délégués</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/delegations')">
-                        <span>Délégations reçues</span>
-
-                    </button>
-                </div>
-
-                <!-- Gestion Locative -->
-                <div class="menu-item has-submenu" onclick="toggleSubmenu('locative-menu')">
-                    <div class="menu-item-content">
-                        <i data-lucide="file-signature"></i>
-                        <span>Gestion Locative</span>
-                    </div>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="submenu" id="locative-menu" style="display: none;">
-                    <!-- Laravel routes -->
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/tenants')">
-                        <span>Liste des locataires</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/tenants/create')">
-                        <span>Créer un locataire</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/assign-property/create')">
-                        <span>Assigner un bien</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/leases')">
-                        <span>Contrats de bail</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/quittances')">
-                        <span>Quittances de loyer</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/notices')">
-                        <span>Préavis</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/maintenance')">
-                        <span>Demandes de maintenance</span>
-
-                    </button>
-                    <!-- React route -->
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/baux')">
-                        <span>Baux en cours</span>
-
-                    </button>
-                </div>
-
-                <!-- Documents -->
-                <div class="menu-item has-submenu" onclick="toggleSubmenu('documents-menu')">
-                    <div class="menu-item-content">
-                        <i data-lucide="file-text"></i>
-                        <span>Documents</span>
-                    </div>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="submenu" id="documents-menu" style="display: none;">
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/documents')">
-                        <span>Mes documents</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/finances')">
-                        <span>Finances</span>
-
-                    </button>
-                    <!-- Laravel lease documents -->
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/leases')">
-                        <span>Documents de bail</span>
-
-                    </button>
-                </div>
-
-                <!-- Profil -->
-                <div class="menu-item has-submenu" onclick="toggleSubmenu('profile-menu')">
-                    <div class="menu-item-content">
-                        <i data-lucide="user"></i>
-                        <span>Profil & Paramètres</span>
-                    </div>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="submenu" id="profile-menu" style="display: none;">
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/profile')">
-                        <span>Mon profil</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/parametres')">
-                        <span>Paramètres</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/audit')">
-                        <span>Journal d'audit</span>
-
-                    </button>
-                </div>
-
-
-
-                <!-- Finances -->
-                <div class="menu-item has-submenu" onclick="toggleSubmenu('finances-menu')">
-                    <div class="menu-item-content">
-                        <i data-lucide="credit-card"></i>
-                        <span>Finances</span>
-                    </div>
-                    <i data-lucide="chevron-down"></i>
-                </div>
-                <div class="submenu" id="finances-menu" style="display: none;">
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/emettre-paiement')">
-                        <span>Émettre un paiement</span>
-
-                    </button>
-                    <button class="submenu-item" onclick="goToReact('/coproprietaire/retrait-methode')">
-                        <span>Méthode de retrait</span>
-
-                    </button>
-                    <!-- Laravel finances -->
-                    <button class="submenu-item" onclick="navigateTo('/coproprietaire/quittances')">
-                        <span>Gestion des quittances</span>
-
-                    </button>
-                </div>
-
-
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="user-profile">
-                    <div class="user-avatar">
-                        <?php
-                        $user = auth()->user();
-                        $initials = 'C';
-                        if ($user) {
-                            $name = $user->name ?? '';
-                            $email = $user->email ?? '';
-                            if ($name) {
-                                $initials = strtoupper(substr($name, 0, 1));
-                            } elseif ($email) {
-                                $initials = strtoupper(substr($email, 0, 1));
-                            }
-                        }
-                        echo $initials;
-                        ?>
-                    </div>
-                    <div class="user-info">
-                        <div class="user-name">
-                            <?php
-                            if ($user) {
-                                echo e($user->name ?? 'Co-propriétaire');
-                            } else {
-                                echo 'Co-propriétaire';
-                            }
-                            ?>
-                        </div>
-                        <div class="user-role">Co-propriétaire</div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main content -->
-        <div class="main-content">
-            <!-- Top bar -->
-            <header class="top-bar">
-                <button class="mobile-menu-btn" onclick="toggleSidebar()" style="display: none;">
-                    <i data-lucide="menu"></i>
-                </button>
-
-
-            </header>
-
-            <!-- Contenu -->
-            <div class="content-container">
-                <div class="content-card">
-                    <div class="content-header">
-                        <h1>
-                            <i data-lucide="wrench" style="width: 32px; height: 32px;"></i>
-                            Demandes de maintenance
-                        </h1>
-                        <p>Gérez les demandes de réparation pour les biens qui vous sont délégués</p>
-                    </div>
-
-                    <div class="content-body">
-                        <?php if(session('success')): ?>
-                            <div class="alert-box alert-success">
-                                <i data-lucide="check-circle" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
-                                <div>
-                                    <strong>Succès</strong>
-                                    <p style="margin-top: 4px; font-weight: 650; font-size: 0.9rem;"><?php echo e(session('success')); ?></p>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if(session('error')): ?>
-                            <div class="alert-box alert-error">
-                                <i data-lucide="alert-circle" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
-                                <div>
-                                    <strong>Erreur</strong>
-                                    <p style="margin-top: 4px; font-weight: 650; font-size: 0.9rem;"><?php echo e(session('error')); ?></p>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Statistiques -->
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon blue">
-                                    <i data-lucide="wrench" style="width: 24px; height: 24px;"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value"><?php echo e($stats['total']); ?></div>
-                                    <div class="stat-label">Demandes totales</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-icon yellow">
-                                    <i data-lucide="clock" style="width: 24px; height: 24px;"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value"><?php echo e($stats['open']); ?></div>
-                                    <div class="stat-label">En attente</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-icon purple">
-                                    <i data-lucide="loader" style="width: 24px; height: 24px;"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value"><?php echo e($stats['in_progress']); ?></div>
-                                    <div class="stat-label">En cours</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-icon green">
-                                    <i data-lucide="check-circle" style="width: 24px; height: 24px;"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value"><?php echo e($stats['resolved']); ?></div>
-                                    <div class="stat-label">Résolues</div>
-                                </div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-icon red">
-                                    <i data-lucide="home" style="width: 24px; height: 24px;"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <div class="stat-value"><?php echo e($stats['properties']); ?></div>
-                                    <div class="stat-label">Biens délégués</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Filtres -->
-                        <div class="filters">
-                            <div class="filter-group">
-                                <label class="filter-label">Statut</label>
-                                <select class="filter-select" onchange="filterByStatus(this.value)">
-                                    <option value="all">Tous les statuts</option>
-                                    <option value="open">En attente</option>
-                                    <option value="in_progress">En cours</option>
-                                    <option value="resolved">Résolu</option>
-                                    <option value="cancelled">Annulé</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label class="filter-label">Priorité</label>
-                                <select class="filter-select" onchange="filterByPriority(this.value)">
-                                    <option value="all">Toutes priorités</option>
-                                    <option value="emergency">Urgence</option>
-                                    <option value="high">Élevée</option>
-                                    <option value="medium">Moyenne</option>
-                                    <option value="low">Faible</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-group">
-                                <label class="filter-label">Bien</label>
-                                <select class="filter-select" onchange="filterByProperty(this.value)">
-                                    <option value="all">Tous les biens</option>
-                                    <?php $__currentLoopData = $delegations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $delegation): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <?php if($delegation->property): ?>
-                                            <option value="<?php echo e($delegation->property->id); ?>">
-                                                <?php echo e($delegation->property->address); ?> - <?php echo e($delegation->property->city); ?>
-
-                                            </option>
-                                        <?php endif; ?>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </select>
-                            </div>
-
-                            <div class="filter-group" style="align-self: flex-end;">
-                                <button onclick="resetFilters()" class="button button-secondary">
-                                    <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
-                                    Réinitialiser
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Liste des demandes -->
-                        <?php if($maintenanceRequests->isEmpty()): ?>
-                            <div class="empty-state">
-                                <i data-lucide="wrench" class="empty-state-icon" style="width: 64px; height: 64px;"></i>
-                                <h3 class="empty-state-title">Aucune demande de maintenance</h3>
-                                <p class="empty-state-text">
-                                    Les locataires des biens délégués n'ont créé aucune demande de maintenance pour le moment.
-                                </p>
-                                <?php if($stats['properties'] === 0): ?>
-                                    <div class="alert-box alert-info" style="max-width: 500px; margin: 1rem auto;">
-                                        <i data-lucide="info" style="width: 20px; height: 20px; flex-shrink: 0;"></i>
-                                        <div>
-                                            <strong>Information</strong>
-                                            <p style="margin-top: 4px; font-weight: 650; font-size: 0.9rem;">
-                                                Vous n'avez aucun bien délégué. Contactez le propriétaire principal pour obtenir des délégations.
-                                            </p>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="notices-list">
-                                <?php $__currentLoopData = $maintenanceRequests; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $request): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <div class="notice-card"
-                                         data-status="<?php echo e($request->status); ?>"
-                                         data-priority="<?php echo e($request->priority); ?>"
-                                         data-property="<?php echo e($request->property_id); ?>">
-                                        <div class="notice-info">
-                                            <div class="notice-title">
-                                                <i data-lucide="wrench" style="width: 18px; height: 18px; color: var(--indigo);"></i>
-                                                <?php echo e($request->title); ?>
-
-                                                <span class="badge badge-<?php echo e($request->status); ?>">
-                                                    <?php if($request->status == 'open'): ?>
-                                                        <i data-lucide="clock" style="width: 12px; height: 12px;"></i> En attente
-                                                    <?php elseif($request->status == 'in_progress'): ?>
-                                                        <i data-lucide="loader" style="width: 12px; height: 12px;"></i> En cours
-                                                    <?php elseif($request->status == 'resolved'): ?>
-                                                        <i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Résolu
-                                                    <?php else: ?>
-                                                        <i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Annulé
-                                                    <?php endif; ?>
-                                                </span>
-                                                <span class="badge badge-<?php echo e($request->priority); ?>">
-                                                    <?php if($request->priority == 'emergency'): ?>
-                                                        <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Urgence
-                                                    <?php elseif($request->priority == 'high'): ?>
-                                                        <i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> Élevée
-                                                    <?php elseif($request->priority == 'medium'): ?>
-                                                        <i data-lucide="info" style="width: 12px; height: 12px;"></i> Moyenne
-                                                    <?php else: ?>
-                                                        <i data-lucide="check" style="width: 12px; height: 12px;"></i> Faible
-                                                    <?php endif; ?>
-                                                </span>
-                                            </div>
-                                            <div class="notice-meta">
-                                                <span class="notice-meta-item">
-                                                    <i data-lucide="home" style="width: 14px; height: 14px;"></i>
-                                                    <?php echo e($request->property->address ?? 'Bien inconnu'); ?>
-
-                                                </span>
-                                                <span class="notice-meta-item">
-                                                    <i data-lucide="user" style="width: 14px; height: 14px;"></i>
-                                                    <?php echo e($request->tenant->user->name ?? 'Locataire inconnu'); ?>
-
-                                                </span>
-                                                <span class="notice-meta-item">
-                                                    <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
-                                                    <?php echo e($request->created_at->format('d/m/Y H:i')); ?>
-
-                                                </span>
-                                            </div>
-                                            <?php if($request->description): ?>
-                                                <div style="margin-top: 8px; font-size: 0.875rem; color: #64748b;">
-                                                    <?php echo e(Str::limit($request->description, 100)); ?>
-
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="notice-meta">
-                                            <div>
-                                                <strong>Catégorie:</strong>
-                                                <?php
-                                                    $categories = [
-                                                        'plumbing' => 'Plomberie',
-                                                        'electricity' => 'Électricité',
-                                                        'heating' => 'Chauffage',
-                                                        'other' => 'Autre',
-                                                    ];
-                                                    echo $categories[$request->category] ?? $request->category;
-                                                ?>
-                                            </div>
-                                            <?php if($request->assigned_provider): ?>
-                                                <div><strong>Prestataire:</strong> <?php echo e($request->assigned_provider); ?></div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="notice-actions">
-                                            <a href="<?php echo e(route('co-owner.maintenance.show', $request)); ?>" class="button button-secondary">
-                                                <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
-                                                Voir
-                                            </a>
-                                            <?php if($request->status == 'open'): ?>
-                                                <form action="<?php echo e(route('co-owner.maintenance.start', $request)); ?>" method="POST" style="display: inline;">
-                                                    <?php echo csrf_field(); ?>
-                                                    <button type="submit" class="button button-primary">
-                                                        <i data-lucide="play" style="width: 16px; height: 16px;"></i>
-                                                        Prendre en charge
-                                                    </button>
-                                                </form>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
+@extends('layouts.co-owner')
+
+@section('title', 'Répartitions et travaux - Copropriétaire')
+
+@section('content')
+<div class="maintenance-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1>Répartitions et travaux</h1>
+            <p class="subtitle">Gérez vos interventions, suivez les demandes de vos locataires et planifiez les travaux.<br>Centralisez tous les devis, factures et suivis de chantier au même endroit.</p>
+        </div>
+        <a href="{{ route('co-owner.maintenance.create') }}" class="btn-create">
+            <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+            Créer une intervention
+        </a>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-label">INTERVENTIONS URGENTES</div>
+            <div class="stat-value urgent">{{ $stats['urgent'] }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">EN COURS</div>
+            <div class="stat-value in-progress">{{ $stats['in_progress'] }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">PLANIFIÉES</div>
+            <div class="stat-value planned">{{ $stats['planned'] }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">COÛT TOTAL {{ date('Y') }}</div>
+            <div class="stat-value cost">{{ number_format($stats['total_cost'], 0, ',', ' ') }} FCFA</div>
         </div>
     </div>
 
-    <script>
-        // Initialiser les icônes
-        lucide.createIcons();
+    <!-- Filtres par statut (pills) -->
+    <div class="status-filters">
+        <a href="{{ route('co-owner.maintenance.index') }}"
+           class="status-pill {{ $currentFilter === 'all' || !isset($currentFilter) ? 'active' : '' }}">
+            Tous
+        </a>
+        <a href="{{ route('co-owner.maintenance.index', ['status_filter' => 'urgent']) }}"
+           class="status-pill {{ $currentFilter === 'urgent' ? 'active' : '' }}">
+            Urgentes
+        </a>
+        <a href="{{ route('co-owner.maintenance.index', ['status_filter' => 'in_progress']) }}"
+           class="status-pill {{ $currentFilter === 'in_progress' ? 'active' : '' }}">
+            En cours
+        </a>
+        <a href="{{ route('co-owner.maintenance.index', ['status_filter' => 'planned']) }}"
+           class="status-pill {{ $currentFilter === 'planned' ? 'active' : '' }}">
+            Planifiées
+        </a>
+        <a href="{{ route('co-owner.maintenance.index', ['status_filter' => 'completed']) }}"
+           class="status-pill {{ $currentFilter === 'completed' ? 'active' : '' }}">
+            Terminées
+        </a>
+    </div>
 
-        // Fonction UNIFIÉE - React sur 8080, Laravel sur 8000
-        function goToReact(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
+    <!-- Filtres avancés -->
+    <div class="filters-card">
+        <h3 class="filters-title">FILTRE</h3>
+        <form method="GET" action="{{ route('co-owner.maintenance.index') }}" class="filters-form">
+            @if(request('status_filter'))
+                <input type="hidden" name="status_filter" value="{{ request('status_filter') }}">
+            @endif
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
@@ -1142,34 +74,77 @@
                 return;
             }
 
-            // Déterminer si c'est une route React ou Laravel
-            const isLaravelRoute = path.includes('/tenants') ||
-                                  path.includes('/assign-property') ||
-                                  path.includes('/leases') ||
-                                  path.includes('/notices') ||
-                                  path.includes('/maintenance') ||
-                                  path.includes('/test-laravel');
+                <div class="filter-select-wrapper">
+                    <select name="year" class="filter-select" onchange="this.form.submit()">
+                        <option value="all" {{ request('year') == 'all' || !request('year') ? 'selected' : '' }}>Toutes les années</option>
+                        @foreach($years as $year)
+                            <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                    <i data-lucide="chevron-down" class="select-icon"></i>
+                </div>
+            </div>
 
-            let baseUrl = 'http://localhost:';
+            <div class="search-row">
+                <div class="search-input-wrapper">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text"
+                           name="search"
+                           class="search-input"
+                           placeholder="Rechercher"
+                           value="{{ request('search') }}">
+                </div>
+            </div>
+        </form>
+    </div>
 
-            if (isLaravelRoute) {
-                baseUrl += '8000'; // Laravel
-            } else {
-                baseUrl += '8080'; // React
-            }
+    <!-- Liste des interventions -->
+    <div class="interventions-grid">
+        @forelse($maintenanceRequests as $request)
+            @php
+                $statusClass = match($request->status) {
+                    'open' => $request->priority === 'emergency' ? 'urgent' : 'planned',
+                    'in_progress' => 'in-progress',
+                    'resolved' => 'completed',
+                    default => 'planned'
+                };
 
-            let fullUrl = baseUrl + path;
+                $statusLabel = match($request->status) {
+                    'open' => $request->priority === 'emergency' ? 'URGENT' : 'PLANIFIÉE',
+                    'in_progress' => 'EN COURS',
+                    'resolved' => 'TERMINÉE',
+                    default => 'PLANIFIÉE'
+                };
 
-            const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+                $categoryLabels = [
+                    'plumbing' => 'Plomberie',
+                    'electricity' => 'Électricité',
+                    'heating' => 'Chauffage',
+                    'other' => 'Autre',
+                ];
 
-            console.log('Navigation vers:', fullUrl);
-            window.location.href = fullUrl;
-        }
+                $priorityLabels = [
+                    'low' => 'Faible',
+                    'medium' => 'Moyenne',
+                    'high' => 'Élevée',
+                    'emergency' => 'Urgente',
+                ];
+            @endphp
 
-        // Pour les routes Laravel
-        function navigateTo(path) {
-            const token = localStorage.getItem('token') || getUrlParam('api_token');
+            <div class="intervention-card">
+                <!-- Badge statut -->
+                <div class="status-badge {{ $statusClass }}">
+                    @if($request->priority === 'emergency' || $statusClass === 'urgent')
+                        <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i>
+                    @elseif($statusClass === 'in-progress')
+                        <i data-lucide="loader" style="width: 12px; height: 12px;"></i>
+                    @elseif($statusClass === 'completed')
+                        <i data-lucide="check" style="width: 12px; height: 12px;"></i>
+                    @else
+                        <i data-lucide="calendar" style="width: 12px; height: 12px;"></i>
+                    @endif
+                    {{ $statusLabel }}
+                </div>
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
@@ -1180,32 +155,102 @@
             const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
             let fullUrl = baseUrl + path;
 
-            const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+                <!-- Détails en grille -->
+                <div class="intervention-details">
+                    <div class="detail-item">
+                        <span class="detail-label">TYPE</span>
+                        <span class="detail-value">{{ $categoryLabels[$request->category] ?? $request->category }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">PRIORITÉ</span>
+                        <span class="detail-value">{{ $priorityLabels[$request->priority] ?? $request->priority }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">DEMANDÉ LE</span>
+                        <span class="detail-value">{{ $request->created_at->format('d M Y') }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">PRESTATAIRE</span>
+                        <span class="detail-value">{{ $request->assigned_provider ?? 'À affecter' }}</span>
+                    </div>
 
-            console.log('Navigation Laravel vers:', fullUrl);
-            window.location.href = fullUrl;
-        }
+                    @if($request->status === 'in_progress' && $request->started_at)
+                        <div class="detail-item">
+                            <span class="detail-label">DÉBUT TRAVAUX</span>
+                            <span class="detail-value">{{ \Carbon\Carbon::parse($request->started_at)->format('d M Y') }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">AVANCEMENT</span>
+                            <span class="detail-value">{{ $request->progress ?? '0' }}%</span>
+                        </div>
+                    @elseif($request->status === 'resolved')
+                        <div class="detail-item">
+                            <span class="detail-label">DATE RÉALISATION</span>
+                            <span class="detail-value">{{ $request->resolved_at ? $request->resolved_at->format('d M Y') : 'N/A' }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">FACTURE</span>
+                            <span class="detail-value">{{ $request->actual_cost ? 'Payée' : 'En attente' }}</span>
+                        </div>
+                    @else
+                        <div class="detail-item">
+                            <span class="detail-label">DEVIS ESTIMÉ</span>
+                            <span class="detail-value cost-value">{{ $request->estimated_cost ? number_format($request->estimated_cost, 0, ',', ' ') . ' €' : '—' }}</span>
+                        </div>
+                    @endif
+                </div>
 
-        // Helper pour récupérer un paramètre d'URL
-        function getUrlParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
+                <!-- Coût en grand si disponible -->
+                @if($request->estimated_cost || $request->actual_cost)
+                    <div class="intervention-cost">
+                        <span class="cost-label">DEVIS {{ $request->status === 'resolved' ? 'FINAL' : 'ACCEPTÉ' }}</span>
+                        <span class="cost-amount">{{ number_format($request->actual_cost ?? $request->estimated_cost, 0, ',', ' ') }} €</span>
+                    </div>
+                @endif
 
-        // Gestion des sous-menus
-        function toggleSubmenu(menuId) {
-            const submenu = document.getElementById(menuId);
-            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+                <!-- Footer -->
+                <div class="intervention-footer">
+                    <span class="creation-date">
+                        @if($request->status === 'resolved')
+                            Terminé le {{ $request->resolved_at ? $request->resolved_at->format('d M Y') : 'N/A' }}
+                        @elseif($request->status === 'in_progress' && $request->estimated_end_date)
+                            Fin prévue : {{ \Carbon\Carbon::parse($request->estimated_end_date)->format('d M Y') }}
+                        @else
+                            Créé le {{ $request->created_at->format('d M Y') }}
+                        @endif
+                    </span>
 
-            if (submenu.style.display === 'none' || !submenu.style.display) {
-                submenu.style.display = 'block';
-                parent.classList.add('active');
-            } else {
-                submenu.style.display = 'none';
-                parent.classList.remove('active');
-            }
-        }
+                    <div class="intervention-actions">
+                        <a href="{{ route('co-owner.maintenance.show', $request) }}" class="action-btn" title="Voir">
+                            <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
+                        </a>
+                        @if($request->status === 'open')
+                            <form action="{{ route('co-owner.maintenance.start', $request) }}" method="POST" style="display: inline;">
+                                @csrf
+                                <button type="submit" class="action-btn btn-primary" title="Prendre en charge">
+                                    <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </form>
+                        @endif
+                        <a href="{{ route('co-owner.maintenance.edit', $request) }}" class="action-btn" title="Modifier">
+                            <i data-lucide="pencil" style="width: 16px; height: 16px;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="empty-state">
+                <i data-lucide="wrench" style="width: 64px; height: 64px; color: #cbd5e1;"></i>
+                <h3>Aucune intervention</h3>
+                <p>Vous n'avez pas encore d'interventions pour les biens délégués.</p>
+                <a href="{{ route('co-owner.maintenance.create') }}" class="btn-create">
+                    <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+                    Créer une intervention
+                </a>
+            </div>
+        @endforelse
+    </div>
+</div>
 
         // Gestion de la sidebar mobile
         function toggleSidebar() {
@@ -1335,34 +380,438 @@
         window.location.href = fullUrl;
     }
 
-    // Helper pour récupérer un paramètre d'URL
-    function getUrlParam(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
+    .header-content h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.75rem 0;
     }
 
-    // Gestion des sous-menus
-    function toggleSubmenu(menuId) {
-        const submenu = document.getElementById(menuId);
-        const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+    .subtitle {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin: 0;
+    }
 
-        if (submenu.style.display === 'none' || !submenu.style.display) {
-            submenu.style.display = 'block';
-            parent.classList.add('active');
-        } else {
-            submenu.style.display = 'none';
-            parent.classList.remove('active');
+    .btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #70AE48;
+        color: white;
+        padding: 0.875rem 1.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-create:hover {
+        background: #70AE48;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+    }
+
+    /* Stats Row */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-box {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+
+    .stat-value.urgent {
+        color: #dc2626;
+    }
+
+    .stat-value.in-progress {
+        color: #70AE48;
+    }
+
+    .stat-value.planned {
+        color: #1e293b;
+    }
+
+    .stat-value.cost {
+        color: #ea580c;
+    }
+
+    /* Status Filters (Pills) */
+    .status-filters {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        background: #e2e8f0;
+        color: #475569;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .status-pill:hover {
+        background: #cbd5e1;
+    }
+
+    .status-pill.active {
+        background: #70AE48;
+        color: white;
+    }
+
+    /* Filters Card */
+    .filters-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .filters-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: 0.05em;
+        margin: 0 0 1rem 0;
+    }
+
+    .filters-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filters-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .filter-select-wrapper {
+        position: relative;
+    }
+
+    .filter-select {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        padding-right: 2.5rem;
+        border: 1px solid #84cc16;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        color: #64748b;
+        background: white;
+        appearance: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #65a30d;
+        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+    }
+
+    .select-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: #64748b;
+        pointer-events: none;
+    }
+
+    .search-row {
+        width: 100%;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        color: #84cc16;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.875rem 1rem 0.875rem 2.75rem;
+        border: 1px solid #84cc16;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        color: #374151;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #65a30d;
+        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+    }
+
+    .search-input::placeholder {
+        color: #94a3b8;
+    }
+
+    /* Interventions Grid */
+    .interventions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .intervention-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .intervention-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.875rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        width: fit-content;
+    }
+
+    .status-badge.urgent {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .status-badge.in-progress {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .status-badge.planned {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .status-badge.completed {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .intervention-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .intervention-location {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .intervention-location i {
+        color: #e74c3c;
+    }
+
+    .intervention-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem 1.5rem;
+        padding: 1rem 0;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detail-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+    }
+
+    .detail-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .detail-value.cost-value {
+        color: #ea580c;
+    }
+
+    .intervention-cost {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+    }
+
+    .cost-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+    }
+
+    .cost-amount {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ea580c;
+    }
+
+    .intervention-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 0.75rem;
+    }
+
+    .creation-date {
+        font-size: 0.8rem;
+        color: #94a3b8;
+    }
+
+    .intervention-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .action-btn:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        color: #374151;
+    }
+
+    .action-btn.btn-primary {
+        background: #84cc16;
+        border-color: #84cc16;
+        color: white;
+    }
+
+    .action-btn.btn-primary:hover {
+        background: #65a30d;
+    }
+
+    /* Empty State */
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        border: 2px dashed #e2e8f0;
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 1rem 0 0.5rem 0;
+    }
+
+    .empty-state p {
+        color: #64748b;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .stats-row {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 
-    // Gestion de la sidebar mobile
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
 
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-    }
+        .stats-row {
+            grid-template-columns: 1fr;
+        }
 
     // Logout
     function logout() {
@@ -1372,71 +821,13 @@
             window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
         }
     }
+</style>
 
-    // Au chargement
-    function checkMobile() {
-        const mobileBtn = document.querySelector('.mobile-menu-btn');
-        if (window.innerWidth <= 768) {
-            mobileBtn.style.display = 'block';
-        } else {
-            mobileBtn.style.display = 'none';
-        }
-    }
-
-    window.addEventListener('resize', checkMobile);
-    checkMobile();
-
-    // Ajouter le token à la page actuelle si présent dans l'URL
-    const urlToken = getUrlParam('api_token');
-    if (urlToken) {
-        localStorage.setItem('token', urlToken);
-    }
-
-    // Marquer le menu actif en fonction de la page courante
+<script>
     document.addEventListener('DOMContentLoaded', function() {
-        const currentPath = window.location.pathname;
-
-        // Définir quel sous-menu doit être ouvert par défaut
-        const menuConfig = {
-            '/coproprietaire/tenants': 'locative-menu',
-            '/coproprietaire/tenants/create': 'locative-menu',
-            '/coproprietaire/assign-property/create': 'locative-menu',
-            '/coproprietaire/leases': 'locative-menu',
-            '/coproprietaire/quittances': 'locative-menu',
-            '/coproprietaire/notices': 'locative-menu',
-            '/coproprietaire/maintenance': 'locative-menu',
-            '/coproprietaire/biens': 'biens-menu',
-            '/coproprietaire/delegations': 'biens-menu',
-            '/coproprietaire/documents': 'documents-menu',
-            '/coproprietaire/finances': 'documents-menu',
-            '/coproprietaire/profile': 'profile-menu',
-            '/coproprietaire/parametres': 'profile-menu',
-            '/coproprietaire/audit': 'profile-menu',
-            '/coproprietaire/mes-delegations': 'delegations-menu',
-            '/coproprietaire/demandes-delegation': 'delegations-menu',
-            '/coproprietaire/inviter-proprietaire': 'delegations-menu',
-            '/coproprietaire/emettre-paiement': 'finances-menu',
-            '/coproprietaire/retrait-methode': 'finances-menu',
-            '/admin/statistiques': 'admin-menu',
-            '/admin/logs': 'admin-menu'
-        };
-
-        // Ouvrir le sous-menu approprié
-        for (const [path, menuId] of Object.entries(menuConfig)) {
-            if (currentPath.includes(path)) {
-                setTimeout(() => toggleSubmenu(menuId), 100);
-                break;
-            }
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
-
-        // Marquer l'élément actif
-        document.querySelectorAll('.submenu-item').forEach(item => {
-            const itemPath = item.getAttribute('onclick');
-            if (itemPath && itemPath.includes(currentPath)) {
-                item.classList.add('active');
-            }
-        });
     });
 </script>
-</body>
-</html>
+@endsection

@@ -1,24 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Building,
-  LayoutDashboard,
-  Home,
-  Users,
-  FileSignature,
-  Bell,
-  FileText,
-  FileCheck,
-  Wrench,
-  UserPlus,
-  LogOut,
-  ChevronRight,
-  ChevronDown,
   Menu,
   X,
+  LogOut,
   Sun,
   Moon,
-  CreditCard,
-  DollarSign,
+  Bell,
   User,
   Wallet,
   ExternalLink,
@@ -42,11 +29,11 @@ interface LayoutProps {
 interface MenuItem {
   id: Tab | string;
   label: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   path?: string;
-  submenu?: MenuItem[];
-  badge?: number;
+  emoji?: string;
   isLaravel?: boolean;
+  isReact?: boolean;
 }
 
 type UserData = {
@@ -56,6 +43,7 @@ type UserData = {
   last_name?: string | null;
   role?: string;
   avatar?: string | null;
+  name?: string | null;
 };
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -85,339 +73,303 @@ export const Layout: React.FC<LayoutProps> = ({
   const ownerName = useMemo(() => {
     if (!user) return "Co-propriétaire";
     const full = `${user.first_name || ""} ${user.last_name || ""}`.trim();
-    return full || user.email || "Co-propriétaire";
+    return full || user.name || user.email || "Co-propriétaire";
   }, [user]);
 
   const ownerInitials = useMemo(() => {
     if (!user) return "C";
-    const a = (user.first_name?.[0] || "").toUpperCase();
+    const a = (user.first_name?.[0] || user.name?.[0] || "").toUpperCase();
     const b = (user.last_name?.[0] || "").toUpperCase();
     const initials = `${a}${b}`.trim();
     return initials || (user.email?.[0] || "C").toUpperCase();
   }, [user]);
 
-  // ✅ FONCTION : Navigation vers Laravel avec token
+  // ✅ FONCTION AMÉLIORÉE : Navigation vers Laravel avec token
   const goToLaravelPage = (path: string) => {
-    const token = localStorage.getItem("token");
-    console.log("Token disponible pour Laravel:", token ? "OUI" : "NON");
+    console.log('🚀 Navigation React -> Laravel:', path);
+    
+    // Récupérer le token de toutes les sources
+    const token = getTokenFromAllSources();
     
     if (!token) {
-      console.error("Aucun token trouvé pour l'authentification Laravel");
-      alert("Session expirée, veuillez vous reconnecter");
-      onNavigate('/login' as Tab);
+      console.error('❌ Aucun token trouvé pour Laravel');
+      alert('Session expirée, redirection vers la connexion...');
+      setTimeout(() => {
+        window.location.href = 'http://localhost:8000/login';
+      }, 500);
       return;
     }
 
     const laravelBaseUrl = 'https://wheat-skunk-120710.hostingersite.com';
     let fullPath = path;
     
-    if (fullPath.startsWith('/')) {
-      fullPath = `${laravelBaseUrl}${fullPath}`;
+    // Assurer le format correct
+    if (!fullPath.startsWith('/')) {
+      fullPath = '/' + fullPath;
     }
     
-    const separator = fullPath.includes('?') ? '&' : '?';
+    // Construire l'URL complète
+    let fullUrl = `${laravelBaseUrl}${fullPath}`;
+    const separator = fullUrl.includes('?') ? '&' : '?';
     const timestamp = Date.now();
-    const fullUrl = `${fullPath}${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
     
-    console.log("Redirection vers Laravel:", fullUrl);
-    window.location.href = fullUrl;
+    fullUrl += `${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
+    
+    console.log('✅ URL Laravel générée:', fullUrl);
+    
+    // Redirection
+    setTimeout(() => {
+      window.location.href = fullUrl;
+    }, 100);
+  };
+
+  // ✅ FONCTION AMÉLIORÉE : Récupération du token
+  const getTokenFromAllSources = () => {
+    console.log('🔍 Recherche du token...');
+    
+    // 1. LocalStorage
+    let token = localStorage.getItem('token');
+    if (token) {
+      console.log('✅ Token trouvé dans localStorage');
+      return token;
+    }
+    
+    // 2. URL
+    const urlParams = new URLSearchParams(window.location.search);
+    token = urlParams.get('api_token');
+    if (token) {
+      console.log('✅ Token trouvé dans URL');
+      localStorage.setItem('token', token);
+      return token;
+    }
+    
+    // 3. SessionStorage
+    token = sessionStorage.getItem('token');
+    if (token) {
+      console.log('✅ Token trouvé dans sessionStorage');
+      return token;
+    }
+    
+    console.log('❌ Aucun token trouvé');
+    return null;
   };
 
   // ✅ FONCTION : Navigation unifiée
-  const handleNavigation = (path: string, isLaravel = false) => {
-    console.log('Navigation vers:', path, 'Laravel:', isLaravel);
+  const handleNavigation = (item: MenuItem) => {
+    console.log('📱 Navigation:', item.label, 'path:', item.path);
     
-    if (isLaravel || path.startsWith('/test-laravel')) {
-      goToLaravelPage(path);
+    if (!item.path) return;
+    
+    if (item.isLaravel) {
+      goToLaravelPage(item.path);
+    } else if (item.isReact) {
+      // Navigation interne React
+      onNavigate(item.path as Tab);
+      setIsMobileMenuOpen(false);
     } else {
-      onNavigate(path as Tab);
+      // Navigation interne standard
+      onNavigate(item.path as Tab);
+      setIsMobileMenuOpen(false);
     }
     
-    setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ Menu mixte : Routes React ET Laravel
-  const menuItems: MenuItem[] = [
+  // ✅ Menu synchronisé avec Blade
+  const menuSections = [
     {
-      id: 'dashboard',
-      label: 'Tableau de bord',
-      icon: LayoutDashboard,
-      path: "/coproprietaire/dashboard",
+      title: "Menu principal",
+      items: [
+        {
+          id: 'dashboard',
+          label: 'Tableau de bord',
+          emoji: '📊',
+          path: "/coproprietaire/dashboard",
+          isReact: true
+        },
+      ]
     },
     {
-      id: "biens",
-      label: "Gestion des Biens",
-      icon: Building,
-      submenu: [
+      title: "GESTIONS DES BIENS",
+      items: [
         { 
-          id: "biens", 
-          label: "Mes biens délégués", 
-          icon: Home, 
-          path: "/coproprietaire/biens" 
-        },
-        { 
-          id: "delegations", 
-          label: "Délégations reçues", 
-          icon: Building, 
-          path: "/coproprietaire/delegations" 
-        },
-
-
-        
-      ],
-    },
-    {
-      id: "gestion-locative",
-      label: "Gestion Locative",
-      icon: FileSignature,
-      submenu: [
-        { 
-          id: "locataires", 
-          label: "Liste des locataires", 
-          icon: Users, 
-          path: "/coproprietaire/tenants",
+          id: "add-property", 
+          label: "Ajouter un bien", 
+          emoji: '+',
+          path: "/coproprietaire/biens/create",
           isLaravel: true
         },
         { 
-          id: "create-tenant", 
-          label: "Créer un locataire", 
-          icon: UserPlus, 
+          id: "my-properties", 
+          label: "Mes biens", 
+          emoji: '🏠',
+          path: "/coproprietaire/biens",
+          isReact: true
+        },
+      ]
+    },
+    {
+      title: "GESTION LOCATIVE",
+      items: [
+        { 
+          id: "new-rental", 
+          label: "Nouvelle location", 
+          emoji: '🔑',
+          path: "/coproprietaire/assign-property/create",
+          isLaravel: true
+        },
+        { 
+          id: "add-tenant", 
+          label: "Ajouter un locataire", 
+          emoji: '📍',
           path: "/coproprietaire/tenants/create",
           isLaravel: true
         },
         { 
-          id: "assign-property", 
-          label: "Assigner un bien", 
-          icon: Home, 
-          path: "/coproprietaire/assign-property/create",
+          id: "tenant-list", 
+          label: "Liste des locataires", 
+          emoji: '📄',
+          path: "/coproprietaire/tenants",
           isLaravel: true
         },
-
-{
-  id: "leases-index",
-  label: "Contrats de bail",
-  icon: FileSignature,   
-  path: "/coproprietaire/leases",
-  isLaravel: true
-},
-
-     {
-  id: "co-owner-quittances-index",
-  label: "Quittances de loyer",
-  icon: Bell,
-  path: "/coproprietaire/quittances",
-  isLaravel: true
-},
-
-{
-  id: "co-owner-notices-index",
-  label: "Préavis",
-  icon: Bell,          
-  path: "/coproprietaire/notices",
-  isLaravel: true
-},
-
-{
-  id: "co-owner-maintenance-index",
-  label: "Demandes de maintenance",
-  icon: Wrench, 
-  path: "/coproprietaire/maintenance",
-  isLaravel: true
-},
-  
         { 
-          id: "baux", 
-          label: "Baux en cours", 
-          icon: FileText, 
-          path: "/coproprietaire/baux" 
+          id: "payment-management", 
+          label: "Gestion des paiements", 
+          emoji: '📅',
+          path: "/coproprietaire/paiements",
+          isLaravel: true
         },
-
-      ],
+      ]
     },
     {
-      id: "documents",
-      label: "Documents",
-      icon: FileText,
-      submenu: [
+      title: "DOCUMENTS",
+      items: [
         { 
-          id: "documents", 
-          label: "Mes documents", 
-          icon: FileText, 
-          path: "/coproprietaire/documents" 
+          id: "lease-contracts", 
+          label: "Contrats de bail", 
+          emoji: '📄',
+          path: "/coproprietaire/leases",
+          isLaravel: true
         },
         { 
-          id: "finances", 
-          label: "Finances", 
-          icon: DollarSign, 
-          path: "/coproprietaire/finances" 
+          id: "condition-reports", 
+          label: "Etats de lieux", 
+          emoji: '📄',
+          path: "/coproprietaire/etats-des-lieux",
+          isLaravel: true
         },
-      ],
+        { 
+          id: "due-notices", 
+          label: "Avis d'échéance", 
+          emoji: '📄',
+          path: "/coproprietaire/notices",
+          isLaravel: true
+        },
+        { 
+          id: "rent-receipts", 
+          label: "Quittances de loyers", 
+          emoji: '📄',
+          path: "/coproprietaire/quittances",
+          isLaravel: true
+        },
+        { 
+          id: "invoices", 
+          label: "Factures et documents divers", 
+          emoji: '📄',
+          path: "/coproprietaire/factures",
+          isLaravel: true
+        },
+        { 
+          id: "document-archiving", 
+          label: "Archivage de documents", 
+          emoji: '📄',
+          path: "/coproprietaire/documents",
+          isReact: true
+        },
+      ]
     },
     {
-      id: "profile",
-      label: "Profil",
-      icon: User,
-      path: "/coproprietaire/profile",
+      title: "REPARATIONS ET TRAVAUX",
+      items: [
+        { 
+          id: "repairs", 
+          label: "Réparations et travaux", 
+          emoji: '✂️',
+          path: "/coproprietaire/maintenance",
+          isLaravel: true
+        },
+      ]
     },
-    
     {
-      id: "finances",
-      label: "Finances",
-      icon: CreditCard,
-      submenu: [
-        {
-          id: "emettre-paiement",
-          label: "Émettre un paiement",
-          icon: CreditCard,
-          path: "/coproprietaire/emettre-paiement",
+      title: "COMPTABILITE ET STATISTIQUES",
+      items: [
+        { 
+          id: "accounting", 
+          label: "Comptabilité et statistiques", 
+          emoji: '💼',
+          path: "/coproprietaire/comptabilite",
+          isLaravel: true
         },
-        {
-          id: "retrait-methode",
-          label: "Méthode de retrait",
-          icon: Wallet,
-          path: "/coproprietaire/retrait-methode",
-        },
-      ],
+      ]
     },
+    {
+      title: "CONFIGURATION",
+      items: [
+        { 
+          id: "settings", 
+          label: "Paramètres", 
+          emoji: '📜',
+          path: "/coproprietaire/parametres",
+          isReact: true
+        },
+        
+      ]
+    }
   ];
 
   const flatMenu = useMemo(() => {
     const items: MenuItem[] = [];
-    const walk = (arr: MenuItem[]) => {
-      arr.forEach((i) => {
-        items.push(i);
-        if (i.submenu?.length) walk(i.submenu);
+    menuSections.forEach(section => {
+      section.items.forEach(item => {
+        items.push(item);
       });
-    };
-    walk(menuItems);
+    });
     return items;
   }, []);
 
   const activeTitle = useMemo(() => {
-    const found = flatMenu.find((i) => i.path === activeTab || i.id === activeTab);
+    const found = flatMenu.find((i) => 
+      i.path === activeTab || 
+      i.id === activeTab
+    );
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
 
-  // ✅ Auto-open du menu parent du sous-menu actif
-  useEffect(() => {
-    const parent = menuItems.find((m) => m.submenu?.some((s) => s.path === activeTab || s.id === activeTab));
-    if (parent?.id) setExpandedMenu(String(parent.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const handleMenuItemClick = (item: MenuItem) => {
-    console.log('Click menu:', item.label, 'path:', item.path, 'Laravel?', item.isLaravel);
-    
-    if (item.path) {
-      handleNavigation(item.path, item.isLaravel);
-    }
-  };
-
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenu((prev) => (prev === menuId ? null : menuId));
-  };
-
   const renderMenuItem = (item: MenuItem) => {
-    const Icon = item.icon;
+    const isActive = item.path === activeTab || item.id === activeTab;
 
-    const isActive =
-      (item.path && item.path === activeTab) ||
-      item.id === activeTab ||
-      (item.submenu?.some((s) => s.path === activeTab || s.id === activeTab) ?? false);
-
-    const hasSub = !!item.submenu?.length;
-    const isExpanded = expandedMenu === String(item.id);
-
-    const baseBtn =
-      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group relative";
-    const activeBtn = "bg-blue-600 text-white";
-    const idleBtn = "text-gray-700 hover:bg-blue-50 hover:text-blue-600";
-
-    if (hasSub) {
-      return (
-        <div key={String(item.id)} className="space-y-1">
-          <button
-            onClick={() => toggleMenu(String(item.id))}
-            className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
-            type="button"
-          >
-            <div className="flex items-center gap-3.5">
-              <Icon
-                size={20}
-                className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
-              />
-              {item.label}
-            </div>
-            <ChevronDown
-              size={18}
-              className={`transition-transform ${isExpanded ? "rotate-180" : ""} ${
-                isActive ? "text-white/90" : "text-gray-500 group-hover:text-blue-600"
-              }`}
-            />
-          </button>
-
-          {isExpanded && (
-            <div className="pl-2 space-y-1">
-              {item.submenu!.map((sub) => {
-                const SubIcon = sub.icon;
-                const subActive = sub.path === activeTab || sub.id === activeTab;
-                
-                return (
-                  <button
-                    key={String(sub.id)}
-                    onClick={() => handleMenuItemClick(sub)}
-                    className={`${baseBtn} ${
-                      subActive ? "bg-blue-600 text-white" : idleBtn
-                    } py-3`}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <SubIcon
-                        size={18}
-                        className={`${
-                          subActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"
-                        }`}
-                      />
-                      {sub.label}
-                      {/* SUPPRIMÉ : Le badge a été enlevé ici */}
-                    </div>
-                    {subActive && (
-                      <ChevronRight
-                        size={16}
-                        className="text-white/90 ml-auto"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    }
+    const baseBtn = "w-full flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group cursor-pointer";
+    const activeBtn = `bg-gradient-to-r from-[#70AE48] to-[#8BC34A] text-white shadow-lg`;
+    const idleBtn = "text-gray-700 hover:bg-[#70AE48]/10 hover:text-[#70AE48]";
 
     return (
       <button
         key={String(item.id)}
-        onClick={() => handleMenuItemClick(item)}
-        className={`${baseBtn} ${isActive ? activeBtn : idleBtn}`}
+        onClick={() => handleNavigation(item)}
+        className={`${baseBtn} ${isActive ? activeBtn : idleBtn} mb-1`}
         type="button"
+        title={item.label}
       >
         <div className="flex items-center gap-3.5">
-          <Icon
-            size={20}
-            className={`${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
-          />
-          {item.label}
-          {/* SUPPRIMÉ : Le badge "Laravel" a été enlevé ici aussi */}
+          {item.emoji ? (
+            <span className="text-lg" role="img" aria-label={item.label}>
+              {item.emoji}
+            </span>
+          ) : null}
+          <span className="text-left whitespace-nowrap overflow-hidden text-ellipsis">
+            {item.label}
+          </span>
         </div>
-        {isActive && (
-          <ChevronRight
-            size={16}
-            className="text-white/90 ml-auto"
-          />
-        )}
       </button>
     );
   };
@@ -425,109 +377,127 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <>
       <style>{`
-        body, #root {
-          background-color: white !important;
+        /* Masquer UNIQUEMENT la barre de défilement dans le menu latéral */
+        .sidebar-menu-container {
+          overflow-y: auto !important;
+          scrollbar-width: none !important; /* Firefox */
+          -ms-overflow-style: none !important; /* IE and Edge */
+        }
+        
+        .sidebar-menu-container::-webkit-scrollbar {
+          display: none !important; /* Chrome, Safari, Opera */
+        }
+        
+        /* Le reste de la page garde son comportement normal */
+        main {
+          overflow-y: auto !important;
+        }
+        
+        /* Les barres de défilement normales restent visibles ailleurs */
+        ::-webkit-scrollbar {
+          display: block;
         }
       `}</style>
       
       <div className="min-h-screen bg-white">
         <div className="flex h-screen bg-white">
-          {/* Sidebar */}
+          {/* Sidebar - Desktop */}
           <aside className="hidden lg:flex lg:flex-shrink-0">
-            <div className="flex flex-col w-64">
-              <div className="flex flex-col flex-grow bg-white border-r border-gray-200 overflow-y-auto">
-                <div className="flex items-center flex-shrink-0 px-4 h-16 border-b border-gray-200">
-                  <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
-                </div>
-                <nav className="flex-1 px-4 py-6 space-y-2">
-                  {menuItems.map(renderMenuItem)}
-                </nav>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {ownerInitials}
+            <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
+              {/* Header avec fond vert #70AE48 */}
+              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#70AE48' }}>
+                <h1 className="text-xl font-bold text-white">
+                  GestiLoc
+                </h1>
+              </div>
+              
+              {/* Menu avec scroll mais sans barre visible */}
+              <div className="flex-1 sidebar-menu-container px-5 py-6">
+                {menuSections.map((section) => (
+                  <div key={section.title} className="mb-6">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
+                      {section.title}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-gray-900">{ownerName}</div>
-                      <div className="text-xs text-gray-600">Co-propriétaire</div>
+                    <div className="space-y-1">
+                      {section.items.map(renderMenuItem)}
                     </div>
                   </div>
+                ))}
+              </div>
+              
+              {/* Footer */}
+              <div className="p-5 border-t border-gray-200 flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {ownerInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{ownerName}</div>
+                    <div className="text-xs text-gray-600">Co-propriétaire</div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                    title="Déconnexion"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
             </div>
           </aside>
 
-          {/* Mobile sidebar */}
-          <div className={`fixed inset-0 z-50 lg:hidden ${isMobileMenuOpen ? '' : 'pointer-events-none'}`}>
-            <div className={`fixed inset-0 bg-gray-600 transition-opacity ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMobileMenuOpen(false)} />
-            <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white transform transition-transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-              <div className="absolute top-0 right-0 -mr-12 pt-2">
-                <button
-                  type="button"
-                  className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <X className="h-6 w-6 text-white" />
-                </button>
-              </div>
-              <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-                <div className="flex-shrink-0 flex items-center px-4">
-                  <h1 className="text-xl font-bold text-gray-900">GestiLoc</h1>
-                </div>
-                <nav className="mt-5 px-2 space-y-1">
-                  {menuItems.map(renderMenuItem)}
-                </nav>
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {ownerInitials}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-gray-900">{ownerName}</div>
-                      <div className="text-xs text-gray-600">Co-propriétaire</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Main content */}
-          <div className="flex flex-col w-0 flex-1 overflow-hidden bg-white">
-            {/* Top bar */}
-            <div className="relative z-10 flex-shrink-0 flex h-16 bg-white border-b border-gray-200 lg:border-none">
+          <div className="flex flex-col flex-1 bg-white">
+            {/* Top bar avec fond vert #70AE48 */}
+            <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#70AE48' }}>
               <button
                 type="button"
-                className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
+                className="px-4 text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white lg:hidden hover:bg-white/10 transition-all duration-200"
                 onClick={() => setIsMobileMenuOpen(true)}
               >
                 <Menu className="h-6 w-6" />
               </button>
-              <div className="flex-1 px-4 flex justify-between items-center sm:px-6 lg:px-8">
+              <div className="flex-1 px-6 flex justify-between items-center">
                 <div className="flex-1">
                   <div className="max-w-lg">
-                    <h1 className="text-2xl font-bold text-gray-900">{activeTitle}</h1>
+                    <h1 className="text-2xl font-bold text-white">{activeTitle}</h1>
                   </div>
                 </div>
-                <div className="ml-4 flex items-center md:ml-6 space-x-4">
+                <div className="ml-4 flex items-center md:ml-6 space-x-2">
+                  {/* Bouton Notifications */}
                   <button
-                    onClick={() => setShowHelp(!showHelp)}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    title="Aide"
+                    onClick={() => onNavigate('/coproprietaire/notifications' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Notifications"
                   >
-                    <HelpCircle className="w-5 h-5" />
+                    <Bell className="w-4 h-4" />
+                    <span className="hidden md:inline">Notifications</span>
                   </button>
 
+                  {/* Bouton Aide */}
                   <button
-                    onClick={toggleTheme}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    onClick={() => onNavigate('/coproprietaire/aide' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Aide"
                   >
-                    {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    <HelpCircle className="w-4 h-4" />
+                    <span className="hidden md:inline">Aide</span>
+                  </button>
+
+                  {/* Bouton Mon compte */}
+                  <button
+                    onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Mon compte"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="hidden md:inline">Mon compte</span>
                   </button>
 
                   <button
                     onClick={onLogout}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded-full text-white hover:bg-white/20 lg:hidden transition-all duration-200"
                     title="Déconnexion"
                   >
                     <LogOut className="w-5 h-5" />
@@ -536,10 +506,10 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             </div>
 
-            {/* Page content */}
-            <main className="flex-1 relative overflow-y-auto focus:outline-none bg-white">
+            {/* Page content - garde son scroll normal */}
+            <main className="flex-1 overflow-y-auto focus:outline-none bg-white">
               <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-6">
                   {children}
                 </div>
               </div>
