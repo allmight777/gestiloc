@@ -41,6 +41,11 @@ import EtatsDesLieux from './components/EtatsDesLieux';
 import AvisEcheance from './components/AvisEcheance';
 import QuittancesLoyersPage from './components/QuittancesPage';
 import FacturesDocs from './components/FacturesDocs';
+import ArchivageDocs from './components/ArchivageDocs';
+import ReparationsTravaux from './components/ReparationsTravaux';
+import ComptabilitePage from './components/ComptabilitePage';
+import ParametresPage from './components/ParametresPage';
+import MonCompte from './components/MonCompte';
 
 
 const ProprietaireApp: React.FC = () => {
@@ -451,6 +456,34 @@ const ProprietaireApp: React.FC = () => {
           </Layout>
         } />
 
+        <Route path="archives" element={
+          <Layout
+            activeTab="archives"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <ArchivageDocs notify={notify} />
+          </Layout>
+        } />
+
+        <Route path="incidents" element={
+          <Layout
+            activeTab="incidents"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <ReparationsTravaux notify={notify} />
+          </Layout>
+        } />
+
         <Route path="comptabilite" element={
           <Layout
             activeTab="comptabilite"
@@ -461,7 +494,7 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <Finances notify={notify} />
+            <ComptabilitePage notify={notify} />
           </Layout>
         } />
 
@@ -475,7 +508,7 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <Settings />
+            <ParametresPage notify={notify} />
           </Layout>
         } />
         <Route path="profil" element={
@@ -488,7 +521,7 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <Profile notify={notify} onLogout={handleLogout} />
+            <MonCompte notify={notify} />
           </Layout>
         } />
         <Route path="mes-biens" element={

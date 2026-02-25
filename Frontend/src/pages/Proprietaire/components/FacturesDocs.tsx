@@ -150,7 +150,7 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
         <>
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
-        .fd-page { padding: 1.5rem 2.5rem 3rem; font-family: 'Manrope', sans-serif; color: #1a1a1a; }
+        .fd-page { padding: 1.5rem 1rem 3rem; font-family: 'Manrope', sans-serif; color: #1a1a1a; width: 100%; box-sizing: border-box; }
         .fd-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
         .fd-title { font-family: 'Merriweather', serif; font-size: 1.55rem; font-weight: 900; margin: 0 0 6px 0; }
         .fd-subtitle { font-size: 0.82rem; font-weight: 500; color: #6b7280; margin: 0; font-style: italic; max-width: 600px; }
@@ -172,7 +172,7 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
         .fd-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #83C757; pointer-events: none; }
         .fd-search-input { width: 100%; padding: 0.65rem 0.85rem 0.65rem 2.6rem; border: 1.5px solid #83C757; border-radius: 10px; font-size: 0.85rem; font-family: 'Manrope', sans-serif; font-weight: 500; color: #83C757; background: #fff; outline: none; box-sizing: border-box; }
         .fd-search-input::placeholder { color: #83C757; font-weight: 600; }
-        .fd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .fd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .fd-item { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; }
         .fd-item-top { padding: 1.1rem 1.3rem 0.7rem; }
         .fd-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.60rem; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 10px; }
@@ -187,6 +187,7 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
         .fd-icon-btn { background: none; border: none; cursor: pointer; padding: 4px; font-size: 0.85rem; color: #9ca3af; }
         .fd-icon-btn.green { color: #83C757; }
         .fd-icon-btn.orange { color: #f59e0b; }
+        @media (max-width: 1400px) { .fd-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 1024px) { .fd-grid { grid-template-columns: repeat(2, 1fr); } .fd-stats { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) { .fd-grid { grid-template-columns: 1fr; } .fd-stats { grid-template-columns: 1fr; } .fd-filter-row { grid-template-columns: 1fr; } }
       `}</style>

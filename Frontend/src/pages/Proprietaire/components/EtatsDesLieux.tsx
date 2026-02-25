@@ -65,7 +65,7 @@ const EtatsDesLieux: React.FC<EtatsDesLieuxProps> = ({ notify }) => {
         <>
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
-        .edl-page { padding: 1.5rem 2.5rem 3rem; font-family: 'Manrope', sans-serif; color: #1a1a1a; }
+        .edl-page { padding: 1.5rem 1rem 3rem; font-family: 'Manrope', sans-serif; color: #1a1a1a; width: 100%; box-sizing: border-box; }
         .edl-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
         .edl-title { font-family: 'Merriweather', serif; font-size: 1.55rem; font-weight: 900; margin: 0 0 6px 0; }
         .edl-subtitle { font-size: 0.82rem; font-weight: 500; color: #6b7280; margin: 0; font-style: italic; }
@@ -87,7 +87,7 @@ const EtatsDesLieux: React.FC<EtatsDesLieuxProps> = ({ notify }) => {
         .edl-search-input::placeholder { color: #83C757; font-weight: 600; }
         .edl-btn-display { display: inline-flex; align-items: center; gap: 6px; padding: 0 18px; border-radius: 10px; border: 1.5px solid #d1d5db; background: #fff; font-family: 'Manrope', sans-serif; font-size: 0.82rem; font-weight: 700; color: #374151; cursor: pointer; }
 
-        .edl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .edl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .edl-item { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; border-left: 4px solid #e5e7eb; }
         .edl-item.entree { border-left: 4px solid #83C757; }
         .edl-item.sortie { border-left: 4px solid #ef4444; }
@@ -107,6 +107,7 @@ const EtatsDesLieux: React.FC<EtatsDesLieuxProps> = ({ notify }) => {
         .edl-action-btn img { width: 20px; height: 20px; object-fit: contain; }
         .edl-action-dots { background: none; border: none; cursor: pointer; padding: 4px; font-size: 1.1rem; color: #9ca3af; line-height: 1; }
 
+        @media (max-width: 1400px) { .edl-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 1024px) { .edl-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) { .edl-grid { grid-template-columns: 1fr; } }
       `}</style>
