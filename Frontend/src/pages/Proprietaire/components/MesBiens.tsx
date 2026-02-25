@@ -86,46 +86,6 @@ interface MesBiensProps {
   };
 }
 
-// Données mockées
-const biens = [
-  {
-    id: 1,
-    statut: "Loué",
-    type: "APPARTEMENT",
-    titre: "Appartement 12 - Agla",
-    adresse: "Boulevard de la marina, Cotonou",
-    loyer: "60.000",
-    surface: "65",
-    photos: 1,
-    ref: "PR-WZ6WHU",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
-  },
-  {
-    id: 2,
-    statut: "Disponible",
-    type: "MAISON",
-    titre: "Villa moderne - Fidjrossè",
-    adresse: "Rue des Cocotiers, Cotonou",
-    loyer: "150.000",
-    surface: "120",
-    photos: 5,
-    ref: "PR-ABC123",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80",
-  },
-  {
-    id: 3,
-    statut: "Loué",
-    type: "STUDIO",
-    titre: "Studio cosy - Centre-ville",
-    adresse: "Avenue Steinmetz, Cotonou",
-    loyer: "35.000",
-    surface: "28",
-    photos: 3,
-    ref: "PR-XYZ78",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
-  },
-];
-
 const filters = ["Tous", "Loué", "Disponible", "En travaux", "Préavis", "Meublé"];
 
 const statutColor: Record<string, string> = {
@@ -250,7 +210,7 @@ const styles = `
   .view-badge {
     padding: 0.5rem 1rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(131, 199, 87, 0.3);
     font-size: 0.85rem;
     font-weight: 600;
     display: flex;
@@ -420,7 +380,7 @@ const styles = `
   }
 
   .edit-header {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #83C757, #6dae45);
     padding: 2rem;
     color: white;
     border-radius: 24px 24px 0 0;
@@ -464,7 +424,7 @@ const styles = `
   .edit-badge {
     padding: 0.5rem 1rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     font-size: 0.85rem;
     font-weight: 600;
     display: flex;
@@ -499,7 +459,7 @@ const styles = `
     margin: 0 0 1rem 0;
     color: #111827;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid rgba(102, 126, 234, 0.28);
+    border-bottom: 2px solid rgba(131, 199, 87, 0.28);
   }
 
   .form-fields {
@@ -540,8 +500,8 @@ const styles = `
   }
 
   .form-control:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    border-color: #83C757;
+    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
   }
 
   .form-select {
@@ -557,8 +517,8 @@ const styles = `
   }
 
   .form-select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    border-color: #83C757;
+    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
   }
 
   .form-checkbox-group {
@@ -596,8 +556,8 @@ const styles = `
   }
 
   .form-textarea:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    border-color: #83C757;
+    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
   }
 
   .form-error {
@@ -684,8 +644,8 @@ const styles = `
   }
 
   .photo-upload-btn:hover {
-    border-color: #6366f1;
-    color: #6366f1;
+    border-color: #83C757;
+    color: #83C757;
   }
 
   .modal-overlay {
@@ -698,7 +658,8 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 9999;
+    padding: 20px;
   }
 
   .modal-close {
@@ -724,14 +685,15 @@ const styles = `
   .view-modal-content {
     background: white;
     border-radius: 24px;
-    width: 90%;
+    width: 100%;
     max-width: 800px;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 
   .view-header {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #83C757, #6dae45);
     padding: 2rem;
     color: white;
     border-radius: 24px 24px 0 0;
@@ -760,6 +722,11 @@ const styles = `
     opacity: 0.9;
     margin: 0;
     color: white;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   @media (max-width: 768px) {
@@ -1769,9 +1736,11 @@ const EditPropertyModal: React.FC<{
   );
 };
 
-function BienCard({ bien }: { bien: typeof biens[0] }) {
+function BienCard({ bien, onClick }: { bien: typeof biens[0]; onClick?: () => void }) {
   return (
-    <div style={{
+    <div 
+      onClick={onClick}
+      style={{
       background: "#fff",
       border: "1px solid rgba(131,199,87,0.4)",
       borderRadius: "16px",
@@ -1852,6 +1821,47 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  // Fetch properties from API
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await propertyService.listProperties();
+        // Handle paginated response
+        const propertiesData = response.data || response;
+        setProperties(propertiesData);
+      } catch (err: any) {
+        console.error('Error fetching properties:', err);
+        setError(err.message || 'Erreur lors du chargement des biens');
+        // Fall back to mock data on error
+        setProperties([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  // Transform API data to match component format
+  const biens = properties.map((p) => ({
+    id: p.id,
+    statut: p.status === 'available' ? 'Disponible' : p.status === 'rented' ? 'Loué' : 'Disponible',
+    type: p.type?.toUpperCase() || 'APPARTEMENT',
+    titre: p.name || p.title || 'Bien sans titre',
+    adresse: p.address || '',
+    loyer: p.rent_amount || '0',
+    surface: p.surface || '0',
+    photos: p.photos?.length || 0,
+    ref: p.reference_code || `PR-${p.id}`,
+    image: p.photos && p.photos.length > 0 ? p.photos[0] : 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80',
+  }));
 
   const filtered = biens.filter((b) => {
     const matchFilter = activeFilter === "Tous" || b.statut === activeFilter;
@@ -1862,7 +1872,7 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
   });
 
   return (
-    <div style={{ background: "#f7f8fa", minHeight: "100vh", padding: "28px 32px", fontFamily: "Manrope, sans-serif" }}>
+    <div style={{ background: "#f7f8fa", minHeight: "100vh", padding: "28px", fontFamily: "Manrope, sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
       <style>{styles}</style>
 
@@ -1951,12 +1961,61 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="animate-fadeInUp animate-delay-300" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "22px" }}>
-        {filtered.map((bien) => (
-          <BienCard key={bien.id} bien={bien} />
-        ))}
-      </div>
+      {/* Grid - Affichage avec gestion du chargement et des erreurs */}
+      {isLoading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Loader2 size={40} className="animate-spin" style={{ color: '#83C757', animation: 'spin 1s linear infinite' }} />
+            <p style={{ marginTop: '16px', color: '#6b7280' }}>Chargement des biens...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+          <div style={{ textAlign: 'center', background: '#fee2e2', padding: '24px', borderRadius: '12px' }}>
+            <AlertCircle size={40} style={{ color: '#ef4444' }} />
+            <p style={{ marginTop: '16px', color: '#ef4444', fontWeight: 600 }}>Erreur</p>
+            <p style={{ color: '#6b7280', marginTop: '8px' }}>{error}</p>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Building2 size={60} style={{ color: '#9ca3af' }} />
+            <p style={{ marginTop: '16px', color: '#6b7280', fontSize: '18px' }}>Aucun bien trouvé</p>
+            <p style={{ color: '#9ca3af', marginTop: '8px' }}>Ajoutez votre premier bien en cliquant sur "Ajouter un bien"</p>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px' }}>
+          {filtered.map((bien) => (
+            <BienCard 
+              key={bien.id} 
+              bien={bien} 
+              onClick={() => {
+                const prop = properties.find(p => p.id === bien.id);
+                if (prop) setSelectedProperty(prop);
+              }} 
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal de détails du bien */}
+      {selectedProperty && (
+        <div className="modal-overlay" onClick={() => setSelectedProperty(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <PropertyDetailsModal 
+              property={selectedProperty} 
+              onClose={() => setSelectedProperty(null)} 
+              onEdit={() => {
+                setSelectedProperty(null);
+                // Could navigate to edit page or open edit modal
+              }}
+              canEdit={selectedProperty.can_edit !== false}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,7 +27,7 @@ import {
 /**
  * ✅ EXACTEMENT ton composant (structure / largeur identiques)
  * ✅ PAS d'emojis
- * ✅ Même style & mêmes couleurs que ton exemple (667eea -> 764ba2 + accents vert)
+ * ✅ Même style & mêmes couleurs (529D21 -> 83C757 vert)
  * ✅ Logique inchangée
  */
 
@@ -36,10 +36,10 @@ type ToastType = "success" | "error" | "info";
 
 const styles = `
   :root{
-    --gradA: #667eea;
-    --gradB: #764ba2;
-    --indigo: #4f46e5;
-    --violet: #7c3aed;
+    --gradA: #529D21;
+    --gradB: #83C757;
+    --indigo: #529D21;
+    --violet: #83C757;
     --emerald: #10b981;
 
     --ink: #0f172a;
@@ -64,8 +64,8 @@ const styles = `
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(900px 520px at 12% -8%, rgba(102,126,234,.16) 0%, rgba(102,126,234,0) 62%),
-      radial-gradient(900px 520px at 92% 8%, rgba(118,75,162,.14) 0%, rgba(118,75,162,0) 64%),
+      radial-gradient(900px 520px at 12% -8%, rgba(82,157,33,.16) 0%, rgba(82,157,33,0) 62%),
+      radial-gradient(900px 520px at 92% 8%, rgba(131,199,87,.14) 0%, rgba(131,199,87,0) 64%),
       radial-gradient(700px 420px at 40% 110%, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 60%);
     pointer-events: none;
     z-index: -2;
@@ -78,7 +78,7 @@ const styles = `
     border-radius: 22px;
     box-shadow: var(--shadow);
     overflow: hidden;
-    border: 1px solid rgba(102,126,234,.18);
+    border: 1px solid rgba(82,157,33,.18);
     position: relative;
     backdrop-filter: blur(10px);
   }
@@ -90,8 +90,8 @@ const styles = `
     inset:0;
     pointer-events:none;
     background:
-      radial-gradient(circle at 14% 18%, rgba(102,126,234,.10), rgba(102,126,234,0) 58%),
-      radial-gradient(circle at 88% 30%, rgba(118,75,162,.10), rgba(118,75,162,0) 58%),
+      radial-gradient(circle at 14% 18%, rgba(82,157,33,.10), rgba(82,157,33,0) 58%),
+      radial-gradient(circle at 88% 30%, rgba(131,199,87,.10), rgba(131,199,87,0) 58%),
       radial-gradient(circle at 50% 95%, rgba(16,185,129,.08), rgba(16,185,129,0) 55%);
     z-index: 0;
   }
@@ -205,7 +205,7 @@ const styles = `
     color: var(--ink);
     margin: 0 0 1.25rem 0;
     padding-bottom: 0.85rem;
-    border-bottom: 2px solid rgba(102,126,234,.28);
+    border-bottom: 2px solid rgba(82,157,33,.28);
     display: flex;
     align-items: center;
     gap: 0.6rem;
@@ -219,9 +219,9 @@ const styles = `
     gap: .45rem;
     padding: .25rem .6rem;
     border-radius: 999px;
-    background: rgba(79,70,229,.10);
-    border: 1px solid rgba(79,70,229,.18);
-    color: #4338ca;
+    background: rgba(82,157,33,.10);
+    border: 1px solid rgba(82,157,33,.18);
+    color: #529D21;
     font-weight: 950;
     font-size: .78rem;
   }
@@ -259,8 +259,8 @@ const styles = `
 
   .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
-    border-color: rgba(79,70,229,.75);
-    box-shadow: 0 0 0 4px rgba(79,70,229,0.14);
+    border-color: rgba(82,157,33,.75);
+    box-shadow: 0 0 0 4px rgba(82,157,33,0.14);
   }
 
   .form-input::placeholder, .form-textarea::placeholder {
@@ -316,7 +316,7 @@ const styles = `
     transition: background 0.25s ease;
     border: 1px solid rgba(15,23,42,.10);
   }
-  .switch.active { background: rgba(79,70,229,.85); }
+  .switch.active { background: rgba(82,157,33,.85); }
   .switch-thumb {
     position: absolute;
     top: 3px;
@@ -350,19 +350,19 @@ const styles = `
   .button-primary{
     background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
     color: #fff;
-    box-shadow: 0 14px 30px rgba(79,70,229,.22);
+    box-shadow: 0 14px 30px rgba(82,157,33,.22);
   }
   .button-primary:hover:not(:disabled){
     transform: translateY(-1px);
-    box-shadow: 0 18px 34px rgba(79,70,229,.28);
+    box-shadow: 0 18px 34px rgba(82,157,33,.28);
   }
 
   .button-secondary{
     background: rgba(255,255,255,.92);
-    color: #4338ca;
-    border: 2px solid rgba(67,56,202,.20);
+    color: #529D21;
+    border: 2px solid rgba(82,157,33,.20);
   }
-  .button-secondary:hover{ background: rgba(67,56,202,.06); }
+  .button-secondary:hover{ background: rgba(82,157,33,.06); }
 
   .button-danger{
     background: rgba(255,255,255,.92);
@@ -426,12 +426,12 @@ const styles = `
   }
 
   .tab-button.active{
-    color:#4338ca;
-    border-color:#4338ca;
+    color:#529D21;
+    border-color:#529D21;
   }
   .tab-button.active .tab-dot{
-    background: rgba(67,56,202,.95);
-    box-shadow: 0 0 0 4px rgba(67,56,202,.18);
+    background: rgba(82,157,33,.95);
+    box-shadow: 0 0 0 4px rgba(82,157,33,.18);
   }
 
   /* ✅ Toasts */
@@ -474,7 +474,7 @@ const styles = `
   }
   .toast.success{ border-color: rgba(16,185,129,.30); background: rgba(236,253,245,.92); }
   .toast.error{ border-color: rgba(244,63,94,.30); background: rgba(255,241,242,.92); }
-  .toast.info{ border-color: rgba(99,102,241,.30); background: rgba(238,242,255,.92); }
+  .toast.info{ border-color: rgba(82,157,33,.30); background: rgba(236,253,245,.92); }
 
   @media (max-width: 768px){
     .form-container{ padding: 1rem; }
@@ -1216,12 +1216,12 @@ export const AjouterLocataire: React.FC = () => {
                   {formData.hasGuarantor && (
                     <div
                       style={{
-                        background: "rgba(99,102,241,.08)",
+                        background: "rgba(82,157,33,.08)",
                         padding: "1.5rem",
                         borderRadius: "14px",
-                        border: "1px solid rgba(99,102,241,.18)",
+                        border: "1px solid rgba(82,157,33,.18)",
                         marginBottom: "1.5rem",
-                        boxShadow: "0 10px 30px rgba(99,102,241,.08)",
+                        boxShadow: "0 10px 30px rgba(82,157,33,.08)",
                       }}
                     >
                       <h3 className="form-label" style={{ marginBottom: "1rem" }}>
