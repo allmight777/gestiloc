@@ -333,6 +333,11 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
     setShowDeleteConfirm(true);
   };
 
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setIncidentToDelete(null);
+  };
+
   const handleConfirmDelete = async () => {
     if (!incidentToDelete) return;
     
@@ -355,37 +360,25 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
   // Empty state illustration component
   const EmptyStateIllustration = () => (
     <div className="flex flex-col items-center justify-center py-12">
-      <svg width="200" height="160" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-4">
-        <circle cx="100" cy="80" r="60" fill="#FFF5F5"/>
-        <circle cx="70" cy="60" r="8" fill="#FFB6B6"/>
-        <circle cx="130" cy="50" r="6" fill="#FFD6D6"/>
-        <circle cx="140" cy="90" r="4" fill="#FFE6E6"/>
-        <rect x="85" y="40" width="30" height="40" rx="4" fill="#7CB342" opacity="0.8"/>
-        <rect x="80" y="50" width="40" height="30" rx="3" fill="#8BC34A"/>
-        <rect x="90" y="45" width="20" height="25" rx="2" fill="#AED581"/>
-        <circle cx="100" cy="100" r="25" fill="#FFCCBC" opacity="0.6"/>
-        <path d="M85 95 Q100 85 115 95" stroke="#8D6E63" strokeWidth="2" fill="none"/>
-        <circle cx="92" cy="90" r="3" fill="#5D4037"/>
-        <circle cx="108" cy="90" r="3" fill="#5D4037"/>
-        <ellipse cx="100" cy="98" rx="4" ry="3" fill="#5D4037"/>
-        <rect x="75" y="110" width="12" height="25" rx="6" fill="#FFCCBC"/>
-        <rect x="113" y="110" width="12" height="25" rx="6" fill="#FFCCBC"/>
-        <rect x="70" y="100" width="15" height="20" rx="7" fill="#FFAB91"/>
-        <rect x="115" y="100" width="15" height="20" rx="7" fill="#FFAB91"/>
-        <path d="M60 70 Q55 60 65 55" stroke="#8BC34A" strokeWidth="2" fill="none"/>
-        <circle cx="65" cy="55" r="3" fill="#8BC34A"/>
-        <path d="M140 75 Q145 65 135 60" stroke="#8BC34A" strokeWidth="2" fill="none"/>
-        <circle cx="135" cy="60" r="3" fill="#8BC34A"/>
-      </svg>
-      <button
-        onClick={() => setShowCreateForm(true)}
-        className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors"
-        style={{ background: 'rgba(82, 157, 33, 1)' }}
-      >
-        Nouvelle intervention
-      </button>
+      {/* ... */}
     </div>
   );
+
+  const filteredIncidents = useMemo(() => {
+    if (!searchQuery.trim()) return incidents;
+    const query = searchQuery.toLowerCase();
+    return incidents.filter(incident => 
+      incident.title.toLowerCase().includes(query) ||
+      incident.description?.toLowerCase().includes(query) ||
+      (incident.property as any)?.name?.toLowerCase().includes(query) ||
+      leases.find(l => l.property?.id === incident.property_id)?.property?.name?.toLowerCase().includes(query)
+    );
+  }, [incidents, searchQuery, leases]);
+
+  const paginatedIncidents = useMemo(() => {
+    const limit = parseInt(itemsPerPage) || 10;
+    return filteredIncidents.slice(0, limit);
+  }, [filteredIncidents, itemsPerPage]);
 
   // List view component
   const ListView = () => (
@@ -401,6 +394,8 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
           Une nouvelle intervention
         </button>
       </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -444,14 +439,14 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
               <button
                 onClick={handleCancelDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-white"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:bg-white flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -804,7 +799,7 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="px-6 py-3 text-white rounded-xl font-medium flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 text-white rounded-xl font-medium flex items-center gap-2 transition-all hover:opacity-90 disabled:bg-white disabled:cursor-not-allowed"
                     style={{ backgroundColor: PRIMARY_COLOR }}
                   >
                     {submitting ? (

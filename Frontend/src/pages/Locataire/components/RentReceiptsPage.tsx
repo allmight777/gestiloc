@@ -30,8 +30,9 @@ export default function RentReceiptsPage() {
     try {
       const rows = await tenantRentReceiptService.list();
       setItems(Array.isArray(rows) ? rows : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Impossible de charger les quittances.");
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { message?: string } } };
+      setError(error?.response?.data?.message || "Impossible de charger les quittances.");
     } finally {
       setLoading(false);
     }
@@ -99,8 +100,9 @@ export default function RentReceiptsPage() {
       const blob = await tenantRentReceiptService.downloadPdf(r.id);
       const name = (r.reference || `quittance-${r.id}`) + ".pdf";
       downloadBlob(blob, name);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "PDF indisponible pour cette quittance.");
+    } catch (e: unknown) {
+      const error = e as { response?: { data?: { message?: string } } };
+      setError(error?.response?.data?.message || "PDF indisponible pour cette quittance.");
     } finally {
       setBusyId(null);
     }
@@ -282,7 +284,7 @@ export default function RentReceiptsPage() {
                         {propLine || <span className="text-gray-400">Non renseigné</span>}
                       </td>
                       <td className="px-6 py-4 text-sm font-medium text-[#529D21]">
-                        {r.amount_paid != null ? formatFCFA(r.amount_paid) : '—'}
+                        {r.amount_paid != null ? formatFCFA(Number(r.amount_paid)) : '—'}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {r.reference || `Quittance #${r.id}`}

@@ -24,8 +24,8 @@ import tenantApi, { Property as PropertyType, TenantLease } from '../services/te
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 // =============== helpers ===============
-const isFilled = (v: any) =>
-  v !== null && v !== undefined && !(typeof v === 'string' && v.trim() === '');
+const isFilled = (v: unknown) =>
+  v !== null && v !== undefined && v !== false && !(typeof v === 'string' && v.trim() === '');
 
 const cx = (...classes: Array<string | false | null | undefined>) =>
   classes.filter(Boolean).join(' ');
@@ -127,7 +127,7 @@ const Property: React.FC<PropertyProps> = ({ notify }) => {
   }, [fetchProperty]);
 
   const postal = useMemo(() => {
-    return (property as any)?.postal_code ?? (property as any)?.zip_code ?? '';
+    return (property?.postal_code as string | undefined) ?? (property?.zip_code as string | undefined) ?? '';
   }, [property]);
 
   const leaseInfo = useMemo(() => {
@@ -143,7 +143,7 @@ const Property: React.FC<PropertyProps> = ({ notify }) => {
   }, [lease]);
 
   const owner = useMemo(() => {
-    const l: any = property?.landlord || null;
+    const l = property?.landlord;
     if (!l) return null;
     return {
       full_name: l.full_name,

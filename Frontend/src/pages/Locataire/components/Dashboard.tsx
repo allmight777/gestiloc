@@ -25,6 +25,12 @@ import { Tab } from "../types";
 import { PaymentModal } from "./PaymentModal";
 import api from "@/services/api"; // Service API réel
 
+// Import missing types and mock services
+import { TenantLease, TenantIncident, mockTenantApi } from "@/services/mockTenantApi";
+import { RentReceipt, mockRentReceiptService } from "@/services/mockRentReceiptService";
+import { TenantInvoice, mockInvoiceService } from "@/services/mockInvoiceService";
+import { Notice, mockNoticeService } from "@/services/mockNoticeService";
+
 // ---------- helpers ----------
 const monthKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -69,22 +75,27 @@ interface UserData {
   default_role: string | null;
 }
 
-interface Notice {
-  id: string | number;
-  notice_date?: string;
-  status?: string;
-  [key: string]: unknown;
-}
-
 export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify, onNavigate }) => {
+  // User state
   const [user, setUser] = useState<UserData | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+
+  // Data states
+  const [lease, setLease] = useState<TenantLease | null>(null);
+  const [receipts, setReceipts] = useState<RentReceipt[]>([]);
+  const [invoices, setInvoices] = useState<TenantInvoice[]>([]);
+  const [incidents, setIncidents] = useState<TenantIncident[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+
+  // UI states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Derived date keys
   const currentYM = useMemo(() => monthKey(new Date()), []);
+  const ytdStartYM = useMemo(() => `${new Date().getFullYear()}-01`, []);
 
   useEffect(() => {
     // Récupérer les données utilisateur depuis localStorage
@@ -92,29 +103,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
     if (userData) {
       try {
         setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Erreur lors de la lecture des données utilisateur:', error);
+      } catch (err) {
+        console.error('Erreur lors de la lecture des données utilisateur:', err);
       }
     }
   }, []);
-
-  const [leases, setLeases] = useState<TenantLease[]>([]);
-  const [lease, setLease] = useState<TenantLease | null>(null);
-  const [receipts, setReceipts] = useState<RentReceipt[]>([]);
-  const [invoices, setInvoices] = useState<TenantInvoice[]>([]);
-  const [incidents, setIncidents] = useState<TenantIncident[]>([]);
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errLeases, setErrLeases] = useState<string | null>(null);
-  const [errReceipts, setErrReceipts] = useState<string | null>(null);
-  const [errInvoices, setErrInvoices] = useState<string | null>(null);
-  const [errIncidents, setErrIncidents] = useState<string | null>(null);
-  const [errNotices, setErrNotices] = useState<string | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const currentYM = useMemo(() => monthKey(new Date()), []);
-  const ytdStartYM = useMemo(() => `${new Date().getFullYear()}-01`, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,93 +116,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
       setLoading(true);
       setError(null);
 
-      // Lancer toutes les requêtes en parallèle puis traiter les résultats
-      const promises = {
-        leases: mockTenantApi.getLeases(),
-        receipts: mockRentReceiptService.list({ type: "independent" }),
-        invoices: mockInvoiceService.list(),
-        incidents: mockTenantApi.getIncidents(),
-        notices: mockNoticeService.list(),
-      } as const;
+      try {
+        // Lancer toutes les requêtes en parallèle
+        const [leasesRes, receiptsRes, invoicesRes, incidentsRes, noticesRes] = await Promise.allSettled([
+          mockTenantApi.getLeases(),
+          mockRentReceiptService.list({ type: "independent" }),
+          mockInvoiceService.list(),
+          mockTenantApi.getIncidents(),
+          mockNoticeService.list(),
+        ]);
 
-      const entries = Object.entries(promises) as [keyof typeof promises, Promise<unknown>][];
+        if (cancelled) return;
 
-      const results = await Promise.allSettled(entries.map(([, p]) => p));
-
-      if (cancelled) return;
-
-      // Associer résultats dans l'ordre
-      for (let i = 0; i < entries.length; i++) {
-        const key = entries[i][0];
-        const res = results[i];
-        try {
-          if (res.status === "fulfilled") {
-            const value = res.value;
-            switch (key) {
-              case "leases": {
-                const ls = Array.isArray(value) ? value : [];
-                const activeLease =
-                  ls.find((l: TenantLease) => String(l.status).toLowerCase() === "active") || ls[0] || null;
-                setLease(activeLease);
-                break;
-              }
-              case "receipts": {
-                setReceipts(Array.isArray(value) ? value : []);
-                break;
-              }
-              case "invoices": {
-                setInvoices(Array.isArray(value) ? value : []);
-                break;
-              }
-              case "incidents": {
-                setIncidents(Array.isArray(value) ? value : []);
-                break;
-              }
-              case "notices": {
-                setNotices(Array.isArray(value) ? value : []);
-                break;
-              }
-              default:
-                break;
-            }
-          } else {
-            // rejected
-            const e = res.reason;
-            switch (key) {
-              case "leases":
-                console.error("[DASH] getLeases", e?.response?.data || e);
-                setErrLeases(e?.response?.data?.message || "Erreur lors du chargement du bail.");
-                setLease(null);
-                break;
-              case "receipts":
-                console.error("[DASH] receipts", e?.response?.data || e);
-                setErrReceipts(e?.response?.data?.message || "Erreur lors du chargement des quittances.");
-                setReceipts([]);
-                break;
-              case "invoices":
-                console.error("[DASH] invoices", e?.response?.data || e);
-                setErrInvoices(e?.response?.data?.message || "Erreur lors du chargement des factures.");
-                setInvoices([]);
-                break;
-              case "incidents":
-                console.error("[DASH] incidents", e?.response?.data || e);
-                setErrIncidents(e?.response?.data?.message || "Erreur lors du chargement des incidents.");
-                setIncidents([]);
-                break;
-              case "notices":
-                console.error("[DASH] notices", e?.response?.data || e);
-                setErrNotices(e?.response?.data?.message || "Erreur lors du chargement des préavis.");
-                setNotices([]);
-                break;
-              default:
-                break;
-            }
-          }
+        // Traiter les résultats
+        if (leasesRes.status === "fulfilled") {
+          const ls = leasesRes.value || [];
+          const activeLease = ls.find((l: TenantLease) => String(l.status).toLowerCase() === "active") || ls[0] || null;
+          setLease(activeLease);
+        } else {
+          console.error("[DASH] leases error", leasesRes.reason);
         }
+
+        if (receiptsRes.status === "fulfilled") {
+          setReceipts(receiptsRes.value || []);
+        } else {
+          console.error("[DASH] receipts error", receiptsRes.reason);
+        }
+
+        if (invoicesRes.status === "fulfilled") {
+          setInvoices(invoicesRes.value || []);
+        } else {
+          console.error("[DASH] invoices error", invoicesRes.reason);
+        }
+
+        if (incidentsRes.status === "fulfilled") {
+          setIncidents(incidentsRes.value || []);
+        } else {
+          console.error("[DASH] incidents error", incidentsRes.reason);
+        }
+
+        if (noticesRes.status === "fulfilled") {
+          setNotices(noticesRes.value || []);
+        } else {
+          console.error("[DASH] notices error", noticesRes.reason);
+        }
+
       } catch (err: any) {
         console.error('[DASH] Error fetching dashboard data:', err);
         if (!cancelled) {
-          setError(err.response?.data?.message || 'Erreur lors du chargement des données');
+          setError(err.message || 'Erreur lors du chargement des données');
         }
       } finally {
         if (!cancelled) {
@@ -226,13 +181,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
   }, []);
 
   // ---------- derived stats ----------
-  const rentMonthly = useMemo(() => dashboardData?.active_lease?.rent_amount || 0, [dashboardData]);
-  const chargesMonthly = useMemo(() => dashboardData?.active_lease?.charges_amount || 0, [dashboardData]);
+  const rentMonthly = useMemo(() => lease?.rent_amount || 0, [lease]);
+  const chargesMonthly = useMemo(() => lease?.charges_amount || 0, [lease]);
   const totalMonthly = useMemo(() => rentMonthly + chargesMonthly, [rentMonthly, chargesMonthly]);
 
   const receiptsSorted = useMemo(() => {
-    if (!dashboardData?.receipts) return [];
-    const arr = [...dashboardData.receipts];
+    if (!receipts) return [];
+    const arr = [...receipts];
     arr.sort((a, b) => {
       const da = safeDate(a.issued_date || "")?.getTime() ?? 0;
       const db = safeDate(b.issued_date || "")?.getTime() ?? 0;
@@ -240,20 +195,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
       return (b.paid_month || "").localeCompare(a.paid_month || "");
     });
     return arr;
-  }, [dashboardData?.receipts]);
+  }, [receipts]);
 
   const lastReceipt = useMemo(() => receiptsSorted[0] || null, [receiptsSorted]);
 
   const monthsPaidSet = useMemo(() => {
     const s = new Set<string>();
-    dashboardData?.payments?.forEach((p) => {
+    payments?.forEach((p) => {
       if (p.status === 'approved' && p.paid_at) {
         const month = new Date(p.paid_at).toISOString().slice(0, 7);
         s.add(month);
       }
     });
     return s;
-  }, [dashboardData?.payments]);
+  }, [payments]);
 
   const isUpToDate = useMemo(() => monthsPaidSet.has(currentYM), [monthsPaidSet, currentYM]);
 
@@ -278,27 +233,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
   const receiptsYTD = useMemo(() => {
     const ytdStart = `${new Date().getFullYear()}-01`;
-    return (dashboardData?.receipts || []).filter((r) => (r.paid_month || "") >= ytdStart);
-  }, [dashboardData?.receipts]);
+    return (receipts || []).filter((r) => (r.paid_month || "") >= ytdStart);
+  }, [receipts]);
 
   const totalPaidYTD = useMemo(() => {
-    return receiptsYTD.reduce((sum, r) => sum + (r.amount || 0), 0);
+    return receiptsYTD.reduce((sum, r) => sum + ((r as any).amount || r.amount_paid || 0), 0);
   }, [receiptsYTD]);
 
   const avgPaid = useMemo(() => {
-    if (!dashboardData?.receipts?.length) return 0;
-    const sum = dashboardData.receipts.reduce((acc, r) => acc + (r.amount || 0), 0);
-    return sum / dashboardData.receipts.length;
-  }, [dashboardData?.receipts]);
+    if (!receipts?.length) return 0;
+    const sum = receipts.reduce((acc, r) => acc + ((r as any).amount || r.amount_paid || 0), 0);
+    return sum / receipts.length;
+  }, [receipts]);
 
   const openIncidents = useMemo(
-    () => dashboardData?.incidents?.filter((i) => i.status === "open").length || 0,
-    [dashboardData?.incidents]
+    () => incidents?.filter((i) => i.status === "open").length || 0,
+    [incidents]
   );
-  
+
   const inProgressIncidents = useMemo(
-    () => dashboardData?.incidents?.filter((i) => i.status === "in_progress").length || 0,
-    [dashboardData?.incidents]
+    () => incidents?.filter((i) => i.status === "in_progress").length || 0,
+    [incidents]
   );
 
   const pendingNotices = useMemo(
@@ -310,8 +265,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
   // Afficher le contenu selon l'onglet actif
   const renderContent = () => {
-    const activeLease = dashboardData?.active_lease;
-    
+    const activeLease = lease;
+
     switch (activeTab) {
       case 'home':
         // Contenu du tableau de bord principal - Refait selon le design Figma
@@ -329,9 +284,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </p>
                 </div>
                 <div className="flex-shrink-0">
-                  <img 
-                    src="/Ressource_gestiloc/hand.png" 
-                    alt="Welcome" 
+                  <img
+                    src="/Ressource_gestiloc/hand.png"
+                    alt="Welcome"
                     className="w-24 h-24 md:w-32 md:h-32 object-contain"
                   />
                 </div>
@@ -471,24 +426,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Ma Location</h2>
-            {dashboardData?.active_lease ? (
+            {lease ? (
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold mb-4">{dashboardData.active_lease.property?.name || 'Détails du logement'}</h3>
+                <h3 className="text-lg font-semibold mb-4">{lease.property?.name || 'Détails du logement'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Adresse</p>
                     <p className="font-medium">
-                      {dashboardData.active_lease.property?.address || 'Non spécifiée'}, 
-                      {dashboardData.active_lease.property?.city || ''}
+                      {lease.property?.address || 'Non spécifiée'},
+                      {lease.property?.city || ''}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Loyer mensuel</p>
-                    <p className="font-medium">{fmtMoney(dashboardData.active_lease.rent_amount || 0)}</p>
+                    <p className="font-medium">{fmtMoney(lease.rent_amount || 0)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Charges</p>
-                    <p className="font-medium">{fmtMoney(dashboardData.active_lease.charges_amount || 0)}</p>
+                    <p className="font-medium">{fmtMoney(lease.charges_amount || 0)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Total mensuel</p>
@@ -496,25 +451,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Date de début</p>
-                    <p className="font-medium">{new Date(dashboardData.active_lease.start_date).toLocaleDateString('fr-FR')}</p>
+                    <p className="font-medium">{new Date(lease.start_date).toLocaleDateString('fr-FR')}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Date de fin</p>
                     <p className="font-medium">
-                      {dashboardData.active_lease.end_date 
-                        ? new Date(dashboardData.active_lease.end_date).toLocaleDateString('fr-FR')
+                      {lease.end_date
+                        ? new Date(lease.end_date).toLocaleDateString('fr-FR')
                         : 'Non spécifiée'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Type de bail</p>
                     <p className="font-medium">
-                      {dashboardData.active_lease.type === 'nu' ? 'Location nue' : 'Location meublée'}
+                      {lease.type === 'nu' ? 'Location nue' : 'Location meublée'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Numéro de bail</p>
-                    <p className="font-medium">{dashboardData.active_lease.lease_number}</p>
+                    <p className="font-medium">{lease.lease_number}</p>
                   </div>
                 </div>
               </div>
@@ -531,9 +486,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
             <div className="bg-white rounded-lg shadow">
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Historique des quittances</h3>
-                {dashboardData?.receipts && dashboardData.receipts.length > 0 ? (
+                {receipts && receipts.length > 0 ? (
                   <div className="space-y-3">
-                    {dashboardData.receipts.map((receipt) => (
+                    {receipts.map((receipt) => (
                       <div key={receipt.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
                         <div>
                           <p className="font-medium">Mois: {receipt.paid_month}</p>
@@ -545,16 +500,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold">{fmtMoney(receipt.amount)}</p>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            receipt.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <p className="font-semibold">{fmtMoney((receipt as any).amount || receipt.amount_paid || 0)}</p>
+                          <span className={`text-xs px-2 py-1 rounded ${receipt.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {receipt.status === 'paid' ? 'Payé' : 'En attente'}
                           </span>
                           {receipt.pdf_url && (
-                            <a 
-                              href={receipt.pdf_url} 
-                              target="_blank" 
+                            <a
+                              href={receipt.pdf_url}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="ml-2 text-xs text-blue-600 hover:underline"
                             >
@@ -579,9 +533,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
             <h2 className="text-2xl font-bold text-gray-900">Mes Interventions</h2>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Historique des interventions</h3>
-              {dashboardData?.incidents && dashboardData.incidents.length > 0 ? (
+              {incidents && incidents.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.incidents.map((incident) => (
+                  {incidents.map((incident) => (
                     <div key={incident.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
                       <div>
                         <p className="font-medium">{incident.title}</p>
@@ -592,14 +546,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          incident.status === 'open' ? 'bg-red-100 text-red-800' : 
-                          incident.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {incident.status === 'open' ? 'Ouvert' : 
-                           incident.status === 'in_progress' ? 'En cours' : 
-                           'Résolu'}
+                        <span className={`text-xs px-2 py-1 rounded ${incident.status === 'open' ? 'bg-red-100 text-red-800' :
+                          incident.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                          {incident.status === 'open' ? 'Ouvert' :
+                            incident.status === 'in_progress' ? 'En cours' :
+                              'Résolu'}
                         </span>
                       </div>
                     </div>
@@ -618,17 +571,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
             <h2 className="text-2xl font-bold text-gray-900">Paiements</h2>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Historique des paiements</h3>
-              {dashboardData?.payments && dashboardData.payments.length > 0 ? (
+              {payments && payments.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.payments.map((payment) => (
+                  {payments.map((payment) => (
                     <div key={payment.id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
                       <div>
                         <p className="font-medium">
-                          {payment.payment_method === 'card' ? 'Paiement par carte' : 
-                           payment.payment_method === 'mobile_money' ? 'Mobile Money' :
-                           payment.payment_method === 'virement' ? 'Virement' :
-                           payment.payment_method === 'especes' ? 'Espèces' :
-                           payment.payment_method === 'cheque' ? 'Chèque' : 'Paiement'}
+                          {payment.payment_method === 'card' ? 'Paiement par carte' :
+                            payment.payment_method === 'mobile_money' ? 'Mobile Money' :
+                              payment.payment_method === 'virement' ? 'Virement' :
+                                payment.payment_method === 'especes' ? 'Espèces' :
+                                  payment.payment_method === 'cheque' ? 'Chèque' : 'Paiement'}
                         </p>
                         <p className="text-sm text-gray-500">
                           Date: {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('fr-FR') : 'N/A'}
@@ -639,16 +592,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">{fmtMoney(payment.amount)}</p>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          payment.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {payment.status === 'approved' ? 'Approuvé' : 
-                           payment.status === 'pending' ? 'En attente' : 
-                           payment.status === 'initiated' ? 'Initiatié' :
-                           payment.status === 'cancelled' ? 'Annulé' :
-                           payment.status === 'failed' ? 'Échoué' : payment.status}
+                        <span className={`text-xs px-2 py-1 rounded ${payment.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                          {payment.status === 'approved' ? 'Approuvé' :
+                            payment.status === 'pending' ? 'En attente' :
+                              payment.status === 'initiated' ? 'Initiatié' :
+                                payment.status === 'cancelled' ? 'Annulé' :
+                                  payment.status === 'failed' ? 'Échoué' : payment.status}
                         </span>
                       </div>
                     </div>
@@ -667,9 +619,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
             <h2 className="text-2xl font-bold text-gray-900">Préavis</h2>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Gestion du préavis</h3>
-              {dashboardData?.notices && dashboardData.notices.length > 0 ? (
+              {notices && notices.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.notices.map((notice) => (
+                  {notices.map((notice) => (
                     <div key={notice.id} className="flex justify-between items-center p-3 border rounded">
                       <div>
                         <p className="font-medium">Préavis de départ #{notice.notice_number}</p>
@@ -677,21 +629,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                           Date: {new Date(notice.notice_date).toLocaleDateString('fr-FR')}
                         </p>
                         <p className="text-sm text-gray-500">
-                          Effectif le: {new Date(notice.effective_date).toLocaleDateString('fr-FR')}
+                          Effectif le: {notice.effective_date ? new Date(notice.effective_date).toLocaleDateString('fr-FR') : 'Non défini'}
                         </p>
                         {notice.reason && (
                           <p className="text-sm text-gray-500">Motif: {notice.reason}</p>
                         )}
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        notice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded ${notice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                        }`}>
                         {notice.status === 'pending' ? 'En attente' : 'Confirmé'}
                       </span>
                     </div>
                   ))}
                 </div>
-              ) : ( 
+              ) : (
                 <p className="text-gray-500">Aucun préavis en cours</p>
               )}
             </div>
@@ -714,9 +665,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
                   </p>
                 </div>
                 <div className="flex-shrink-0">
-                  <img 
-                    src="/Ressource_gestiloc/hand.png" 
-                    alt="Welcome" 
+                  <img
+                    src="/Ressource_gestiloc/hand.png"
+                    alt="Welcome"
                     className="w-24 h-24 md:w-32 md:h-32 object-contain"
                   />
                 </div>
@@ -727,14 +678,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
               <button onClick={() => onNavigate?.('receipts')} className="flex flex-col items-center justify-center gap-2 group cursor-pointer transition-all hover:shadow-lg" style={{ width: '193px', height: '168px', borderRadius: '20px', background: 'rgba(255, 255, 255, 1)', boxShadow: '0px 0px 6.8px 0px rgba(131, 199, 87, 1)' }}>
                 <div className="relative flex items-center justify-center" style={{ height: '80px' }}>
-                  <div style={{ 
-                    width: '74px', 
-                    height: '70px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(255, 251, 244, 1)', 
-                    border: '3px solid rgba(255, 177, 51, 1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    width: '74px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 251, 244, 1)',
+                    border: '3px solid rgba(255, 177, 51, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     position: 'absolute',
                     top: '50%',
@@ -749,14 +700,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
               <button onClick={() => onNavigate?.('interventions')} className="flex flex-col items-center justify-center gap-2 group cursor-pointer transition-all hover:shadow-lg" style={{ width: '193px', height: '168px', borderRadius: '20px', background: 'rgba(255, 255, 255, 1)', boxShadow: '0px 0px 6.8px 0px rgba(131, 199, 87, 1)' }}>
                 <div className="relative flex items-center justify-center" style={{ height: '80px' }}>
-                  <div style={{ 
-                    width: '74px', 
-                    height: '70px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(255, 251, 244, 1)', 
-                    border: '3px solid rgba(255, 177, 51, 1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    width: '74px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 251, 244, 1)',
+                    border: '3px solid rgba(255, 177, 51, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     position: 'absolute',
                     top: '50%',
@@ -771,14 +722,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
               <button onClick={() => onNavigate?.('tasks')} className="flex flex-col items-center justify-center gap-2 group cursor-pointer transition-all hover:shadow-lg" style={{ width: '193px', height: '168px', borderRadius: '20px', background: 'rgba(255, 255, 255, 1)', boxShadow: '0px 0px 6.8px 0px rgba(131, 199, 87, 1)' }}>
                 <div className="relative flex items-center justify-center" style={{ height: '80px' }}>
-                  <div style={{ 
-                    width: '74px', 
-                    height: '70px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(255, 251, 244, 1)', 
-                    border: '3px solid rgba(255, 177, 51, 1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    width: '74px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 251, 244, 1)',
+                    border: '3px solid rgba(255, 177, 51, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     position: 'absolute',
                     top: '50%',
@@ -793,14 +744,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
               <button onClick={() => onNavigate?.('property')} className="flex flex-col items-center justify-center gap-2 group cursor-pointer transition-all hover:shadow-lg" style={{ width: '193px', height: '168px', borderRadius: '20px', background: 'rgba(255, 255, 255, 1)', boxShadow: '0px 0px 6.8px 0px rgba(131, 199, 87, 1)' }}>
                 <div className="relative flex items-center justify-center" style={{ height: '80px' }}>
-                  <div style={{ 
-                    width: '74px', 
-                    height: '70px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(255, 251, 244, 1)', 
-                    border: '3px solid rgba(255, 177, 51, 1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    width: '74px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 251, 244, 1)',
+                    border: '3px solid rgba(255, 177, 51, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     position: 'absolute',
                     top: '50%',
@@ -815,14 +766,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeTab = 'home', notify
 
               <button onClick={() => onNavigate?.('documents')} className="flex flex-col items-center justify-center gap-2 group cursor-pointer transition-all hover:shadow-lg" style={{ width: '193px', height: '168px', borderRadius: '20px', background: 'rgba(255, 255, 255, 1)', boxShadow: '0px 0px 6.8px 0px rgba(131, 199, 87, 1)' }}>
                 <div className="relative flex items-center justify-center" style={{ height: '80px' }}>
-                  <div style={{ 
-                    width: '74px', 
-                    height: '70px', 
-                    borderRadius: '50%', 
-                    background: 'rgba(255, 251, 244, 1)', 
-                    border: '3px solid rgba(255, 177, 51, 1)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    width: '74px',
+                    height: '70px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 251, 244, 1)',
+                    border: '3px solid rgba(255, 177, 51, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     position: 'absolute',
                     top: '50%',

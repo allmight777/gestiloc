@@ -88,7 +88,7 @@ export default function PayLinkPage() {
   }, [info]);
 
   const invoice = info?.invoice ?? null;
-  const amount = invoice?.amount_total ?? invoice?.amount ?? 0;
+  const amount = invoice?.amount_total ?? 0;
 
   const currency =
     invoice?.currency ||
@@ -96,7 +96,7 @@ export default function PayLinkPage() {
     info?.invoice?.currency ||
     "XOF";
 
-  const dueDate = invoice?.due_date || invoice?.dueDate || null;
+  const dueDate = invoice?.due_date || null;
 
   const load = async () => {
     if (!token) return;

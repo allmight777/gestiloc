@@ -10,6 +10,8 @@ export interface TenantLease {
   start_date: string;
   end_date: string;
   status: string;
+  type: string;
+  lease_number: string;
   created_at: string;
   updated_at: string;
   property?: any;
@@ -23,13 +25,18 @@ export interface TenantIncident {
   status: string;
   priority: string;
   created_at: string;
+  property?: {
+    id: number;
+    name: string;
+    address?: string;
+  };
 }
 
 export const mockTenantApi = {
   getLeases: async (): Promise<TenantLease[]> => {
     // Simuler un délai réseau
     await new Promise(resolve => setTimeout(resolve, 500));
-    return [mockLease];
+    return mockLease ? [mockLease] : [];
   },
 
   getIncidents: async (): Promise<TenantIncident[]> => {

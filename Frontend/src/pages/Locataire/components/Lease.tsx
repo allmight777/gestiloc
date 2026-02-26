@@ -168,7 +168,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
             </div>
             <div className="mt-4">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={fetchLeaseData}
                 disabled={isFetching.current}
                 className="inline-flex items-center text-sm"
@@ -222,9 +222,9 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
 
   const { property } = lease;
   const endDate = lease.end_date ? new Date(lease.end_date) : null;
-  const rentAmount = parseFloat(lease.rent_amount);
-  const chargesAmount = parseFloat(lease.charges_amount || '0');
-  const depositAmount = parseFloat(lease.deposit || '0');
+  const rentAmount = typeof lease.rent_amount === 'number' ? lease.rent_amount : parseFloat(lease.rent_amount || '0');
+  const chargesAmount = typeof lease.charges_amount === 'number' ? lease.charges_amount : parseFloat(lease.charges_amount || '0');
+  const depositAmount = typeof lease.deposit === 'number' ? lease.deposit : parseFloat(lease.deposit || '0');
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -274,7 +274,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
               <div className="flex items-center gap-2 text-sm">
                 <Bath className="w-4 h-4 text-slate-500" />
                 <span>
-                  {property.bathroom_count} salle{property.bathroom_count > 1 ? 's' : ''} de bain
+                  {(property.bathroom_count ?? 0)} salle{(property.bathroom_count ?? 0) > 1 ? 's' : ''} de bain
                 </span>
               </div>
             </div>
@@ -398,7 +398,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
               <span className="w-1.5 h-1.5 bg-slate-400 rounded-full mt-2 shrink-0"></span>
               <div>
                 <p className="font-medium text-slate-800 text-sm">Référence du bien</p>
-                <p className="text-slate-500 text-xs">{property.reference_code || 'Non spécifiée'}</p>
+                <p className="text-slate-500 text-xs">{(property as any).reference_code || 'Non spécifiée'}</p>
               </div>
             </li>
 
@@ -423,7 +423,7 @@ export const Lease: React.FC<LeaseProps> = ({ notify }) => {
                         ? 'success'
                         : lease.status === 'terminated'
                         ? 'error'
-                        : 'default'
+                        : 'neutral'
                     }
                   >
                     {lease.status === 'active'

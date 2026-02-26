@@ -1,6 +1,11 @@
 import { mockReceipts } from './mockData';
 
 export interface RentReceipt {
+  property?: {
+    id: number;
+    name: string;
+    address?: string;
+  };
   id: number;
   lease_id: number;
   paid_month: string;
@@ -8,6 +13,7 @@ export interface RentReceipt {
   payment_date: string;
   issued_date: string;
   status: string;
+  pdf_url?: string;
 }
 
 export const mockRentReceiptService = {
@@ -30,7 +36,8 @@ export const mockRentReceiptService = {
       amount_paid: data.amount_paid,
       payment_date: data.payment_date || new Date().toISOString().split('T')[0],
       issued_date: new Date().toISOString().split('T')[0],
-      status: 'paid'
+      status: 'paid',
+      property: data.property
     };
     mockReceipts.push(newReceipt);
     return newReceipt;

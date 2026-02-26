@@ -165,8 +165,8 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-// 🔹 baseURL = https://wheat-skunk-120710.hostingersite.com/api
-const API_URL = 'https://wheat-skunk-120710.hostingersite.com/api';
+// 🔹 baseURL = http://localhost:8000/api
+const API_URL = 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -189,7 +189,7 @@ const getCsrfToken = async () => {
   
   // Mode backend : appel réel au serveur Laravel
   try {
-    await axios.get('https://wheat-skunk-120710.hostingersite.com/sanctum/csrf-cookie', {
+    await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
       withCredentials: true,
       headers: {
         Accept: 'application/json',
@@ -314,18 +314,37 @@ export const authService = {
     try {
       await initializeCsrfToken();
 
-      const requestData = {
-        first_name: userData.first_name || userData.first_name,
-        last_name: userData.last_name || userData.last_name,
-        email: userData.email,
-        phone: userData.phone,
-        password: userData.password,
-        password_confirmation: userData.password_confirmation,
-        role: userData.role || 'proprietaire',
-      };
+      // Déterminer le bon endpoint selon le rôle
+      const role = userData.role || 'proprietaire';
+      const endpoint = role === 'agence' 
+        ? '/auth/register/co-owner' 
+        : '/auth/register/landlord';
+
+      // Prepare request data based on role
+      const requestData = role === 'agence' 
+        ? {
+            email: userData.email || '',
+            phone: userData.phone || '',
+            password: userData.password || '',
+            password_confirmation: userData.password_confirmation || '',
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            is_professional: true,
+          }
+        : {
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            password: userData.password || '',
+            password_confirmation: userData.password_confirmation || '',
+          };
+
+      console.log('📤 Register request data:', requestData);
+      console.log('📤 Register endpoint:', endpoint);
 
       const response = await api.post<RegisterResponse>(
-        '/auth/register/landlord',
+        endpoint,
         requestData
       );
 

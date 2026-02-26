@@ -656,11 +656,11 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
               sur <span className="font-medium">{filteredPeople.length}</span> résultats
             </p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronsLeft size={16} /></button>
-              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft size={16} /></button>
+              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:bg-white disabled:cursor-not-allowed transition-colors"><ChevronsLeft size={16} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:bg-white disabled:cursor-not-allowed transition-colors"><ChevronLeft size={16} /></button>
               <span className="px-4 py-2 bg-[#529D21] text-white rounded-lg font-medium">{currentPage} / {totalPages || 1}</span>
-              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight size={16} /></button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronsRight size={16} /></button>
+              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:bg-white disabled:cursor-not-allowed transition-colors"><ChevronRight size={16} /></button>
+              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:bg-white disabled:cursor-not-allowed transition-colors"><ChevronsRight size={16} /></button>
             </div>
           </div>
         )}

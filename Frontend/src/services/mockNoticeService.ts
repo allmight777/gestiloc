@@ -10,6 +10,9 @@ export interface Notice {
   status: string;
   notice_date: string;
   end_date: string;
+  notice_number?: string;
+  effective_date?: string;
+  reason?: string;
 }
 
 export const mockNoticeService = {

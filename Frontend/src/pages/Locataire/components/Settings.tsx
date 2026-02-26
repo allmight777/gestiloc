@@ -78,8 +78,6 @@ import {
   Keyboard,
   Mouse,
   Printer,
-  Scanner,
-  Fax,
   Phone as PhoneIcon,
   Tablet as TabletIcon,
   Laptop as LaptopIcon,
@@ -97,13 +95,12 @@ import {
   Keyboard as KeyboardIcon,
   Mouse as MouseIcon,
   Printer as PrinterIcon,
-  Scanner as ScannerIcon,
-  Fax as FaxIcon,
 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import api from '@/services/api';
 
+// ... rest of the code remains the same ...
 interface SettingsProps {
   notify?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
@@ -485,7 +482,7 @@ export const Settings: React.FC<SettingsProps> = ({ notify }) => {
     await fetchSettings();
   };
 
-  const handleToggleNotification = async (key: keyof typeof settings.notifications) => {
+  const handleToggleNotification = async (key: keyof UserSettings['notifications']) => {
     if (!settings) return;
 
     const newValue = !settings.notifications[key];
@@ -855,7 +852,7 @@ export const Settings: React.FC<SettingsProps> = ({ notify }) => {
             <button 
               onClick={handlePasswordChange} 
               disabled={saving}
-              className="w-full md:w-auto px-6 py-2.5 text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full md:w-auto px-6 py-2.5 text-white rounded-lg hover:opacity-90 transition-colors disabled:bg-white flex items-center justify-center gap-2"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               {saving ? (

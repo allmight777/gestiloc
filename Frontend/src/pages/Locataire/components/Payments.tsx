@@ -1,6 +1,6 @@
 // src/pages/Locataire/components/Payments.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChevronDown, 
   Search, 
@@ -83,6 +83,15 @@ interface Payment {
   invoice?: Invoice;
 }
 
+interface RecentPayment {
+  id: number;
+  amount_total: number;
+  status: string;
+  paid_at: string | null;
+  display_date: string;
+  checkout_url: string | null;
+}
+
 interface PropertyPaymentStatus {
   lease: Lease;
   property: Property;
@@ -93,14 +102,7 @@ interface PropertyPaymentStatus {
   pending_checkout_url?: string | null;
   unpaid_count: number;
   total_unpaid: number;
-  recent_payments: Array<{
-    id: number;
-    amount_total: number;
-    status: string;
-    paid_at: string | null;
-    display_date: string;
-    checkout_url: string | null;
-  }>;
+  recent_payments: RecentPayment[];
   rent_amount: number;
   charges: number;
   total_monthly: number;
@@ -172,10 +174,70 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
 
   const PRIMARY_COLOR = '#70AE48';
 
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/tenant/payments/dashboard');
+      if (response.data.success) {
+        setInvoices(response.data.data.invoices || []);
+        setPayments(response.data.data.payments || []);
+        setStats(response.data.data.stats);
+        setChartData(response.data.data.chart_data || []);
+        const hasData = response.data.data.chart_data?.some((item: ChartData) => item.amount > 0) || false;
+        setHasChartData(hasData);
+        setPropertiesStatus(response.data.data.properties || []);
+      }
+    } catch (error) {
+      notify?.('Erreur lors du chargement des données', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [notify]);
+
+  const loadInvoices = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (selectedProperty) params.append('property_id', selectedProperty);
+      if (selectedStatus) params.append('status', selectedStatus);
+      if (selectedMonth) params.append('month', selectedMonth);
+      if (selectedYear) params.append('year', selectedYear);
+      if (searchQuery) params.append('search', searchQuery);
+      const response = await api.get(`/tenant/payments/invoices?${params}`);
+      if (response.data.success) setInvoices(response.data.data.data || []);
+    } catch (error) {
+      // Silently handle error - user will see empty invoices list
+    }
+  }, [selectedProperty, selectedStatus, selectedMonth, selectedYear, searchQuery]);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (selectedProperty) params.append('property_id', selectedProperty);
+      if (selectedStatus) params.append('status', selectedStatus);
+      if (selectedMonth) params.append('month', selectedMonth);
+      if (selectedYear) params.append('year', selectedYear);
+      const response = await api.get(`/tenant/payments/history?${params}`);
+      if (response.data.success) setPayments(response.data.data.data || []);
+    } catch (error) {
+      console.error('Failed to load payment history:', error);
+      notify?.('Erreur lors du chargement de l\'historique des paiements', 'error');
+    }
+  }, [selectedProperty, selectedStatus, selectedMonth, selectedYear, notify]);
+
+  const loadFilterOptions = useCallback(async () => {
+    try {
+      const response = await api.get('/tenant/payments/filters/options');
+      if (response.data.success) setFilterOptions(response.data.data);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+      notify?.('Erreur lors du chargement des options de filtre', 'error');
+    }
+  }, [notify]);
+
   useEffect(() => {
     loadDashboard();
     loadFilterOptions();
-  }, []);
+  }, [loadDashboard, loadFilterOptions]);
 
   useEffect(() => {
     if (activeTab === 'invoices') {
@@ -183,7 +245,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
     } else if (activeTab === 'history') {
       loadHistory();
     }
-  }, [activeTab, selectedProperty, selectedMonth, selectedYear, selectedStatus, searchQuery]);
+  }, [activeTab, selectedProperty, selectedMonth, selectedYear, selectedStatus, searchQuery, loadInvoices, loadHistory]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -195,58 +257,6 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadDashboard = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/tenant/payments/dashboard');
-      if (response.data.success) {
-        setInvoices(response.data.data.invoices || []);
-        setPayments(response.data.data.payments || []);
-        setStats(response.data.data.stats);
-        setChartData(response.data.data.chart_data || []);
-        const hasData = response.data.data.chart_data?.some((item: any) => item.amount > 0) || false;
-        setHasChartData(hasData);
-        setPropertiesStatus(response.data.data.properties || []);
-      }
-    } catch (error) {
-      notify?.('Erreur lors du chargement des données', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadInvoices = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (selectedProperty) params.append('property_id', selectedProperty);
-      if (selectedStatus) params.append('status', selectedStatus);
-      if (selectedMonth) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
-      if (searchQuery) params.append('search', searchQuery);
-      const response = await api.get(`/tenant/payments/invoices?${params}`);
-      if (response.data.success) setInvoices(response.data.data.data || []);
-    } catch (error) {}
-  };
-
-  const loadHistory = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (selectedProperty) params.append('property_id', selectedProperty);
-      if (selectedStatus) params.append('status', selectedStatus);
-      if (selectedMonth) params.append('month', selectedMonth);
-      if (selectedYear) params.append('year', selectedYear);
-      const response = await api.get(`/tenant/payments/history?${params}`);
-      if (response.data.success) setPayments(response.data.data.data || []);
-    } catch (error) {}
-  };
-
-  const loadFilterOptions = async () => {
-    try {
-      const response = await api.get('/tenant/payments/filters/options');
-      if (response.data.success) setFilterOptions(response.data.data);
-    } catch (error) {}
-  };
 
   const handlePayProperty = (propertyStatus: PropertyPaymentStatus) => {
     if (propertyStatus.has_pending_payment && propertyStatus.pending_checkout_url) {
@@ -292,7 +302,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
     setProcessingPayment(true);
     try {
       let response;
-      const payload: any = {};
+      const payload: { phone_number?: string } = {};
       if (useCustomPhone && paymentPhone) payload.phone_number = paymentPhone;
       if (selectedPropertyForPayment) {
         response = await api.post(`/tenant/payments/pay/${selectedPropertyForPayment.lease.id}`, payload);
@@ -305,8 +315,12 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
         notify?.('Redirection vers la page de paiement...', 'info');
         startPaymentStatusCheck(response.data.payment_id);
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Erreur lors du paiement';
+    } catch (error: unknown) {
+      let errorMessage = 'Erreur lors du paiement';
+      if (error instanceof Error && 'response' in error) {
+        const apiError = error as { response?: { data?: { message?: string } } };
+        errorMessage = apiError.response?.data?.message || errorMessage;
+      }
       setPaymentError(errorMessage);
       notify?.(errorMessage, 'error');
     } finally {
@@ -332,12 +346,14 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             notify?.('Le paiement a échoué', 'error');
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error('Payment status check failed:', error);
+      }
       if (attempts >= maxAttempts) { clearInterval(interval); notify?.("Vérifiez le statut dans l'historique", 'info'); }
     }, 5000);
   };
 
-  const handleDownloadReceipt = async (payment: Payment) => {
+  const handleDownloadReceipt = async (payment: Payment | RecentPayment) => {
     try {
       const response = await api.get(`/tenant/payments/receipt/${payment.id}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -411,7 +427,18 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
     ].filter(item => item.value > 0);
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      value: number;
+      payload: {
+        count: number;
+      };
+    }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white/95 backdrop-blur-sm p-3 border border-gray-100 rounded-xl shadow-xl">
@@ -424,10 +451,18 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
     return null;
   };
 
+  interface BarProps {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    fill?: string;
+  }
+
   // Custom bar shape with rounded top
-  const RoundedBar = (props: any) => {
+  const RoundedBar = (props: BarProps) => {
     const { x, y, width, height, fill } = props;
-    if (!height || height <= 0) return null;
+    if (!height || height <= 0 || !x || !y || !width || !fill) return null;
     const radius = 6;
     return (
       <path
@@ -572,7 +607,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                       Annuler
                     </button>
                     <button onClick={handleConfirmPayment} disabled={processingPayment || (useCustomPhone && !paymentPhone)}
-                      className="flex-1 px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:bg-white flex items-center justify-center gap-2"
                       style={{ background: PRIMARY_COLOR }}>
                       {processingPayment ? <><Loader2 size={15} className="animate-spin" />Initialisation…</> : 'Payer maintenant'}
                     </button>
@@ -823,14 +858,14 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
 
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pl-0">
                             {[
-                              { label: 'Loyer', value: formatCurrency(item.rent_amount) },
-                              { label: 'Charges', value: formatCurrency(item.charges) },
-                              { label: 'Total/mois', value: formatCurrency(item.total_monthly), accent: true },
-                              ...(item.unpaid_count > 0 ? [{ label: 'Impayés', value: `${item.unpaid_count} mois`, danger: true }] : [])
+                              { label: 'Loyer', value: formatCurrency(item.rent_amount), accent: false, danger: false },
+                              { label: 'Charges', value: formatCurrency(item.charges), accent: false, danger: false },
+                              { label: 'Total/mois', value: formatCurrency(item.total_monthly), accent: true, danger: false },
+                              ...(item.unpaid_count > 0 ? [{ label: 'Impayés', value: `${item.unpaid_count} mois`, accent: false, danger: true }] : [])
                             ].map((stat, i) => (
                               <div key={i} className="bg-gray-50 rounded-lg px-3 py-2">
                                 <p className="text-xs text-gray-400 mb-0.5">{stat.label}</p>
-                                <p className={`text-sm font-bold ${(stat as any).accent ? 'text-[#70AE48]' : (stat as any).danger ? 'text-red-600' : 'text-gray-900'} mono`}>
+                                <p className={`text-sm font-bold ${stat.accent ? 'text-[#70AE48]' : stat.danger ? 'text-red-600' : 'text-gray-900'} mono`}>
                                   {stat.value}
                                 </p>
                               </div>
@@ -863,7 +898,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                                 <div className="flex items-center gap-3">
                                   <span className="text-sm font-bold text-gray-900 mono">{formatCurrency(payment.amount_total)}</span>
                                   {payment.status === 'approved' && (
-                                    <button onClick={() => handleDownloadReceipt(payment as Payment)} className="pay-action opacity-0 p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="Télécharger">
+                                    <button onClick={() => handleDownloadReceipt(payment)} className="pay-action opacity-0 p-1.5 hover:bg-gray-100 rounded-lg transition-colors" title="Télécharger">
                                       <Download size={13} className="text-gray-400" />
                                     </button>
                                   )}

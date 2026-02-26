@@ -93,7 +93,6 @@ const NavIcons: Record<string, React.FC<{ active?: boolean }>> = {
       <rect x="2" y="11" width="24" height="3" rx="1" fill="#F5A623" />
       <rect x="8" y="14" width="5" height="5" rx="1" fill="#fff" />
       <rect x="15" y="14" width="5" height="5" rx="1" fill="#fff" />
-      <triangle points="14,2 3,11 25,11" fill="#c8a96e" />
       <polygon points="14,2 3,11 25,11" fill="#e8c97e" />
     </svg>
   ),
@@ -239,9 +238,10 @@ export const Layout: React.FC<LayoutProps> = ({
     try {
       const response = await api.get('/tenant/notifications');
       const notificationsData = response.data.notifications || [];
+      // Always generate unique keys to prevent duplicate key warnings
       const notificationsWithUniqueKeys = notificationsData.map((notif: NotificationItem, index: number) => ({
         ...notif,
-        _uniqueKey: `notif-${notif.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        _uniqueKey: `notif-${notif.id || 'unknown'}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
       setNotifications(notificationsWithUniqueKeys);
       setUnreadCount(response.data.unread_count || 0);
@@ -361,7 +361,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="space-y-0.5">
           {menuItems.map((item) => {
             const isActive = activeTab === item.id;
-            const IconComponent = NavIcons[item.iconKey];
+            const IconComponent = NavIcons[item.id];
             const isFirst = item.id === 'home';
 
             return (
@@ -423,62 +423,115 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col">
-      {/* HEADER - Full width */}
-      <header className="px-4 sm:px-6 py-3 fixed top-0 left-0 right-0 z-[100] h-[60px]" style={{ background: 'rgba(82, 157, 33, 1)' }}>
-        <div className="flex justify-between items-center h-full">
-          <div className="flex items-center gap-3">
-            {activeTab !== 'home' && (
-              <button
-                onClick={() => handleNavigate('home')}
-                className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
-                aria-label="Retour"
-              >
-                <ArrowLeft size={24} className="text-white" />
-              </button>
-            )}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
-              aria-label="Menu"
-            >
-              <Menu size={24} className="text-white" />
-            </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Gestiloc</h1>
-          </div>
+      {/* HEADER */}
+      <header className="fixed top-0 left-0 right-0 z-[100] h-[58px] flex items-center justify-between px-4 sm:px-8" style={{
+        background: 'linear-gradient(90deg, #4CAF50 0%, #43a047 60%, #388E3C 100%)',
+      }}>
+        {/* Left: mobile menu + logo */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={24} className="text-white" />
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">GestiLoc</h1>
+        </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              className="relative flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-              <span className="hidden sm:inline text-sm">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => setShowHelp(!showHelp)}
-              aria-label="Aide"
-            >
-              <HelpCircle size={18} />
-              <span className="hidden sm:inline text-sm">Aide</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => handlePageChange('profile')}
-              aria-label="Mon compte"
-            >
-              <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                <span className="text-xs font-bold">{userInitials}</span>
-              </div>
-              <span className="hidden sm:inline text-sm">Mon compte</span>
-            </button>
-          </div>
+        {/* Right: action buttons */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Notifications */}
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30 relative"
+            style={{
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
+              backdropFilter: 'blur(4px)',
+              fontFamily: "'Manrope', sans-serif",
+              letterSpacing: '0.01em',
+            }}
+            aria-label="Notifications"
+          >
+            <img src="/Ressource_gestiloc/Bell.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          {/* Notifications mobile */}
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30 relative"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Notifications"
+          >
+            <img src="/Ressource_gestiloc/Bell.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Aide */}
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            style={{
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
+              backdropFilter: 'blur(4px)',
+              fontFamily: "'Manrope', sans-serif",
+              letterSpacing: '0.01em',
+            }}
+            aria-label="Aide"
+          >
+            <img src="/Ressource_gestiloc/question_mark.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            Aide
+          </button>
+          {/* Aide mobile */}
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Aide"
+          >
+            <img src="/Ressource_gestiloc/question_mark.png" alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+          </button>
+
+          {/* Mon compte */}
+          <button
+            onClick={() => handlePageChange('profile')}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            style={{
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
+              backdropFilter: 'blur(4px)',
+              fontFamily: "'Manrope', sans-serif",
+              letterSpacing: '0.01em',
+            }}
+            aria-label="Mon compte"
+          >
+            <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold">
+              {userInitials}
+            </div>
+            Mon compte
+          </button>
+          {/* Mon compte mobile */}
+          <button
+            onClick={() => handlePageChange('profile')}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Mon compte"
+          >
+            <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold">
+              {userInitials}
+            </div>
+          </button>
         </div>
       </header>
 
@@ -576,7 +629,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex flex-1 h-[calc(100vh-60px)] relative pt-[60px]">
+      <div className="flex flex-1 h-[calc(100vh-58px)] relative pt-[58px]">
         {/* Toasts */}
         <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-3">
           {toasts.map((toast) => (
@@ -653,10 +706,10 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* ── NOTIFICATIONS DROPDOWN ── */}
       {showNotifications && (
-        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto max-h-[600px]">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <h3 className="text-lg font-bold text-gray-900 font-merriweather">Notifications</h3>
               {unreadCount > 0 && (
                 <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
                   {unreadCount} nouvelle{unreadCount > 1 ? 's' : ''}
@@ -672,7 +725,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 <CheckCircle size={16} />
                 <span className="hidden sm:inline">Tout marquer</span>
               </button>
-              <button onClick={() => setShowNotifications(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={() => setShowNotifications(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors btn-hover">
                 <X size={20} className="text-gray-500" />
               </button>
             </div>
@@ -752,14 +805,14 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* ── HELP DROPDOWN ── */}
       {showHelp && (
-        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Aide</h3>
-            <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-lg font-bold text-gray-900 font-merriweather">Aide & Support</h3>
+            <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors btn-hover">
               <X size={20} className="text-gray-500" />
             </button>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto max-h-96">
             {[
               { color: 'bg-green-500', title: 'Guide de démarrage', sub: 'Apprenez les bases de GestiLoc' },
               { color: 'bg-blue-500', title: "Centre d'aide complet", sub: 'Accédez à tous nos guides' },
@@ -776,10 +829,10 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
             <button
               onClick={() => { setShowHelp(false); window.location.href = '/help'; }}
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-blue-600 hover:text-blue-700 font-bold shadow-sm transition-all active:scale-[0.98] btn-hover"
             >
               Voir toute l'aide
             </button>

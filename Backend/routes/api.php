@@ -246,72 +246,58 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/settings/download-data', [\App\Http\Controllers\Api\Tenant\SettingsController::class, 'downloadData']);
         Route::delete('/settings/account', [\App\Http\Controllers\Api\Tenant\SettingsController::class, 'deleteAccount']);
 
-// Routes pour le profil du locataire
-Route::prefix('profile')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'show']);
-    Route::put('/personal', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updatePersonal']);
-    Route::put('/address', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateAddress']);
-    Route::put('/professional', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateProfessional']);
-    Route::put('/emergency', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateEmergency']);
-    Route::put('/guarantor', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateGuarantor']);
-});
+        // Routes pour le profil du locataire
+        Route::prefix('profile')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'show']);
+            Route::put('/personal', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updatePersonal']);
+            Route::put('/address', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateAddress']);
+            Route::put('/professional', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateProfessional']);
+            Route::put('/emergency', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateEmergency']);
+            Route::put('/guarantor', [\App\Http\Controllers\Api\Tenant\ProfileController::class, 'updateGuarantor']);
+        });
 
+        // Routes pour les documents
+        Route::prefix('documents')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'index']);
+            Route::get('/templates', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'templates']);
+            Route::get('/shareable-contacts', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'getShareableContacts']);
+            Route::get('/filters/options', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'getFilterOptions']);
+            Route::post('/', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'store']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'show']);
+            Route::put('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'update']);
+            Route::delete('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'destroy']);
+            Route::post('/{id}/archive', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'archive']);
+            Route::post('/{id}/restore', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'restore']);
+            Route::get('/{id}/download', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'download']);
+            Route::get('/{id}/pdf', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'downloadPdf']);
+        });
 
-// Dans le groupe tenant, ajoutez cette route :
+        // Routes pour le dossier
+        Route::prefix('dossier')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'show']);
+            Route::put('/', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'update']);
+            Route::get('/shareable-contacts', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'getShareableContacts']);
+            Route::post('/publish', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'publish']);
+            Route::get('/preview', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'preview']);
+            Route::get('/download', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'download']);
+            Route::get('/public/{shareUrl}', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'publicShow']);
+        });
 
-// Routes pour les documents
-Route::prefix('documents')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'index']);
-    Route::get('/templates', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'templates']);
-    Route::get('/shareable-contacts', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'getShareableContacts']);
-    Route::get('/filters/options', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'getFilterOptions']);
-    Route::post('/', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'store']);
-    Route::get('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'show']);
-    Route::put('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'update']);
-    Route::delete('/{id}', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'destroy']);
-    Route::post('/{id}/archive', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'archive']);
-    Route::post('/{id}/restore', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'restore']);
-    Route::get('/{id}/download', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'download']);
-    // Dans le groupe documents
-Route::get('/{id}/pdf', [\App\Http\Controllers\Api\Tenant\DocumentController::class, 'downloadPdf']);
-});
+        // Routes pour les paiements
+        Route::prefix('payments')->group(function () {
+            Route::get('/dashboard', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'dashboard']);
+            Route::get('/invoices', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'invoices']);
+            Route::get('/history', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'history']);
+            Route::get('/properties', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'properties']);
+            Route::get('/filters/options', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'getFilterOptions']);
+            Route::get('/stats/monthly', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'monthlyStats']);
+            Route::get('/check-status/{paymentId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'checkStatus']);
+            Route::post('/pay/{leaseId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'payMonthly']);
+            Route::get('/receipt/{paymentId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'downloadReceipt']);
+        });
 
-// Routes pour le dossier
-Route::prefix('dossier')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'show']);
-    Route::put('/', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'update']);
-    Route::get('/shareable-contacts', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'getShareableContacts']);
-    Route::post('/publish', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'publish']);
-    Route::get('/preview', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'preview']);
-    Route::get('/download', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'download']); // ROUTE AJOUTÉE
-    Route::get('/public/{shareUrl}', [\App\Http\Controllers\Api\Tenant\DossierController::class, 'publicShow']);
-});
-
-// Paiement
-
-
-Route::prefix('payments')->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'dashboard']);
-    Route::get('/invoices', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'invoices']);
-    Route::get('/history', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'history']);
-    Route::get('/properties', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'properties']);
-    Route::get('/filters/options', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'getFilterOptions']);
-    Route::get('/stats/monthly', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'monthlyStats']);
-    Route::get('/check-status/{paymentId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'checkStatus']);
-
-    // Payer le loyer du mois pour un bien
-    Route::post('/pay/{leaseId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'payMonthly']);
-
-    Route::get('/receipt/{paymentId}', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'downloadReceipt']);
-});
-
-// Route pour payer une facture existante
-Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'payInvoice']);
-
-// Route webhook (publique)
-Route::post('/webhooks/fedapay-payment', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'webhook']);
-
-
+        // Route pour payer une facture existante
+        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Api\Tenant\TenantPaymentController::class, 'payInvoice']);
     });
 
     /* =========================
