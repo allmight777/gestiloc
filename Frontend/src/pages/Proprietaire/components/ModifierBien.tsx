@@ -12,15 +12,12 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { propertyService, uploadService } from "@/services/api";
 
 /**
- * ✅ Même style & mêmes couleurs EXACTEMENT que "AjouterLocataire"
- * - Header gradient: #529D21 -> #83C757 (vert)
- * - Accents: vert #529D21 + vert clair #83C757
- * - Halos: vert subtil
- * ✅ Logique inchangée
+ * ✅ Formulaire de modification de bien
+ * Même style que "AjouterBien"
  */
 
 const styles = `
@@ -56,11 +53,10 @@ const styles = `
     position: relative;
   }
 
-  /* ✅ même ambiance "AjouterLocataire" */
   .page::before{
     content:"";
     position: fixed;
-    inset: 0;
+    inset:0;
     background:
       radial-gradient(900px 520px at 12% -8%, rgba(82,157,33,.16) 0%, rgba(82,157,33,0) 62%),
       radial-gradient(900px 520px at 92% 8%, rgba(131,199,87,.14) 0%, rgba(131,199,87,0) 64%),
@@ -478,6 +474,13 @@ const styles = `
     flex-wrap: wrap;
   }
 
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+  }
+
   @media (max-width: 980px){
     .grid{ grid-template-columns: 1fr; }
     .page{ padding: 16px; }
@@ -500,27 +503,25 @@ interface FormData {
   district: string;
   zip_code: string;
   surface: string;
-  room_count: string;      // Nombre de pièces
-  bedroom_count: string;   // Nombre de chambres
-  bathroom_count: string;  // Nombre de salles de bain
+  room_count: string;
+  bedroom_count: string;
+  bathroom_count: string;
   rent_amount: string;
-  charges_amount: string;  // Charges mensuelles
-  caution: string;         // Caution/Garantie
+  charges_amount: string;
+  caution: string;
   status: string;
   reference_code: string;
-  // Caractéristiques supplémentaires
-  terrace: boolean;        // Terrasse
-  balcony: boolean;        // Balcon
-  garden: boolean;         // Jardin
-  parking: boolean;        // Parking
-  floor: string;          // Étage
-  elevator: boolean;       // Ascenseur
-  furnished: boolean;      // Meublé
-  heating_type: string;    // Type de chauffage
-  energy_class: string;    // Classe énergétique
+  terrace: boolean;
+  balcony: boolean;
+  garden: boolean;
+  parking: boolean;
+  floor: string;
+  elevator: boolean;
+  furnished: boolean;
+  heating_type: string;
+  energy_class: string;
 }
 
-type CreatePropertyPayload = any;
 type FormErrors = Partial<Record<keyof FormData | "photos", string>>;
 
 type ApiErr = {
@@ -560,12 +561,16 @@ function normalizeApiError(err: ApiErr, fallback: string) {
   return fallback;
 }
 
-export const AjouterBien = ({
+export const ModifierBien = ({
   notify,
 }: {
   notify?: (msg: string, type: "success" | "info" | "error") => void;
 }) => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+  const [propertyData, setPropertyData] = useState<any>(null);
 
   const [formData, setFormData] = useState<FormData>({
     type: "apartment",
@@ -580,11 +585,10 @@ export const AjouterBien = ({
     bedroom_count: "",
     bathroom_count: "",
     rent_amount: "",
-    charges_amount: "",  // Charges mensuelles
-    caution: "",         // Caution/Garantie
+    charges_amount: "",
+    caution: "",
     status: "available",
     reference_code: "",
-    // Caractéristiques supplémentaires
     terrace: false,
     balcony: false,
     garden: false,
@@ -597,12 +601,11 @@ export const AjouterBien = ({
   });
 
   const [photos, setPhotos] = useState<File[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [banner, setBanner] = useState<{ title: string; text?: string } | null>(null);
-
-  const navigate = useNavigate();
 
   const nameRef = useRef<HTMLInputElement | null>(null);
   const surfaceRef = useRef<HTMLInputElement | null>(null);
@@ -635,7 +638,6 @@ export const AjouterBien = ({
     if (!files) return;
 
     const arr = Array.from(files);
-
     const maxPhotos = 8;
     const maxSize = 5 * 1024 * 1024;
     const ok = arr.filter((f) => f.size <= maxSize);
@@ -652,13 +654,17 @@ export const AjouterBien = ({
     clearError("photos");
   };
 
-  const handleRemovePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-    setPhotoPreviews((prev) => {
-      const toRemove = prev[index];
-      if (toRemove) URL.revokeObjectURL(toRemove);
-      return prev.filter((_, i) => i !== index);
-    });
+  const handleRemovePhoto = (index: number, isExisting: boolean = false) => {
+    if (isExisting) {
+      setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+    } else {
+      setPhotos((prev) => prev.filter((_, i) => i !== index));
+      setPhotoPreviews((prev) => {
+        const toRemove = prev[index];
+        if (toRemove) URL.revokeObjectURL(toRemove);
+        return prev.filter((_, i) => i !== index);
+      });
+    }
   };
 
   useEffect(() => {
@@ -666,6 +672,60 @@ export const AjouterBien = ({
       photoPreviews.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [photoPreviews]);
+
+  // Fetch property data
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!id) return;
+      
+      try {
+        setIsFetching(true);
+        const property = await propertyService.getProperty(Number(id));
+        setPropertyData(property);
+        
+        const p = property;
+        setFormData({
+          type: p.type || "apartment",
+          name: p.name || p.title || "",
+          description: p.description || "",
+          address: p.address || "",
+          city: p.city || "",
+          district: p.district || "",
+          zip_code: p.zip_code || "",
+          surface: p.surface?.toString() || "",
+          room_count: p.room_count?.toString() || "",
+          bedroom_count: p.bedroom_count?.toString() || "",
+          bathroom_count: p.bathroom_count?.toString() || "",
+          rent_amount: p.rent_amount?.toString() || "",
+          charges_amount: p.charges_amount?.toString() || "",
+          caution: p.caution?.toString() || "",
+          status: p.status || "available",
+          reference_code: p.reference_code || "",
+          terrace: p.meta?.terrace || false,
+          balcony: p.meta?.balcony || false,
+          garden: p.meta?.garden || false,
+          parking: p.meta?.parking || false,
+          floor: p.meta?.floor?.toString() || "",
+          elevator: p.meta?.elevator || false,
+          furnished: p.meta?.furnished || false,
+          heating_type: p.meta?.heating_type || "",
+          energy_class: p.meta?.energy_class || "",
+        });
+        
+        if (p.photos && p.photos.length > 0) {
+          setExistingPhotos(p.photos);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement du bien:", error);
+        pushNotify("Erreur lors du chargement du bien", "error");
+        navigate("/proprietaire/mes-biens");
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id]);
 
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
@@ -712,7 +772,7 @@ export const AjouterBien = ({
     setIsLoading(true);
 
     try {
-      // 1️⃣ Upload des photos si présentes
+      // Upload new photos if present
       let uploadedPhotoUrls: string[] = [];
       if (photos.length > 0) {
         for (const file of photos) {
@@ -721,13 +781,14 @@ export const AjouterBien = ({
         }
       }
 
-      // 2️⃣ Payload inchangé
-      const payload: CreatePropertyPayload = {
+      // Combine existing and new photos
+      const allPhotos = [...existingPhotos, ...uploadedPhotoUrls];
+
+      const payload = {
         type: formData.type,
         title: formData.name.trim(),
         name: formData.name.trim(),
         description: formData.description || null,
-
         address: formData.address,
         district: formData.district || null,
         city: formData.city,
@@ -735,20 +796,17 @@ export const AjouterBien = ({
         zip_code: formData.zip_code || null,
         latitude: null,
         longitude: null,
-
         surface: formData.surface ? parseFloat(formData.surface) : null,
         room_count: formData.room_count ? parseInt(formData.room_count) : null,
         bedroom_count: formData.bedroom_count ? parseInt(formData.bedroom_count) : null,
         bathroom_count: formData.bathroom_count ? parseInt(formData.bathroom_count) : null,
-
         rent_amount: formData.rent_amount ? parseFloat(formData.rent_amount) : null,
         charges_amount: formData.charges_amount ? parseFloat(formData.charges_amount) : null,
         caution: formData.caution ? parseFloat(formData.caution) : null,
         status: formData.status,
-
         reference_code: formData.reference_code || null,
         amenities: [],
-        photos: uploadedPhotoUrls.length ? uploadedPhotoUrls : null,
+        photos: allPhotos.length ? allPhotos : null,
         meta: {
           terrace: formData.terrace,
           balcony: formData.balcony,
@@ -762,14 +820,14 @@ export const AjouterBien = ({
         },
       };
 
-      const property = await propertyService.createProperty(payload);
-      console.log("Property created:", property);
+      await propertyService.updateProperty(Number(id), payload);
+      console.log("Property updated:", propertyData);
 
-      pushNotify("✅ Le bien a été ajouté avec succès !", "success");
+      pushNotify("✅ Le bien a été modifié avec succès !", "success");
       navigate("/proprietaire/mes-biens");
     } catch (e: any) {
       const err = e as ApiErr;
-      console.error("Erreur lors de l'ajout du bien:", err);
+      console.error("Erreur lors de la modification du bien:", err);
 
       if (err?.response?.status === 422 && err?.response?.data?.errors) {
         const be = err.response.data.errors;
@@ -795,8 +853,8 @@ export const AjouterBien = ({
         return;
       }
 
-      const msg = normalizeApiError(err, "Une erreur est survenue lors de l'ajout du bien.");
-      setBanner({ title: "Impossible d’enregistrer", text: msg });
+      const msg = normalizeApiError(err, "Une erreur est survenue lors de la modification du bien.");
+      setBanner({ title: "Impossible d'enregistrer", text: msg });
       pushNotify(msg, "error");
     } finally {
       setIsLoading(false);
@@ -805,11 +863,41 @@ export const AjouterBien = ({
 
   const handleCancel = () => {
     if (confirm("Êtes-vous sûr de vouloir annuler ? Les modifications seront perdues.")) {
-      navigate("/proprietaire/biens");
+      navigate("/proprietaire/mes-biens");
     }
   };
 
-  const photosRemaining = useMemo(() => Math.max(0, 8 - photos.length), [photos.length]);
+  const photosRemaining = useMemo(() => Math.max(0, 8 - photos.length - existingPhotos.length), [photos.length, existingPhotos.length]);
+
+  const getBackendOrigin = () => {
+    const baseURL = "http://localhost:8000";
+    try {
+      return new URL(baseURL).origin;
+    } catch {
+      return window.location.origin;
+    }
+  };
+
+  const resolvePhotoUrl = (p?: string | null) => {
+    if (!p) return null;
+    if (p.startsWith("http://") || p.startsWith("https://")) return p;
+    const origin = getBackendOrigin();
+    if (p.startsWith("/storage/")) return `${origin}${p}`;
+    const normalized = p.replace(/\\/g, "/").replace(/^\/+/, "");
+    return `${origin}/storage/${normalized}`;
+  };
+
+  if (isFetching) {
+    return (
+      <div className="page">
+        <div className="shell">
+          <div className="loading-container">
+            <Loader2 size={40} className="animate-spin" style={{ color: "#529D21" }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -860,9 +948,9 @@ export const AjouterBien = ({
                 <div className="titleWrap">
                   <h1 className="title">
                     <Building2 size={22} />
-                    Ajouter un bien
+                    Modifier le bien
                   </h1>
-                  <p className="subtitle">Même look premium (couleurs + halos) que “AjouterLocataire”.</p>
+                  <p className="subtitle">Modifiez les informations de votre bien immobilier.</p>
                 </div>
 
                 <div className="badgeRow">
@@ -1298,7 +1386,6 @@ export const AjouterBien = ({
                           />
                         </div>
                         {formErrors.rent_amount ? <div className="error">{formErrors.rent_amount}</div> : null}
-                        
                       </div>
                     </div>
 
@@ -1321,10 +1408,9 @@ export const AjouterBien = ({
                           />
                         </div>
                         {formErrors.charges_amount ? <div className="error">{formErrors.charges_amount}</div> : null}
-                        
                       </div>
 
-                      <div className="field">
+                      <div className="field" style={{ marginTop: 12 }}>
                         <label className="label">Caution/Garantie (FCFA)</label>
                         <div className="iconInput">
                           <span className="iconLeft">
@@ -1342,7 +1428,6 @@ export const AjouterBien = ({
                           />
                         </div>
                         {formErrors.caution ? <div className="error">{formErrors.caution}</div> : null}
-                        
                       </div>
                     </div>
                   </div>
@@ -1369,18 +1454,35 @@ export const AjouterBien = ({
 
                 {formErrors.photos ? <div className="error" style={{ marginBottom: 10 }}>{formErrors.photos}</div> : null}
 
-                {photoPreviews.length > 0 ? (
+                {/* Existing photos */}
+                {existingPhotos.length > 0 && (
                   <div className="previews">
-                    {photoPreviews.map((src, index) => (
-                      <div className="thumb" key={index}>
-                        <img src={src} alt={`Photo ${index + 1}`} />
-                        <button type="button" className="remove" onClick={() => handleRemovePhoto(index)} aria-label="Supprimer">
+                    {existingPhotos.map((src, index) => (
+                      <div className="thumb" key={`existing-${index}`}>
+                        <img src={resolvePhotoUrl(src) || ""} alt={`Photo ${index + 1}`} />
+                        <button type="button" className="remove" onClick={() => handleRemovePhoto(index, true)} aria-label="Supprimer">
                           <X size={14} />
                         </button>
                       </div>
                     ))}
                   </div>
-                ) : (
+                )}
+
+                {/* New photo previews */}
+                {photoPreviews.length > 0 && (
+                  <div className="previews">
+                    {photoPreviews.map((src, index) => (
+                      <div className="thumb" key={`new-${index}`}>
+                        <img src={src} alt={`Nouvelle photo ${index + 1}`} />
+                        <button type="button" className="remove" onClick={() => handleRemovePhoto(index, false)} aria-label="Supprimer">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {existingPhotos.length === 0 && photoPreviews.length === 0 && (
                   <div className="help">Aucune photo ajoutée.</div>
                 )}
               </div>
@@ -1403,4 +1505,4 @@ export const AjouterBien = ({
   );
 };
 
-export default AjouterBien;
+export default ModifierBien;

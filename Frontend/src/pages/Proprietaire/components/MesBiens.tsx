@@ -2008,8 +2008,7 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
               property={selectedProperty} 
               onClose={() => setSelectedProperty(null)} 
               onEdit={() => {
-                setSelectedProperty(null);
-                // Could navigate to edit page or open edit modal
+                navigate(`/proprietaire/modifier-bien/${selectedProperty.id}`);
               }}
               canEdit={selectedProperty.can_edit !== false}
             />

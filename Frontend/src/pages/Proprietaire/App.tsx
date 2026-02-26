@@ -10,6 +10,7 @@ import { Property } from './components/Property';
 import { Profile } from './components/Profile';
 import { Bureau } from './components/Bureau';
 import { AjouterBien } from './components/AjouterBien';
+import ModifierBien from './components/ModifierBien';
 import { AjouterLocataire } from './components/AjouterLocataire';
 import NouvelleLocation from './components/NouvelleLocation';
 import { Settings } from './components/Settings';
@@ -232,6 +233,20 @@ const ProprietaireApp: React.FC = () => {
             toggleTheme={() => {}}
           >
             <AjouterBien />
+          </Layout>
+        } />
+
+        <Route path="modifier-bien/:id" element={
+          <Layout
+            activeTab="biens"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => {}}
+          >
+            <ModifierBien notify={notify} />
           </Layout>
         } />
 

@@ -527,10 +527,54 @@ export const uploadService = {
 // ================= TENANT SERVICE =================
 
 export interface InviteTenantPayload {
+  // Informations de base
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
+  
+  // Informations personnelles
+  tenant_type?: string;
+  birth_date?: string;
+  birth_place?: string;
+  marital_status?: string;
+  
+  // Adresse
+  address?: string;
+  city?: string;
+  zip_code?: string;
+  country?: string;
+  
+  // Situation professionnelle
+  profession?: string;
+  employer?: string;
+  contract_type?: string;
+  monthly_income?: string;
+  annual_income?: string;
+  
+  // Contact d'urgence
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_email?: string;
+  
+  // Notes
+  notes?: string;
+  
+  // Garant
+  has_guarantor?: boolean;
+  guarantor_name?: string;
+  guarantor_phone?: string;
+  guarantor_email?: string;
+  guarantor_profession?: string;
+  guarantor_monthly_income?: string;
+  guarantor_annual_income?: string;
+  guarantor_address?: string;
+  guarantor_birth_date?: string;
+  guarantor_birth_place?: string;
+
+  // Documents
+  document_type?: string;
+  document_name?: string;
 }
 
 export interface CompleteTenantRegistrationPayload {

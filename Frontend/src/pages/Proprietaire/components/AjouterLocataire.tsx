@@ -10,7 +10,7 @@ import {
   Calendar,
   User,
   MapPin,
-  Briefcase,
+  Briefcase,    
   Home,
   X,
   ArrowRight,
@@ -22,6 +22,10 @@ import {
   Sparkles,
   ShieldCheck,
   ChevronRight,
+  Upload,
+  FileText,
+  Trash2,
+  Plus,
 } from "lucide-react";
 
 /**
@@ -31,7 +35,7 @@ import {
  * ✅ Logique inchangée
  */
 
-type TabKey = "infos" | "contact" | "pro" | "garant";
+type TabKey = "infos" | "pro" | "garant" | "documents";
 type ToastType = "success" | "error" | "info";
 
 const styles = `
@@ -476,6 +480,84 @@ const styles = `
   .toast.error{ border-color: rgba(244,63,94,.30); background: rgba(255,241,242,.92); }
   .toast.info{ border-color: rgba(82,157,33,.30); background: rgba(236,253,245,.92); }
 
+  /* Upload zone styles */
+  .upload-zone {
+    border: 2px dashed rgba(148,163,184,.45);
+    border-radius: 14px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    background: rgba(248,250,252,.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    transition: all 0.2s ease;
+    min-height: 120px;
+    justify-content: center;
+  }
+
+  .upload-zone:hover {
+    border-color: rgba(82,157,33,.6);
+    background: rgba(82,157,33,.05);
+  }
+
+  .upload-zone.has-file {
+    border-color: rgba(82,157,33,.6);
+    background: rgba(82,157,33,.08);
+  }
+
+  .upload-zone-text {
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+
+  .upload-zone-subtext {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-weight: 650;
+  }
+
+  /* Document card styles */
+  .document-card {
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(148,163,184,.35);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .document-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .document-card-title {
+    font-weight: 950;
+    font-size: 0.9rem;
+    color: #334155;
+  }
+
+  .document-preview {
+    background: rgba(82,157,33,.08);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .document-preview-name {
+    font-weight: 750;
+    font-size: 0.85rem;
+    color: #334155;
+  }
+
   @media (max-width: 768px){
     .form-container{ padding: 1rem; }
     .form-header{ padding: 1.5rem; }
@@ -490,6 +572,7 @@ const styles = `
 `;
 
 interface FormData {
+  tenantType: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -502,10 +585,13 @@ interface FormData {
   country: string;
   profession: string;
   employer: string;
+  contractType: string;
+  monthlyIncome: string;
   annualIncome: string;
   maritalStatus: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  emergencyContactEmail: string;
   notes: string;
   hasGuarantor: boolean;
   guarantorName: string;
@@ -513,7 +599,10 @@ interface FormData {
   guarantorEmail: string;
   guarantorAddress: string;
   guarantorProfession: string;
-  guarantorIncome: string;
+  guarantorBirthDate: string;
+  guarantorBirthPlace: string;
+  guarantorMonthlyIncome: string;
+  guarantorAnnualIncome: string;
 }
 
 type FieldKey = keyof FormData;
@@ -524,6 +613,7 @@ export const AjouterLocataire: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("infos");
 
   const [formData, setFormData] = useState<FormData>({
+    tenantType: "particulier",
     firstName: "",
     lastName: "",
     email: "",
@@ -536,10 +626,13 @@ export const AjouterLocataire: React.FC = () => {
     country: "France",
     profession: "",
     employer: "",
+    contractType: "",
+    monthlyIncome: "",
     annualIncome: "",
     maritalStatus: "single",
     emergencyContactName: "",
     emergencyContactPhone: "",
+    emergencyContactEmail: "",
     notes: "",
     hasGuarantor: false,
     guarantorName: "",
@@ -547,11 +640,15 @@ export const AjouterLocataire: React.FC = () => {
     guarantorEmail: "",
     guarantorAddress: "",
     guarantorProfession: "",
-    guarantorIncome: "",
+    guarantorBirthDate: "",
+    guarantorBirthPlace: "",
+    guarantorMonthlyIncome: "",
+    guarantorAnnualIncome: "",
   });
 
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<{ id: string; type: string; file: File | null; name: string }[]>([]);
 
   const [toasts, setToasts] = useState<{ id: string; type: ToastType; title: string; message?: string }[]>([]);
 
@@ -597,7 +694,10 @@ export const AjouterLocataire: React.FC = () => {
         delete next.guarantorEmail;
         delete next.guarantorAddress;
         delete next.guarantorProfession;
-        delete next.guarantorIncome;
+        delete next.guarantorBirthDate;
+        delete next.guarantorBirthPlace;
+        delete next.guarantorMonthlyIncome;
+        delete next.guarantorAnnualIncome;
       }
       return next;
     });
@@ -616,14 +716,10 @@ export const AjouterLocataire: React.FC = () => {
       req("lastName", "Nom");
       req("birthDate", "Date de naissance");
       req("birthPlace", "Lieu de naissance");
-    }
-
-    if (tab === "contact") {
       req("email", "Email");
       if (formData.email.trim() && !isEmail(formData.email.trim())) next.email = "Email invalide.";
       req("phone", "Téléphone");
       req("address", "Adresse");
-      req("zipCode", "Code postal");
       req("city", "Ville");
       req("country", "Pays");
     }
@@ -641,8 +737,9 @@ export const AjouterLocataire: React.FC = () => {
           next.guarantorEmail = "Email du garant invalide.";
         }
         req("guarantorProfession", "Profession du garant");
-        req("guarantorIncome", "Revenu du garant");
         req("guarantorAddress", "Adresse du garant");
+        req("guarantorBirthDate", "Date de naissance du garant");
+        req("guarantorBirthPlace", "Lieu de naissance du garant");
       }
     }
 
@@ -674,15 +771,14 @@ export const AjouterLocataire: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ok = validateTab("infos") && validateTab("contact") && validateTab("pro") && validateTab("garant");
+      const ok = validateTab("infos") && validateTab("pro") && validateTab("garant");
 
       if (!ok) {
         pushToast("error", "Champs manquants", "Merci de compléter les champs requis.");
         const errKeys = Object.keys(fieldErrors);
         if (errKeys.length) {
           const k = errKeys[0];
-          if (["firstName", "lastName", "birthDate", "birthPlace"].includes(k)) setActiveTab("infos");
-          else if (["email", "phone", "address", "zipCode", "city", "country"].includes(k)) setActiveTab("contact");
+          if (["firstName", "lastName", "birthDate", "birthPlace", "email", "phone", "address", "city", "country"].includes(k)) setActiveTab("infos");
           else if (["profession"].includes(k)) setActiveTab("pro");
           else setActiveTab("garant");
         }
@@ -691,10 +787,54 @@ export const AjouterLocataire: React.FC = () => {
       }
 
       const invitePayload = {
+        // Informations de base
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim() || undefined,
+        
+        // Informations personnelles
+        tenant_type: formData.tenantType || undefined,
+        birth_date: formData.birthDate || undefined,
+        birth_place: formData.birthPlace || undefined,
+        marital_status: formData.maritalStatus || undefined,
+        
+        // Adresse
+        address: formData.address || undefined,
+        city: formData.city || undefined,
+        zip_code: formData.zipCode || undefined,
+        country: formData.country || undefined,
+        
+        // Situation professionnelle
+        profession: formData.profession || undefined,
+        employer: formData.employer || undefined,
+        contract_type: formData.contractType || undefined,
+        monthly_income: formData.monthlyIncome || undefined,
+        annual_income: formData.annualIncome || undefined,
+        
+        // Contact d'urgence
+        emergency_contact_name: formData.emergencyContactName || undefined,
+        emergency_contact_phone: formData.emergencyContactPhone || undefined,
+        emergency_contact_email: formData.emergencyContactEmail || undefined,
+        
+        // Notes
+        notes: formData.notes || undefined,
+        
+        // Garant
+        has_guarantor: formData.hasGuarantor || undefined,
+        guarantor_name: formData.guarantorName || undefined,
+        guarantor_phone: formData.guarantorPhone || undefined,
+        guarantor_email: formData.guarantorEmail || undefined,
+        guarantor_profession: formData.guarantorProfession || undefined,
+        guarantor_monthly_income: formData.guarantorMonthlyIncome || undefined,
+        guarantor_annual_income: formData.guarantorAnnualIncome || undefined,
+        guarantor_address: formData.guarantorAddress || undefined,
+        guarantor_birth_date: formData.guarantorBirthDate || undefined,
+        guarantor_birth_place: formData.guarantorBirthPlace || undefined,
+
+        // Documents - envoyer le premier document ajouté
+        document_type: documents.length > 0 && documents[0].type ? documents[0].type : undefined,
+        document_name: documents.length > 0 && documents[0].name ? documents[0].name : undefined,
       };
 
       console.log('📋 FormData before sending:', formData);
@@ -738,8 +878,7 @@ export const AjouterLocataire: React.FC = () => {
           setFieldErrors(next);
           pushToast("error", "Validation", "Corrige les champs en rouge.");
           const first = Object.keys(next)[0] as FieldKey;
-          if (["firstName", "lastName", "birthDate", "birthPlace"].includes(first)) setActiveTab("infos");
-          else if (["email", "phone", "address", "zipCode", "city", "country"].includes(first)) setActiveTab("contact");
+          if (["firstName", "lastName", "birthDate", "birthPlace", "email", "phone", "address", "city", "country"].includes(first)) setActiveTab("infos");
           else if (["profession"].includes(first)) setActiveTab("pro");
           else setActiveTab("garant");
           return;
@@ -895,10 +1034,6 @@ export const AjouterLocataire: React.FC = () => {
                 <span className="tab-dot" />
                 Informations personnelles
               </button>
-              <button type="button" className={`tab-button ${activeTab === "contact" ? "active" : ""}`} onClick={() => goTab("contact")}>
-                <span className="tab-dot" />
-                Coordonnées
-              </button>
               <button type="button" className={`tab-button ${activeTab === "pro" ? "active" : ""}`} onClick={() => goTab("pro")}>
                 <span className="tab-dot" />
                 Situation professionnelle
@@ -906,6 +1041,10 @@ export const AjouterLocataire: React.FC = () => {
               <button type="button" className={`tab-button ${activeTab === "garant" ? "active" : ""}`} onClick={() => goTab("garant")}>
                 <span className="tab-dot" />
                 Garant
+              </button>
+              <button type="button" className={`tab-button ${activeTab === "documents" ? "active" : ""}`} onClick={() => goTab("documents")}>
+                <span className="tab-dot" />
+                Documents
               </button>
             </div>
 
@@ -923,6 +1062,22 @@ export const AjouterLocataire: React.FC = () => {
                   </h2>
 
                   <div className="form-grid form-grid-2">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Type de locataire <span className="required">*</span>
+                      </label>
+                      <select className="form-select" name="tenantType" value={formData.tenantType} onChange={handleChange}>
+                        <option value="">Sélectionner le type</option>
+                        <option value="particulier">Particulier</option>
+                        <option value="etudiant">Étudiant</option>
+                        <option value="salarie">Salarié</option>
+                        <option value="independant">Indépendant</option>
+                        <option value="retraite">Retraité</option>
+                        <option value="entreprise">Entreprise</option>
+                        <option value="association">Association</option>
+                      </select>
+                    </div>
+
                     <div className="form-group">
                       <label className="form-label">
                         Prénom <span className="required">*</span>
@@ -974,8 +1129,72 @@ export const AjouterLocataire: React.FC = () => {
                   </div>
 
                   <div style={{ marginTop: "1.5rem" }}>
-                    <h3 className="form-label" style={{ marginBottom: "0.75rem" }}>
-                      Contact d&apos;urgence
+                    <h3 className="form-label" style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <Mail size={16} />
+                      Coordonnées
+                    </h3>
+                    <div className="form-grid form-grid-2">
+                      <div className="form-group">
+                        <label className="form-label">
+                          Email <span className="required">*</span>
+                        </label>
+                        <div className="form-input-icon">
+                          <div className="icon-wrapper">
+                            <Mail size={16} />
+                          </div>
+                          <input className={inputClass("email", "form-input")} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="jean.dupont@exemple.com" />
+                        </div>
+                        <FieldError name="email" />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">
+                          Téléphone <span className="required">*</span>
+                        </label>
+                        <div className="form-input-icon">
+                          <div className="icon-wrapper">
+                            <Phone size={16} />
+                          </div>
+                          <input className={inputClass("phone", "form-input")} type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="06 12 34 56 78" />
+                        </div>
+                        <FieldError name="phone" />
+                      </div>
+
+                      <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                        <label className="form-label">
+                          Adresse <span className="required">*</span>
+                        </label>
+                        <div className="form-input-icon">
+                          <div className="icon-wrapper">
+                            <MapPin size={16} />
+                          </div>
+                          <input className={inputClass("address", "form-input")} type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Rue de la Paix" />
+                        </div>
+                        <FieldError name="address" />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">
+                          Ville <span className="required">*</span>
+                        </label>
+                        <input className={inputClass("city", "form-input")} type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Paris" />
+                        <FieldError name="city" />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">
+                          Pays <span className="required">*</span>
+                        </label>
+                        <input className={inputClass("country", "form-input")} type="text" name="country" value={formData.country} onChange={handleChange} placeholder="France" />
+                        <FieldError name="country" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "1.5rem" }}>
+                    <h3 className="form-label" style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <Phone size={16} />
+                      Contact d'urgence
                     </h3>
                     <div className="form-grid form-grid-2">
                       <div className="form-group">
@@ -990,6 +1209,16 @@ export const AjouterLocataire: React.FC = () => {
                             <Phone size={16} />
                           </div>
                           <input className="form-input" type="tel" name="emergencyContactPhone" value={formData.emergencyContactPhone} onChange={handleChange} placeholder="06 12 34 56 78" />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Email</label>
+                        <div className="form-input-icon">
+                          <div className="icon-wrapper">
+                            <Mail size={16} />
+                          </div>
+                          <input className="form-input" type="email" name="emergencyContactEmail" value={formData.emergencyContactEmail} onChange={handleChange} placeholder="contact@exemple.com" />
                         </div>
                       </div>
                     </div>
@@ -1009,106 +1238,6 @@ export const AjouterLocataire: React.FC = () => {
                           pushToast("error", "Champs manquants", "Complète les champs requis.");
                           return;
                         }
-                        setActiveTab("contact");
-                      }}
-                    >
-                      Suivant : Coordonnées
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "contact" && (
-                <div className="section">
-                  <h2 className="section-title">
-                    <Mail size={20} />
-                    Coordonnées
-                    <span className="step">
-                      Étape 2
-                      <ChevronRight size={14} />
-                      4
-                    </span>
-                  </h2>
-
-                  <div className="form-grid form-grid-2">
-                    <div className="form-group">
-                      <label className="form-label">
-                        Email <span className="required">*</span>
-                      </label>
-                      <div className="form-input-icon">
-                        <div className="icon-wrapper">
-                          <Mail size={16} />
-                        </div>
-                        <input className={inputClass("email", "form-input")} type="email" name="email" value={formData.email} onChange={handleChange} placeholder="jean.dupont@exemple.com" />
-                      </div>
-                      <FieldError name="email" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        Téléphone <span className="required">*</span>
-                      </label>
-                      <div className="form-input-icon">
-                        <div className="icon-wrapper">
-                          <Phone size={16} />
-                        </div>
-                        <input className={inputClass("phone", "form-input")} type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="06 12 34 56 78" />
-                      </div>
-                      <FieldError name="phone" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        Adresse <span className="required">*</span>
-                      </label>
-                      <div className="form-input-icon">
-                        <div className="icon-wrapper">
-                          <MapPin size={16} />
-                        </div>
-                        <input className={inputClass("address", "form-input")} type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Rue de la Paix" />
-                      </div>
-                      <FieldError name="address" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        Code postal <span className="required">*</span>
-                      </label>
-                      <input className={inputClass("zipCode", "form-input")} type="text" name="zipCode" value={formData.zipCode} onChange={handleChange} placeholder="75000" />
-                      <FieldError name="zipCode" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        Ville <span className="required">*</span>
-                      </label>
-                      <input className={inputClass("city", "form-input")} type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Paris" />
-                      <FieldError name="city" />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">
-                        Pays <span className="required">*</span>
-                      </label>
-                      <input className={inputClass("country", "form-input")} type="text" name="country" value={formData.country} onChange={handleChange} placeholder="France" />
-                      <FieldError name="country" />
-                    </div>
-                  </div>
-
-                  <div className="bottom-actions" style={{ borderTop: "none", paddingTop: "1.5rem" }}>
-                    <button type="button" className="button button-secondary" onClick={() => setActiveTab("infos")}>
-                      <ArrowLeft size={16} />
-                      Précédent
-                    </button>
-                    <button
-                      type="button"
-                      className="button button-primary"
-                      onClick={() => {
-                        if (!validateTab("contact")) {
-                          pushToast("error", "Champs manquants", "Complète les champs requis.");
-                          return;
-                        }
                         setActiveTab("pro");
                       }}
                     >
@@ -1125,7 +1254,7 @@ export const AjouterLocataire: React.FC = () => {
                     <Briefcase size={20} />
                     Situation professionnelle
                     <span className="step">
-                      Étape 3
+                      Étape 2
                       <ChevronRight size={14} />
                       4
                     </span>
@@ -1146,19 +1275,8 @@ export const AjouterLocataire: React.FC = () => {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Revenu annuel (FCFA)</label>
-                      <div className="form-input-icon">
-                        <div className="icon-wrapper">
-                          <Euro size={16} />
-                        </div>
-                        <input className="form-input" type="number" name="annualIncome" value={formData.annualIncome} onChange={handleChange} placeholder="45000" min="0" step="0.01" />
-                      </div>
-                      <p className="helper-text">Optionnel</p>
-                    </div>
-
-                    <div className="form-group">
                       <label className="form-label">Type de contrat</label>
-                      <select className="form-select" name="contractType" onChange={() => {}}>
+                      <select className="form-select" name="contractType" value={formData.contractType} onChange={handleChange}>
                         <option value="">Sélectionner un type de contrat</option>
                         <option value="cdi">CDI</option>
                         <option value="cdd">CDD</option>
@@ -1169,10 +1287,32 @@ export const AjouterLocataire: React.FC = () => {
                         <option value="autre">Autre</option>
                       </select>
                     </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Revenu mensuel (FCFA)</label>
+                      <div className="form-input-icon">
+                        <div className="icon-wrapper">
+                          <Euro size={16} />
+                        </div>
+                        <input className="form-input" type="number" name="monthlyIncome" value={formData.monthlyIncome} onChange={handleChange} placeholder="3500" min="0" step="0.01" />
+                      </div>
+                      <p className="helper-text">Optionnel</p>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Revenu annuel (FCFA)</label>
+                      <div className="form-input-icon">
+                        <div className="icon-wrapper">
+                          <Euro size={16} />
+                        </div>
+                        <input className="form-input" type="number" name="annualIncome" value={formData.annualIncome} onChange={handleChange} placeholder="45000" min="0" step="0.01" />
+                      </div>
+                      <p className="helper-text">Optionnel</p>
+                    </div>
                   </div>
 
                   <div className="bottom-actions" style={{ borderTop: "none", paddingTop: "1.5rem" }}>
-                    <button type="button" className="button button-secondary" onClick={() => setActiveTab("contact")}>
+                    <button type="button" className="button button-secondary" onClick={() => setActiveTab("infos")}>
                       <ArrowLeft size={16} />
                       Précédent
                     </button>
@@ -1200,7 +1340,7 @@ export const AjouterLocataire: React.FC = () => {
                     <User size={20} />
                     Garant
                     <span className="step">
-                      Étape 4
+                      Étape 3
                       <ChevronRight size={14} />
                       4
                     </span>
@@ -1273,15 +1413,27 @@ export const AjouterLocataire: React.FC = () => {
 
                         <div className="form-group">
                           <label className="form-label">
-                            Revenu annuel (FCFA) <span className="required">*</span>
+                            Revenu mensuel (FCFA) <span className="required">*</span>
                           </label>
                           <div className="form-input-icon">
                             <div className="icon-wrapper">
                               <Euro size={16} />
                             </div>
-                            <input className={inputClass("guarantorIncome", "form-input")} type="number" name="guarantorIncome" value={formData.guarantorIncome} onChange={handleChange} placeholder="60000" min="0" step="0.01" />
+                            <input className={inputClass("guarantorMonthlyIncome", "form-input")} type="number" name="guarantorMonthlyIncome" value={formData.guarantorMonthlyIncome} onChange={handleChange} placeholder="5000" min="0" step="0.01" />
                           </div>
-                          <FieldError name="guarantorIncome" />
+                          <FieldError name="guarantorMonthlyIncome" />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">
+                            Revenu annuel (FCFA)
+                          </label>
+                          <div className="form-input-icon">
+                            <div className="icon-wrapper">
+                              <Euro size={16} />
+                            </div>
+                            <input className="form-input" type="number" name="guarantorAnnualIncome" value={formData.guarantorAnnualIncome} onChange={handleChange} placeholder="60000" min="0" step="0.01" />
+                          </div>
                         </div>
 
                         <div className="form-group" style={{ gridColumn: "1 / -1" }}>
@@ -1290,6 +1442,27 @@ export const AjouterLocataire: React.FC = () => {
                           </label>
                           <input className={inputClass("guarantorAddress", "form-input")} type="text" name="guarantorAddress" value={formData.guarantorAddress} onChange={handleChange} placeholder="Adresse complète du garant" />
                           <FieldError name="guarantorAddress" />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">
+                            Date de naissance <span className="required">*</span>
+                          </label>
+                          <div className="form-input-icon">
+                            <div className="icon-wrapper">
+                              <Calendar size={16} />
+                            </div>
+                            <input className={inputClass("guarantorBirthDate", "form-input")} type="date" name="guarantorBirthDate" value={formData.guarantorBirthDate} onChange={handleChange} />
+                          </div>
+                          <FieldError name="guarantorBirthDate" />
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">
+                            Lieu de naissance <span className="required">*</span>
+                          </label>
+                          <input className={inputClass("guarantorBirthPlace", "form-input")} type="text" name="guarantorBirthPlace" value={formData.guarantorBirthPlace} onChange={handleChange} placeholder="Ville, Pays" />
+                          <FieldError name="guarantorBirthPlace" />
                         </div>
                       </div>
                     </div>
@@ -1301,9 +1474,162 @@ export const AjouterLocataire: React.FC = () => {
                       Précédent
                     </button>
 
-                    <button type="button" className="button button-secondary" onClick={() => setActiveTab("infos")}>
-                      <Home size={16} />
-                      Retour au début
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      onClick={() => {
+                        if (!validateTab("garant")) {
+                          pushToast("error", "Champs manquants", "Complète les champs requis.");
+                          return;
+                        }
+                        setActiveTab("documents");
+                      }}
+                    >
+                      Suivant : Documents
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "documents" && (
+                <div className="section">
+                  <h2 className="section-title">
+                    <FileText size={20} />
+                    Documents
+                    <span className="step">
+                      Étape 4
+                      <ChevronRight size={14} />
+                      4
+                    </span>
+                  </h2>
+
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <p className="helper-text" style={{ marginBottom: "1rem" }}>
+                      Ajoutez les documents nécessaires pour le dossier du locataire (pièce d'identité, contrat de travail, bulletins de salaire, etc.)
+                    </p>
+
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => {
+                        setDocuments([...documents, { id: Date.now().toString(), type: "", file: null, name: "" }]);
+                      }}
+                    >
+                      <Plus size={16} />
+                      Ajouter un document
+                    </button>
+                  </div>
+
+                  {documents.length === 0 ? (
+                    <div
+                      style={{
+                        border: "2px dashed rgba(148,163,184,.45)",
+                        borderRadius: "14px",
+                        padding: "3rem 2rem",
+                        textAlign: "center",
+                        background: "rgba(248,250,252,.52)",
+                      }}
+                    >
+                      <Upload size={40} style={{ color: "#94a3b8", marginBottom: "0.75rem" }} />
+                      <p style={{ fontWeight: 850, color: "#64748b", margin: 0 }}>Aucun document ajouté</p>
+                      <p style={{ fontWeight: 650, color: "#94a3b8", margin: "0.5rem 0 0 0", fontSize: "0.85rem" }}>Cliquez sur "Ajouter un document" pour commencer</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {documents.map((doc, index) => (
+                        <div
+                          key={doc.id}
+                          style={{
+                            background: "rgba(255,255,255,.72)",
+                            border: "1px solid rgba(148,163,184,.35)",
+                            borderRadius: "12px",
+                            padding: "1.25rem",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "1rem",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontWeight: 950, fontSize: "0.9rem", color: "#334155" }}>Document {index + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDocuments(documents.filter((d) => d.id !== doc.id));
+                              }}
+                              style={{
+                                background: "rgba(225,29,72,.08)",
+                                border: "1px solid rgba(225,29,72,.18)",
+                                borderRadius: "8px",
+                                padding: "0.5rem",
+                                cursor: "pointer",
+                                color: "#e11d48",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+
+                          <div className="form-grid form-grid-2">
+                            <div className="form-group">
+                              <label className="form-label">Type de document</label>
+                              <select
+                                className="form-select"
+                                value={doc.type}
+                                onChange={(e) => {
+                                  const updated = [...documents];
+                                  updated[index].type = e.target.value;
+                                  setDocuments(updated);
+                                }}
+                              >
+                                <option value="">Sélectionner le type</option>
+                                <option value="cni">Carte Nationale d'Identité (CNI)</option>
+                                <option value="passeport">Passeport</option>
+                                <option value="titre_sejour">Titre de séjour</option>
+                                <option value="permis_conduire">Permis de conduire</option>
+                                <option value="carte_electeur">Carte d'électeur</option>
+                                <option value="carte_mutuelle">Carte de mutuelle</option>
+                                <option value="autre">Autre</option>
+                              </select>
+                            </div>
+
+                            <div className="form-group">
+                              <label className="form-label">Fichier</label>
+                              <label className={`upload-zone ${doc.file ? 'has-file' : ''}`}>
+                                <Upload size={32} />
+                                <span className="upload-zone-text">
+                                  {doc.file ? doc.file.name : 'Cliquer ou glisser le fichier ici'}
+                                </span>
+                                <span className="upload-zone-subtext">
+                                  {doc.file ? '' : 'PDF, JPG, PNG, DOC (max 5Mo)'}
+                                </span>
+                                <input
+                                  type="file"
+                                  hidden
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    const updated = [...documents];
+                                    updated[index].file = file;
+                                    updated[index].name = file?.name || "";
+                                    setDocuments(updated);
+                                  }}
+                                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="bottom-actions" style={{ borderTop: "none", paddingTop: "1.5rem" }}>
+                    <button type="button" className="button button-secondary" onClick={() => setActiveTab("garant")}>
+                      <ArrowLeft size={16} />
+                      Précédent
                     </button>
 
                     <button type="submit" className="button button-primary" disabled={isLoading}>
