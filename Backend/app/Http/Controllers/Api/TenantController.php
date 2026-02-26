@@ -434,19 +434,52 @@ HTML;
             ]);
 
             // Créer le locataire avec le user_id
-            $tenant = Tenant::create([
+            $tenantData = [
                 'user_id' => $tenantUser->id,
                 'first_name' => $data['first_name'] ?? '',
                 'last_name' => $data['last_name'] ?? '',
-                'status' => 'candidate', // Statut ENUM valide: 'candidate', 'active', 'inactive'
-                'meta' => [
-                    'landlord_id' => $landlord->id,
-                    'invitation_email' => $data['email'],
-                    'phone' => $data['phone'] ?? null,
-                    'invitation_id' => $invitation->id,
-                    'invitation_status' => 'invited',
-                ],
-            ]);
+                'email' => $data['email'] ?? '',
+                'phone' => $data['phone'] ?? null,
+                'status' => 'candidate',
+                'tenant_type' => $data['tenant_type'] ?? null,
+                'birth_date' => $data['birth_date'] ?? null,
+                'birth_place' => $data['birth_place'] ?? null,
+                'marital_status' => $data['marital_status'] ?? null,
+                'address' => $data['address'] ?? null,
+                'zip_code' => $data['zip_code'] ?? null,
+                'city' => $data['city'] ?? null,
+                'country' => $data['country'] ?? null,
+                'profession' => $data['profession'] ?? null,
+                'employer' => $data['employer'] ?? null,
+                'contract_type' => $data['contract_type'] ?? null,
+                'monthly_income' => $data['monthly_income'] ?? null,
+                'annual_income' => $data['annual_income'] ?? null,
+                'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
+                'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+                'emergency_contact_email' => $data['emergency_contact_email'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ];
+
+            // Ajouter les informations du garant si présentes
+            if (!empty($data['has_guarantor']) || !empty($data['guarantor_name'])) {
+                $tenantData['guarantor_name'] = $data['guarantor_name'] ?? null;
+                $tenantData['guarantor_phone'] = $data['guarantor_phone'] ?? null;
+                $tenantData['guarantor_email'] = $data['guarantor_email'] ?? null;
+                $tenantData['guarantor_profession'] = $data['guarantor_profession'] ?? null;
+                $tenantData['guarantor_monthly_income'] = $data['guarantor_monthly_income'] ?? null;
+                $tenantData['guarantor_annual_income'] = $data['guarantor_annual_income'] ?? $data['guarantor_income'] ?? null;
+                $tenantData['guarantor_address'] = $data['guarantor_address'] ?? null;
+                $tenantData['guarantor_birth_date'] = $data['guarantor_birth_date'] ?? null;
+                $tenantData['guarantor_birth_place'] = $data['guarantor_birth_place'] ?? null;
+            }
+
+            // Ajouter les informations de document si présentes
+            if (!empty($data['document_type']) || !empty($data['document_name'])) {
+                $tenantData['document_type'] = $data['document_type'] ?? null;
+                $tenantData['document_path'] = $data['document_file'] ?? $data['document_name'] ?? null;
+            }
+
+            $tenant = Tenant::create($tenantData);
 
             // Si un property_id est fourni, vérifier qu'il est disponible
             if (!empty($data['property_id'])) {
@@ -636,7 +669,15 @@ HTML;
             // Déterminer le statut complet
             $status = $tenant->status ?? 'active';
             $invitationStatus = $meta['invitation_status'] ?? null;
-            $fullStatus = ($status === 'candidate' && $invitationStatus) ? $invitationStatus : $status;
+            $acceptedAt = $meta['accepted_at'] ?? null;
+
+            // Si le Tenant a été invité et a accepté (accepted_at présent), passer à 'active'
+            $fullStatus = $status;
+            if ($status === 'candidate' && $acceptedAt) {
+                $fullStatus = 'active';
+            } elseif ($status === 'candidate' && $invitationStatus) {
+                $fullStatus = $invitationStatus;
+            }
 
             // Formater les biens
             $formattedProperties = $properties->map(function ($property) {
@@ -664,10 +705,16 @@ HTML;
                 'email'          => $email,
                 'phone'          => $phone,
                 'status'         => $fullStatus,
+                'tenant_status'  => $status, // Statut brut du tenant
                 'solvency_score' => $tenant->solvency_score,
-                'is_invited'     => $status === 'candidate' || $fullStatus === 'invited' ||
-                                   (!empty($meta['invitation_id']) && empty($meta['accepted_at'])),
-                'invitation_id'  => $meta['invitation_id'] ?? null,
+                'is_invited'    => $status === 'candidate' && !$acceptedAt,
+                'invitation'     => [
+                    'id'          => $meta['invitation_id'] ?? null,
+                    'sent_at'     => $tenant->created_at?->toISOString(),
+                    'accepted_at' => $acceptedAt,
+                    'is_pending'  => $status === 'candidate' && !$acceptedAt,
+                    'is_accepted' => (bool) $acceptedAt,
+                ],
                 'properties'     => $formattedProperties,
                 'active_property' => $formattedProperties->firstWhere('is_active', true),
                 'properties_count' => $properties->count(),

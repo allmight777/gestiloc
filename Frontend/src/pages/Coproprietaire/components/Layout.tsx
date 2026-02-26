@@ -107,7 +107,7 @@ export const Layout: React.FC<LayoutProps> = ({
       return;
     }
 
-    const laravelBaseUrl = 'http://localhost:8000';
+    const laravelBaseUrl = 'https://wheat-skunk-120710.hostingersite.com';
     let fullPath = path;
     
     // Assurer le format correct
@@ -510,8 +510,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <h1 className="text-2xl font-bold text-white">{activeTitle}</h1>
                   </div>
                 </div>
-                <div className="ml-4 flex items-center md:ml-6 space-x-2">
-                  {/* Bouton Notifications */}
+                <div className="ml-4 flex items-center md:ml-6 space-x-4">
                   <button
                     onClick={() => setShowNotifications(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm relative"

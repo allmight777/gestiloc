@@ -272,7 +272,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
         trend: `${occupancy.rented}/${properties.length || 0}`,
         isPositive: occPct >= 80,
         icon: <Home className="w-6 h-6" />,
-        color: "bg-blue-100 text-blue-700",
+        color: "bg-[#529D21]/10 text-[#529D21]",
       },
       {
         label: "Nombre de biens",
@@ -280,7 +280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
         trend: `${activeLeases.length} baux actifs`,
         isPositive: true,
         icon: <Building className="w-6 h-6" />,
-        color: "bg-purple-100 text-purple-700",
+        color: "bg-[#83C757]/20 text-[#529D21]",
       },
       {
         label: "Alertes actives",
@@ -500,7 +500,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
             ))}
             <Link
               to="/proprietaire/documents/etats-des-lieux"
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center ml-2"
+              className="text-sm font-medium text-blue-600 hover:text-[#529D21] flex items-center ml-2"
             >
               Voir tout <ChevronRight className="ml-1 h-4 w-4" />
             </Link>

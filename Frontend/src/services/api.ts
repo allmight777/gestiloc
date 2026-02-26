@@ -98,6 +98,7 @@ export interface Property {
 
   rent_amount: string | null;
   charges_amount: string | null;
+  caution: string | null;
   status: string;
 
   amenities: string[] | null;
@@ -139,6 +140,7 @@ export interface CreatePropertyPayload {
 
   rent_amount?: number | null;
   charges_amount?: number | null;
+  caution?: number | null;
   status: string;
 
   reference_code?: string | null;
@@ -165,8 +167,8 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-// 🔹 baseURL = http://localhost:8000/api
-const API_URL = 'http://localhost:8000/api';
+// 🔹 baseURL = https://wheat-skunk-120710.hostingersite.com/api
+const API_URL = 'https://wheat-skunk-120710.hostingersite.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -189,7 +191,7 @@ const getCsrfToken = async () => {
   
   // Mode backend : appel réel au serveur Laravel
   try {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
+    await axios.get('https://wheat-skunk-120710.hostingersite.com/sanctum/csrf-cookie', {
       withCredentials: true,
       headers: {
         Accept: 'application/json',
@@ -525,10 +527,54 @@ export const uploadService = {
 // ================= TENANT SERVICE =================
 
 export interface InviteTenantPayload {
+  // Informations de base
   first_name: string;
   last_name: string;
   email: string;
   phone?: string;
+  
+  // Informations personnelles
+  tenant_type?: string;
+  birth_date?: string;
+  birth_place?: string;
+  marital_status?: string;
+  
+  // Adresse
+  address?: string;
+  city?: string;
+  zip_code?: string;
+  country?: string;
+  
+  // Situation professionnelle
+  profession?: string;
+  employer?: string;
+  contract_type?: string;
+  monthly_income?: string;
+  annual_income?: string;
+  
+  // Contact d'urgence
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_email?: string;
+  
+  // Notes
+  notes?: string;
+  
+  // Garant
+  has_guarantor?: boolean;
+  guarantor_name?: string;
+  guarantor_phone?: string;
+  guarantor_email?: string;
+  guarantor_profession?: string;
+  guarantor_monthly_income?: string;
+  guarantor_annual_income?: string;
+  guarantor_address?: string;
+  guarantor_birth_date?: string;
+  guarantor_birth_place?: string;
+
+  // Documents
+  document_type?: string;
+  document_name?: string;
 }
 
 export interface CompleteTenantRegistrationPayload {
@@ -545,13 +591,25 @@ export interface TenantApiProperty {
   name: string | null;
   address: string;
   city: string | null;
+  role?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: string;
+  is_active?: boolean;
 }
 
 export interface TenantApiLease {
   id: number;
   uuid: string | null;
   status: string;
-  // current_balance?: number | null; // à activer si le backend le renvoie
+}
+
+export interface TenantApiInvitation {
+  id: number | null;
+  sent_at: string | null;
+  accepted_at: string | null;
+  is_pending: boolean;
+  is_accepted: boolean;
 }
 
 export interface TenantApi {
@@ -560,10 +618,13 @@ export interface TenantApi {
   last_name: string | null;
   email: string;
   phone?: string | null;
-  status?: string | null;
+  status?: string | null;       // Statut du tenant (candidate, active, inactive)
+  tenant_status?: string | null; // Statut brut du tenant
   solvency_score?: number | null;
-  property?: TenantApiProperty | null;
-  lease?: TenantApiLease | null;
+  properties?: TenantApiProperty[];
+  active_property?: TenantApiProperty | null;
+  is_invited?: boolean;
+  invitation?: TenantApiInvitation; // ✅ Nouvelles données d'invitation structurées
 }
 
 export interface TenantInvitationApi {
@@ -665,6 +726,8 @@ export const tenantService = {
 // ================= LEASES SERVICE =================
 
 export interface Lease {
+  tenant: any;
+  property: any;
   id: number;
   uuid: string;
   property_id: number;

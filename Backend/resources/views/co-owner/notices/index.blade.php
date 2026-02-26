@@ -392,6 +392,7 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 <script>
 // Hover effect for create button
 document.addEventListener('DOMContentLoaded', function() {
@@ -417,6 +418,293 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         btn.addEventListener('mouseout', function() {
             this.style.background = '#E5E7EB';
+=======
+    <script>
+        // Initialiser les icônes
+        lucide.createIcons();
+
+        // Fonction UNIFIÉE - React sur 8080, Laravel sur 8000
+        function goToReact(path) {
+            const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            // Déterminer si c'est une route React ou Laravel
+            const isLaravelRoute = path.includes('/tenants') ||
+                                  path.includes('/assign-property') ||
+                                  path.includes('/leases') ||
+                                  path.includes('/notices') ||
+                                  path.includes('/test-laravel');
+
+            let baseUrl = 'http://localhost:';
+
+            if (isLaravelRoute) {
+                baseUrl += '8000'; // Laravel
+            } else {
+                baseUrl += '8080'; // React
+            }
+
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Pour les routes Laravel
+        function navigateTo(path) {
+            const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation Laravel vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Helper pour récupérer un paramètre d'URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Gestion des sous-menus
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId);
+            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+
+            if (submenu.style.display === 'none' || !submenu.style.display) {
+                submenu.style.display = 'block';
+                parent.classList.add('active');
+            } else {
+                submenu.style.display = 'none';
+                parent.classList.remove('active');
+            }
+        }
+
+        // Gestion de la sidebar mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        document.getElementById('overlay').addEventListener('click', toggleSidebar);
+
+        // Logout
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+            }
+        }
+
+        // Au chargement
+        function checkMobile() {
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 768) {
+                mobileBtn.style.display = 'block';
+            } else {
+                mobileBtn.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // Ajouter le token à la page actuelle si présent dans l'URL
+        const urlToken = getUrlParam('api_token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+        }
+
+        // Actualiser les données
+        function refreshData() {
+            const button = event.currentTarget;
+            const originalHtml = button.innerHTML;
+
+            button.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i> Actualisation...';
+            button.disabled = true;
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // Ajouter l'animation de spin pour le loader
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+
+    <script>
+    // Initialiser les icônes
+    lucide.createIcons();
+
+    // Navigation vers React (8080)
+    function goToReact(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'http://localhost:8080';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation React vers:', fullUrl);
+        window.location.href = fullUrl;
+    }
+
+    // Navigation vers Laravel (8000)
+    function navigateTo(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation Laravel vers:', fullUrl);
+        window.location.href = fullUrl;
+    }
+
+    // Helper pour récupérer un paramètre d'URL
+    function getUrlParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    // Gestion des sous-menus
+    function toggleSubmenu(menuId) {
+        const submenu = document.getElementById(menuId);
+        const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+
+        if (submenu.style.display === 'none' || !submenu.style.display) {
+            submenu.style.display = 'block';
+            parent.classList.add('active');
+        } else {
+            submenu.style.display = 'none';
+            parent.classList.remove('active');
+        }
+    }
+
+    // Gestion de la sidebar mobile
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    // Logout
+    function logout() {
+        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+        }
+    }
+
+    // Au chargement
+    function checkMobile() {
+        const mobileBtn = document.querySelector('.mobile-menu-btn');
+        if (window.innerWidth <= 768) {
+            mobileBtn.style.display = 'block';
+        } else {
+            mobileBtn.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('resize', checkMobile);
+    checkMobile();
+
+    // Ajouter le token à la page actuelle si présent dans l'URL
+    const urlToken = getUrlParam('api_token');
+    if (urlToken) {
+        localStorage.setItem('token', urlToken);
+    }
+
+    // Marquer le menu actif en fonction de la page courante
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPath = window.location.pathname;
+
+        // Définir quel sous-menu doit être ouvert par défaut
+        const menuConfig = {
+            '/coproprietaire/tenants': 'locative-menu',
+            '/coproprietaire/tenants/create': 'locative-menu',
+            '/coproprietaire/assign-property/create': 'locative-menu',
+            '/coproprietaire/leases': 'locative-menu',
+            '/coproprietaire/quittances': 'locative-menu',
+            '/coproprietaire/notices': 'locative-menu',
+            '/coproprietaire/maintenance': 'locative-menu',
+            '/coproprietaire/biens': 'biens-menu',
+            '/coproprietaire/delegations': 'biens-menu',
+            '/coproprietaire/documents': 'documents-menu',
+            '/coproprietaire/finances': 'documents-menu',
+            '/coproprietaire/profile': 'profile-menu',
+            '/coproprietaire/parametres': 'profile-menu',
+            '/coproprietaire/audit': 'profile-menu',
+            '/coproprietaire/mes-delegations': 'delegations-menu',
+            '/coproprietaire/demandes-delegation': 'delegations-menu',
+            '/coproprietaire/inviter-proprietaire': 'delegations-menu',
+            '/coproprietaire/emettre-paiement': 'finances-menu',
+            '/coproprietaire/retrait-methode': 'finances-menu',
+            '/admin/statistiques': 'admin-menu',
+            '/admin/logs': 'admin-menu'
+        };
+
+        // Ouvrir le sous-menu approprié
+        for (const [path, menuId] of Object.entries(menuConfig)) {
+            if (currentPath.includes(path)) {
+                setTimeout(() => toggleSubmenu(menuId), 100);
+                break;
+            }
+        }
+
+        // Marquer l'élément actif
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            const itemPath = item.getAttribute('onclick');
+            if (itemPath && itemPath.includes(currentPath)) {
+                item.classList.add('active');
+            }
+>>>>>>> origin/main
         });
     });
 });

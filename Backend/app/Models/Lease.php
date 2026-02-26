@@ -15,13 +15,13 @@ class Lease extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = [
-        'uuid', 'property_id', 'tenant_id', 'lease_number', 'type',
-        'start_date', 'end_date', 'tacit_renewal',
-        'rent_amount', 'charges_amount', 'guarantee_amount', 'prepaid_rent_months',
-        'billing_day', 'payment_frequency', 'penalty_rate',
-        'status', 'contract_file_path', 'terms', 'meta', 'termination_reason' 
-    ];
+protected $fillable = [
+    'uuid', 'property_id', 'tenant_id', 'lease_number', 'type',
+    'start_date', 'end_date', 'tacit_renewal',
+    'rent_amount', 'charges_amount', 'guarantee_amount', 'prepaid_rent_months',
+    'billing_day', 'payment_frequency', 'payment_method', 'penalty_rate',
+    'status', 'contract_file_path', 'terms', 'meta', 'termination_reason'
+];
 
     protected $casts = [
         'start_date' => 'date',

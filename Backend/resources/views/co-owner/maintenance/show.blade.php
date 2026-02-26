@@ -325,6 +325,7 @@
     </button>
 </div>
 
+<<<<<<< HEAD
 <style>
     /* Styles spécifiques à cette page */
     :root {
@@ -549,6 +550,7 @@
         padding: 1.5rem;
     }
 
+<<<<<<< HEAD
     .detail-section-title {
         font-size: 1.1rem;
         font-weight: 950;
@@ -557,6 +559,15 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+=======
+    // Logout
+    function logout() {
+        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+        }
+>>>>>>> origin/main
     }
 
     .detail-row {

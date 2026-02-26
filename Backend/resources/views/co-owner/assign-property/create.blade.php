@@ -391,6 +391,7 @@
                             @enderror
                         </div>
 
+<<<<<<< HEAD
                         <!-- Date de début -->
                         <div>
                             <label style="display: block; font-weight: 500; color: #374151; margin-bottom: 0.5rem; font-size: 0.9rem;">
@@ -404,6 +405,13 @@
                                 <p style="color: #EF4444; font-size: 0.8rem; margin-top: 4px;">{{ $message }}</p>
                             @enderror
                         </div>
+=======
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+>>>>>>> origin/main
 
                         <!-- Dépôt de garantie -->
                         <div>
@@ -508,6 +516,7 @@
                         @enderror
 
 
+<<<<<<< HEAD
 
                           <!-- Boutons d'action en bas -->
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; margin-top: 1rem; border-top: 2px solid #F3F4F6;">
@@ -519,6 +528,16 @@
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                         <span>Annuler</span>
+=======
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            let fullUrl = baseUrl + path;
+>>>>>>> origin/main
 
                     </button>
 
@@ -537,6 +556,7 @@
 
 
 
+<<<<<<< HEAD
                 <style>
                     /* Boutons du bas - même style que ceux du haut */
                     .btn-cancel-bottom {
@@ -555,6 +575,51 @@
                         box-shadow: 0 1px 2px rgba(220, 38, 38, 0.1);
                         position: relative;
                         overflow: hidden;
+=======
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        document.getElementById('overlay').addEventListener('click', toggleSidebar);
+
+        // Logout
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+            }
+        }
+
+        // Au chargement
+        function checkMobile() {
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 768) {
+                mobileBtn.style.display = 'block';
+            } else {
+                mobileBtn.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // Ajouter le token à la page actuelle si présent dans l'URL
+        const urlToken = getUrlParam('api_token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+        }
+
+        // Calcul automatique du dépôt (1 mois de loyer)
+        document.addEventListener('DOMContentLoaded', function() {
+            const rentInput = document.querySelector('input[name="rent_amount"]');
+            const depositInput = document.querySelector('input[name="deposit_amount"]');
+
+            if (rentInput && depositInput) {
+                rentInput.addEventListener('change', function() {
+                    if (this.value && !depositInput.value) {
+                        depositInput.value = this.value;
+>>>>>>> origin/main
                     }
 
                     .btn-cancel-bottom::before {
@@ -691,6 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span style="opacity: 1;">Création en cours...</span>
                     `;
 
+<<<<<<< HEAD
                     // Restaurer après 10 secondes si la soumission échoue
                     setTimeout(() => {
                         if (btn.disabled) {
@@ -701,6 +767,145 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 10000);
                 });
             }
+=======
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'http://localhost:8080';
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation React vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Navigation vers Laravel (8000)
+        function navigateTo(path) {
+            const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation Laravel vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Helper pour récupérer un paramètre d'URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Gestion des sous-menus
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId);
+            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+
+            if (submenu.style.display === 'none' || !submenu.style.display) {
+                submenu.style.display = 'block';
+                parent.classList.add('active');
+            } else {
+                submenu.style.display = 'none';
+                parent.classList.remove('active');
+            }
+        }
+
+        // Gestion de la sidebar mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+            }
+        }
+
+        // Au chargement
+        function checkMobile() {
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 768) {
+                mobileBtn.style.display = 'block';
+            } else {
+                mobileBtn.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // Ajouter le token à la page actuelle si présent dans l'URL
+        const urlToken = getUrlParam('api_token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+        }
+
+        // Marquer le menu actif en fonction de la page courante
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+
+            // Définir quel sous-menu doit être ouvert par défaut
+            const menuConfig = {
+                '/coproprietaire/tenants': 'locative-menu',
+                '/coproprietaire/tenants/create': 'locative-menu',
+                '/coproprietaire/assign-property/create': 'locative-menu',
+                '/coproprietaire/leases': 'locative-menu',
+                '/coproprietaire/quittances': 'locative-menu',
+                '/coproprietaire/notices': 'locative-menu',
+                '/coproprietaire/maintenance': 'locative-menu',
+                '/coproprietaire/biens': 'biens-menu',
+                '/coproprietaire/delegations': 'biens-menu',
+                '/coproprietaire/documents': 'documents-menu',
+                '/coproprietaire/finances': 'documents-menu',
+                '/coproprietaire/profile': 'profile-menu',
+                '/coproprietaire/parametres': 'profile-menu',
+                '/coproprietaire/audit': 'profile-menu',
+                '/coproprietaire/mes-delegations': 'delegations-menu',
+                '/coproprietaire/demandes-delegation': 'delegations-menu',
+                '/coproprietaire/inviter-proprietaire': 'delegations-menu',
+                '/coproprietaire/emettre-paiement': 'finances-menu',
+                '/coproprietaire/retrait-methode': 'finances-menu',
+                '/admin/statistiques': 'admin-menu',
+                '/admin/logs': 'admin-menu'
+            };
+
+            // Ouvrir le sous-menu approprié
+            for (const [path, menuId] of Object.entries(menuConfig)) {
+                if (currentPath.includes(path)) {
+                    setTimeout(() => toggleSubmenu(menuId), 100);
+                    break;
+                }
+            }
+
+            // Marquer l'élément actif
+            document.querySelectorAll('.submenu-item').forEach(item => {
+                const itemPath = item.getAttribute('onclick');
+                if (itemPath && itemPath.includes(currentPath)) {
+                    item.classList.add('active');
+                }
+            });
+>>>>>>> origin/main
         });
     }
 

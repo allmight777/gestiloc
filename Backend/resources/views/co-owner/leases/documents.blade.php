@@ -165,6 +165,7 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 <style>
     /* Styles spécifiques à cette page */
     .content-container {
@@ -184,6 +185,168 @@
             radial-gradient(700px 420px at 40% 110%, rgba(16, 185, 129, .10) 0%, rgba(16, 185, 129, 0) 60%);
         pointer-events: none;
         z-index: -2;
+=======
+    <script>
+        // Initialiser les icônes
+        lucide.createIcons();
+
+        // Fonction UNIFIÉE - React sur 8080, Laravel sur 8000
+        function goToReact(path) {
+            const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            // Déterminer si c'est une route React ou Laravel
+            const isLaravelRoute = path.includes('/tenants') ||
+                path.includes('/assign-property') ||
+                path.includes('/leases') ||
+                path.includes('/test-laravel');
+
+            let baseUrl = 'http://localhost:';
+
+            if (isLaravelRoute) {
+                baseUrl += '8000'; // Laravel
+            } else {
+                baseUrl += '8080'; // React
+            }
+
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Pour les routes Laravel
+        function navigateTo(path) {
+            const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+            if (!token) {
+                alert('Session expirée, veuillez vous reconnecter');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                return;
+            }
+
+            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            let fullUrl = baseUrl + path;
+
+            const separator = fullUrl.includes('?') ? '&' : '?';
+            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+            console.log('Navigation Laravel vers:', fullUrl);
+            window.location.href = fullUrl;
+        }
+
+        // Helper pour récupérer un paramètre d'URL
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Gestion des sous-menus
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId);
+            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
+
+            if (submenu.style.display === 'none' || !submenu.style.display) {
+                submenu.style.display = 'block';
+                parent.classList.add('active');
+            } else {
+                submenu.style.display = 'none';
+                parent.classList.remove('active');
+            }
+        }
+
+        // Gestion de la sidebar mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        document.getElementById('overlay').addEventListener('click', toggleSidebar);
+
+        // Logout
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+            }
+        }
+
+        // Au chargement
+        function checkMobile() {
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 768) {
+                mobileBtn.style.display = 'block';
+            } else {
+                mobileBtn.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // Ajouter le token à la page actuelle si présent dans l'URL
+        const urlToken = getUrlParam('api_token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+        }
+    </script>
+
+
+<script>
+    // Initialiser les icônes
+    lucide.createIcons();
+
+    // Navigation vers React (8080)
+    function goToReact(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'http://localhost:8080';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation React vers:', fullUrl);
+        window.location.href = fullUrl;
+    }
+
+    // Navigation vers Laravel (8000)
+    function navigateTo(path) {
+        const token = localStorage.getItem('token') || getUrlParam('api_token');
+
+        if (!token) {
+            alert('Session expirée, veuillez vous reconnecter');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+            return;
+        }
+
+        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+        let fullUrl = baseUrl + path;
+
+        const separator = fullUrl.includes('?') ? '&' : '?';
+        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
+
+        console.log('Navigation Laravel vers:', fullUrl);
+        window.location.href = fullUrl;
+>>>>>>> origin/main
     }
 
     .content-card {
@@ -217,10 +380,20 @@
         letter-spacing: -0.02em;
     }
 
+<<<<<<< HEAD
     .content-header p {
         opacity: 0.9;
         font-weight: 650;
         font-size: 0.95rem;
+=======
+    // Logout
+    function logout() {
+        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
+        }
+>>>>>>> origin/main
     }
 
     .content-body {

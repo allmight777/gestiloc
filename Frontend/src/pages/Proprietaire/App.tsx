@@ -10,27 +10,28 @@ import { Property } from './components/Property';
 import { Profile } from './components/Profile';
 import { Bureau } from './components/Bureau';
 import { AjouterBien } from './components/AjouterBien';
+import ModifierBien from './components/ModifierBien';
 import { AjouterLocataire } from './components/AjouterLocataire';
-import { NouvelleLocation } from './components/NouvelleLocation';
+import NouvelleLocation from './components/NouvelleLocation';
 import { Settings } from './components/Settings';
 import { Lots } from './components/Lots';
 import { Immeubles } from './components/Immeubles';
 import { TenantsList } from './components/TenantsList';
 import { Onboarding } from './components/Onboarding';
-import { MesBiens } from './components/MesBiens';
-import { Lease } from './components/Lease';
+import MesBiens from './components/MesBiens';
+import { Lease } from "./components/Lease";
 import EtatsLieux from './components/EtatsLieux';
 import { InviteCoOwner } from './components/InviteCoOwner';
 import { CoOwnersList } from './components/CoOwnersList';
 import { 
   Biens, Locataires, Locations, Inventaires, EtatDesLieux, 
-  Finances, Carnet, Candidats, Outils, Corbeille 
+  Finances, Carnet, Candidats, Outils, Corbeille,
 } from './components/SectionPages';
 import { Tab, ToastMessage } from './types';
 import { authService } from '@/services/api';
 import { DocumentsManager } from './components/DocumentsManager';
 import PreavisList from './components/PreavisList';
-import QuittancesIndependants from './components/QuittancesIndependants';
+import QuittancesIndependants from './components/QuittancesLoyers';
 import LandlordIncidentsPage from './components/LandlordIncidentsPage';
 import { EmitInvoice } from './components/EmitInvoice';
 import { InvoicesList } from './components/InvoicesList';
@@ -232,6 +233,20 @@ const ProprietaireApp: React.FC = () => {
             toggleTheme={() => {}}
           >
             <AjouterBien />
+          </Layout>
+        } />
+
+        <Route path="modifier-bien/:id" element={
+          <Layout
+            activeTab="biens"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => {}}
+          >
+            <ModifierBien notify={notify} />
           </Layout>
         } />
 

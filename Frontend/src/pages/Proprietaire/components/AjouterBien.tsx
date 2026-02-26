@@ -17,18 +17,18 @@ import { propertyService, uploadService } from "@/services/api";
 
 /**
  * ✅ Même style & mêmes couleurs EXACTEMENT que "AjouterLocataire"
- * - Header gradient: #667eea -> #764ba2
- * - Accents: indigo #4f46e5 + violet #7c3aed
- * - Halos: bleu/violet + touche vert subtil
+ * - Header gradient: #529D21 -> #83C757 (vert)
+ * - Accents: vert #529D21 + vert clair #83C757
+ * - Halos: vert subtil
  * ✅ Logique inchangée
  */
 
 const styles = `
   :root{
-    --gradA:#667eea;
-    --gradB:#764ba2;
-    --indigo:#4f46e5;
-    --violet:#7c3aed;
+    --gradA:#529D21;
+    --gradB:#83C757;
+    --indigo:#529D21;
+    --violet:#83C757;
     --emerald:#10b981;
 
     --bg:#ffffff;
@@ -43,7 +43,7 @@ const styles = `
     --shadow2: 0 12px 35px rgba(15,23,42,.10);
     --shadow3: 0 8px 18px rgba(15,23,42,.08);
 
-    --ring: 0 0 0 4px rgba(79,70,229,.14);
+    --ring: 0 0 0 4px rgba(82,157,33,.14);
   }
 
   *{ box-sizing:border-box; }
@@ -62,8 +62,8 @@ const styles = `
     position: fixed;
     inset: 0;
     background:
-      radial-gradient(900px 520px at 12% -8%, rgba(102,126,234,.16) 0%, rgba(102,126,234,0) 62%),
-      radial-gradient(900px 520px at 92% 8%, rgba(118,75,162,.14) 0%, rgba(118,75,162,0) 64%),
+      radial-gradient(900px 520px at 12% -8%, rgba(82,157,33,.16) 0%, rgba(82,157,33,0) 62%),
+      radial-gradient(900px 520px at 92% 8%, rgba(131,199,87,.14) 0%, rgba(131,199,87,0) 64%),
       radial-gradient(700px 420px at 40% 110%, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 60%);
     pointer-events:none;
     z-index:-2;
@@ -76,7 +76,7 @@ const styles = `
     border-radius: 22px;
     box-shadow: var(--shadow);
     overflow: hidden;
-    border: 1px solid rgba(102,126,234,.18);
+    border: 1px solid rgba(82,157,33,.18);
     position: relative;
     backdrop-filter: blur(10px);
   }
@@ -87,8 +87,8 @@ const styles = `
     inset:0;
     pointer-events:none;
     background:
-      radial-gradient(circle at 14% 18%, rgba(102,126,234,.10), rgba(102,126,234,0) 58%),
-      radial-gradient(circle at 88% 30%, rgba(118,75,162,.10), rgba(118,75,162,0) 58%),
+      radial-gradient(circle at 14% 18%, rgba(82,157,33,.10), rgba(82,157,33,0) 58%),
+      radial-gradient(circle at 88% 30%, rgba(131,199,87,.10), rgba(131,199,87,0) 58%),
       radial-gradient(circle at 50% 95%, rgba(16,185,129,.08), rgba(16,185,129,0) 55%);
     z-index: 0;
   }
@@ -197,9 +197,9 @@ const styles = `
   .actionsRight{ display:flex; gap: 10px; flex-wrap: wrap; }
 
   .btn{
-    border: 2px solid rgba(67,56,202,.20);
+    border: 2px solid rgba(82,157,33,.20);
     background: rgba(255,255,255,.92);
-    color: #4338ca;
+    color: #529D21;
     border-radius: 14px;
     padding: 10px 12px;
     font-weight: 950;
@@ -214,7 +214,7 @@ const styles = `
   }
   .btn:hover:not(:disabled){
     transform: translateY(-1px);
-    background: rgba(67,56,202,.06);
+    background: rgba(82,157,33,.06);
   }
   .btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
 
@@ -228,10 +228,10 @@ const styles = `
     border: none;
     color:#fff;
     background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
-    box-shadow: 0 14px 30px rgba(79,70,229,.22);
+    box-shadow: 0 14px 30px rgba(82,157,33,.22);
   }
   .btn-primary:hover:not(:disabled){
-    box-shadow: 0 18px 34px rgba(79,70,229,.28);
+    box-shadow: 0 18px 34px rgba(82,157,33,.28);
   }
 
   .banner{
@@ -240,7 +240,7 @@ const styles = `
     align-items:flex-start;
     padding: 14px 16px;
     background:
-      radial-gradient(700px 220px at 20% 0%, rgba(79,70,229,.10), transparent 60%),
+      radial-gradient(700px 220px at 20% 0%, rgba(82,157,33,.10), transparent 60%),
       linear-gradient(180deg, rgba(255,255,255,0.74), rgba(255,255,255,0.50));
     border: 1px solid rgba(15,23,42,.10);
     border-radius: 16px;
@@ -282,8 +282,8 @@ const styles = `
     position:absolute;
     inset:0;
     background:
-      radial-gradient(900px 260px at 90% 0%, rgba(124,58,237,.06), transparent 62%),
-      radial-gradient(900px 260px at 10% 0%, rgba(79,70,229,.07), transparent 62%);
+      radial-gradient(900px 260px at 90% 0%, rgba(131,199,87,.06), transparent 62%),
+      radial-gradient(900px 260px at 10% 0%, rgba(82,157,33,.07), transparent 62%);
     pointer-events:none;
   }
   .section > *{ position: relative; }
@@ -295,7 +295,7 @@ const styles = `
     gap: 10px;
     margin-bottom: 12px;
     padding-bottom: 12px;
-    border-bottom: 2px solid rgba(102,126,234,.28);
+    border-bottom: 2px solid rgba(82,157,33,.28);
   }
 
   .sectionTitle{
@@ -315,9 +315,9 @@ const styles = `
     gap: .45rem;
     padding: .25rem .6rem;
     border-radius: 999px;
-    background: rgba(79,70,229,.10);
-    border: 1px solid rgba(79,70,229,.18);
-    color: #4338ca;
+    background: rgba(82,157,33,.10);
+    border: 1px solid rgba(82,157,33,.18);
+    color: #529D21;
     font-weight: 950;
     font-size: .78rem;
     white-space: nowrap;
@@ -358,11 +358,11 @@ const styles = `
     font-family: inherit;
   }
   .control:hover{
-    border-color: rgba(79,70,229,.30);
+    border-color: rgba(82,157,33,.30);
     background: rgba(255,255,255,.96);
   }
   .control:focus{
-    border-color: rgba(79,70,229,.75);
+    border-color: rgba(82,157,33,.75);
     box-shadow: var(--ring);
     background: rgba(255,255,255,1);
   }
@@ -402,7 +402,7 @@ const styles = `
     padding: 16px;
     border-top: 1px solid rgba(148,163,184,.35);
     background:
-      radial-gradient(900px 220px at 12% 0%, rgba(102,126,234,.10), transparent 58%),
+      radial-gradient(900px 220px at 12% 0%, rgba(82,157,33,.10), transparent 58%),
       linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.54));
     border-radius: 18px;
   }
@@ -504,6 +504,8 @@ interface FormData {
   bedroom_count: string;   // Nombre de chambres
   bathroom_count: string;  // Nombre de salles de bain
   rent_amount: string;
+  charges_amount: string;  // Charges mensuelles
+  caution: string;         // Caution/Garantie
   status: string;
   reference_code: string;
   // Caractéristiques supplémentaires
@@ -578,6 +580,8 @@ export const AjouterBien = ({
     bedroom_count: "",
     bathroom_count: "",
     rent_amount: "",
+    charges_amount: "",  // Charges mensuelles
+    caution: "",         // Caution/Garantie
     status: "available",
     reference_code: "",
     // Caractéristiques supplémentaires
@@ -668,11 +672,13 @@ export const AjouterBien = ({
 
     if (!formData.name.trim()) errs.name = "Le titre du bien est obligatoire.";
     if (!formData.surface || Number(formData.surface) <= 0) errs.surface = "La surface doit être > 0.";
-    if (!formData.address.trim()) errs.address = "L’adresse est obligatoire.";
+    if (!formData.address.trim()) errs.address = "L'adresse est obligatoire.";
     if (!formData.zip_code.trim()) errs.zip_code = "Le code postal est obligatoire.";
     if (!formData.city.trim()) errs.city = "La ville est obligatoire.";
 
     if (formData.rent_amount && Number(formData.rent_amount) < 0) errs.rent_amount = "Le loyer doit être positif.";
+    if (formData.charges_amount && Number(formData.charges_amount) < 0) errs.charges_amount = "Les charges doivent être positives.";
+    if (formData.caution && Number(formData.caution) < 0) errs.caution = "La caution doit être positive.";
 
     if (formData.reference_code && !/^[A-Z0-9-]+$/.test(formData.reference_code)) {
       errs.reference_code = "Uniquement lettres MAJ, chiffres et tirets.";
@@ -736,7 +742,8 @@ export const AjouterBien = ({
         bathroom_count: formData.bathroom_count ? parseInt(formData.bathroom_count) : null,
 
         rent_amount: formData.rent_amount ? parseFloat(formData.rent_amount) : null,
-        charges_amount: null,
+        charges_amount: formData.charges_amount ? parseFloat(formData.charges_amount) : null,
+        caution: formData.caution ? parseFloat(formData.caution) : null,
         status: formData.status,
 
         reference_code: formData.reference_code || null,
@@ -775,6 +782,8 @@ export const AjouterBien = ({
         if (be.city) mapped.city = be.city?.[0] || "Ville invalide.";
         if (be.reference_code) mapped.reference_code = be.reference_code?.[0] || "Référence invalide.";
         if (be.rent_amount) mapped.rent_amount = be.rent_amount?.[0] || "Loyer invalide.";
+        if (be.charges_amount) mapped.charges_amount = be.charges_amount?.[0] || "Charges invalides.";
+        if (be.caution) mapped.caution = be.caution?.[0] || "Caution invalide.";
         if (be.photos) mapped.photos = be.photos?.[0] || "Photos invalides.";
 
         setFormErrors((p) => ({ ...p, ...mapped }));
@@ -1021,7 +1030,18 @@ export const AjouterBien = ({
                         min="0"
                       />
                     </div>
+                  </div>
 
+                  {/* Section Caractéristiques */}
+                  <div className="sectionHead" style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid rgba(102,126,234,.28)' }}>
+                    <h2 className="sectionTitle">
+                      <Home size={16} />
+                      Caractéristiques
+                    </h2>
+                    <span className="pill">Options</span>
+                  </div>
+
+                  <div className="fields" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Étage</label>
                       <input
@@ -1036,7 +1056,28 @@ export const AjouterBien = ({
                     </div>
 
                     <div className="field">
-                      <label className="label">Caractéristiques</label>
+                      <label className="label">Type de chauffage</label>
+                      <select
+                        name="heating_type"
+                        value={formData.heating_type}
+                        onChange={handleChange}
+                        className="control"
+                      >
+                        <option value="">Sélectionner...</option>
+                        <option value="electric">Électrique</option>
+                        <option value="gas">Gaz</option>
+                        <option value="oil">Fioul</option>
+                        <option value="heat_pump">Pompe à chaleur</option>
+                        <option value="solar">Solaire</option>
+                        <option value="collective">Collectif</option>
+                        <option value="none">Aucun</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="fields one" style={{ marginTop: 12 }}>
+                    <div className="field">
+                      <label className="label">Options et équipements</label>
                       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                           <input
@@ -1094,26 +1135,9 @@ export const AjouterBien = ({
                         </label>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="field">
-                      <label className="label">Type de chauffage</label>
-                      <select
-                        name="heating_type"
-                        value={formData.heating_type}
-                        onChange={handleChange}
-                        className="control"
-                      >
-                        <option value="">Sélectionner...</option>
-                        <option value="electric">Électrique</option>
-                        <option value="gas">Gaz</option>
-                        <option value="oil">Fioul</option>
-                        <option value="heat_pump">Pompe à chaleur</option>
-                        <option value="solar">Solaire</option>
-                        <option value="collective">Collectif</option>
-                        <option value="none">Aucun</option>
-                      </select>
-                    </div>
-
+                  <div className="fields" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Classe énergétique</label>
                       <select
@@ -1132,7 +1156,9 @@ export const AjouterBien = ({
                         <option value="G">G</option>
                       </select>
                     </div>
+                  </div>
 
+                  <div className="fields one" style={{ marginTop: 12 }}>
                     <div className="field">
                       <label className="label">Référence</label>
                       <input
@@ -1272,7 +1298,51 @@ export const AjouterBien = ({
                           />
                         </div>
                         {formErrors.rent_amount ? <div className="error">{formErrors.rent_amount}</div> : null}
-                        <div className="help">Tu peux laisser vide si tu veux.</div>
+                        
+                      </div>
+                    </div>
+
+                    <div className="fields one" style={{ marginTop: 12 }}>
+                      <div className="field">
+                        <label className="label">Charges mensuelles (FCFA)</label>
+                        <div className="iconInput">
+                          <span className="iconLeft">
+                            <Euro size={16} />
+                          </span>
+                          <input
+                            type="number"
+                            name="charges_amount"
+                            value={formData.charges_amount}
+                            onChange={handleChange}
+                            placeholder="0,00"
+                            className="control"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        {formErrors.charges_amount ? <div className="error">{formErrors.charges_amount}</div> : null}
+                        
+                      </div>
+
+                      <div className="field">
+                        <label className="label">Caution/Garantie (FCFA)</label>
+                        <div className="iconInput">
+                          <span className="iconLeft">
+                            <Euro size={16} />
+                          </span>
+                          <input
+                            type="number"
+                            name="caution"
+                            value={formData.caution}
+                            onChange={handleChange}
+                            placeholder="0,00"
+                            className="control"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        {formErrors.caution ? <div className="error">{formErrors.caution}</div> : null}
+                        
                       </div>
                     </div>
                   </div>
