@@ -542,7 +542,7 @@ export default function Auth() {
                       className="mt-4 text-center"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4, delay: 0.8 }}
+                      transition={{ duration: 0.3, delay: 0.6 }}
                     >
                       <p className="text-sm text-slate-600">
                         Pas de compte ?{" "}

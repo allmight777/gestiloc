@@ -127,6 +127,11 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
+  // Couleur principale
+  const primaryColor = '#70AE48';
+  const primaryColorLight = '#f0f9e6';
+  const primaryColorHover = '#5c8f3a';
+
   useEffect(() => {
     fetchLandlordInfo();
   }, []);
@@ -141,15 +146,17 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
         setLandlord(response.data.landlord || null);
         setCoOwners(response.data.co_owners || []);
         setPropertyInfo(response.data.property || null);
+        
+        // Vérifier s'il y a des données
         if (!response.data.creator && !response.data.landlord && response.data.co_owners.length === 0) {
-          setError('Aucune information trouvée');
+          setError('no_data');
         }
       } else {
         setError(response.data.message || 'Erreur lors du chargement');
       }
     } catch (err: any) {
       console.error('Erreur lors du chargement:', err);
-      setError(err.response?.data?.message || 'Erreur lors du chargement des données');
+      setError('Erreur lors du chargement des données');
       notify('Erreur lors du chargement des informations', 'error');
     } finally {
       setLoading(false);
@@ -245,7 +252,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
       <div className="p-4 sm:p-6 max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
         <div className="text-center animate-pulse">
           <div className="relative">
-            <Loader className="w-16 h-16 text-[#529D21] animate-spin mx-auto mb-4" />
+            <Loader className="w-16 h-16 text-[#70AE48] animate-spin mx-auto mb-4" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-8 h-8 bg-white rounded-full"></div>
             </div>
@@ -257,18 +264,52 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
     );
   }
 
-  if (error && allPeople.length === 0) {
+  // Message quand il n'y a pas de location ou d'intervenant
+  if (error === 'no_data' || allPeople.length === 0) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div className="bg-gradient-to-br from-[#70AE48]/10 to-[#70AE48]/5 border border-[#70AE48]/20 rounded-2xl p-12 text-center animate-fadeIn">
+          <div className="w-24 h-24 bg-[#70AE48]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Home size={48} className="text-[#70AE48]" />
+          </div>
+          <h3 className="text-2xl font-bold text-[#70AE48] mb-3">Aucune location active</h3>
+          <p className="text-gray-600 text-lg mb-4 max-w-md mx-auto">
+            Vous n'avez pas encore de bien en location
+          </p>
+          <div className="bg-white/60 backdrop-blur rounded-xl p-6 max-w-lg mx-auto mb-8">
+            <p className="text-gray-700 mb-4">
+              Pour voir les informations des propriétaires et intervenants, vous devez d'abord avoir une location active.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <AlertCircle size={16} className="text-[#70AE48]" />
+              <span>Dès qu'une location sera créée, les informations apparaîtront ici</span>
+            </div>
+          </div>
+          <button
+            onClick={fetchLandlordInfo}
+            className="px-6 py-3 bg-[#70AE48] text-white rounded-xl hover:bg-[#5c8f3a] transition-all shadow-lg shadow-[#70AE48]/20 inline-flex items-center gap-2 font-medium"
+          >
+            <RefreshCw size={18} />
+            Actualiser
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Message d'erreur technique
+  if (error && error !== 'no_data') {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-12 text-center animate-fadeIn">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={40} className="text-red-500" />
           </div>
-          <h3 className="text-xl font-semibold text-red-800 mb-2">Information non disponible</h3>
+          <h3 className="text-xl font-semibold text-red-800 mb-2">Erreur de chargement</h3>
           <p className="text-red-600 mb-6">{error}</p>
           <button
             onClick={fetchLandlordInfo}
-            className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors inline-flex items-center gap-2 shadow-lg shadow-red-200"
+            className="px-6 py-3 bg-[#70AE48] text-white rounded-xl hover:bg-[#5c8f3a] transition-colors inline-flex items-center gap-2 shadow-lg shadow-[#70AE48]/20"
           >
             <RefreshCw size={18} />
             Réessayer
@@ -282,19 +323,19 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
     
     <div className="p-4 sm:p-6 max-w-7xl mx-auto animate-fadeIn"> 
 
-      {/* ===== MODAL — CORRIGÉ : flex column + scroll sur le contenu ===== */}
+      {/* ===== MODAL ===== */}
       {selectedPerson && (
       <div
-  className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-16 p-4 animate-fadeIn"
-  onClick={closeModal}
->
+        className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-16 p-4 animate-fadeIn"
+        onClick={closeModal}
+      >
           <div
             className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col animate-slideUp"
             style={{ maxHeight: '90vh' }}
             onClick={(e) => e.stopPropagation()}
           > 
-            {/* Bandeau header — flex-shrink-0 pour qu'il ne rétrécisse pas */}
-            <div className="relative flex-shrink-0 h-20 bg-gradient-to-r from-[#529D21] to-[#F5A623] rounded-t-2xl">
+            {/* Bandeau header avec la couleur #70AE48 */}
+            <div className="relative flex-shrink-0 h-20 bg-gradient-to-r from-[#70AE48] to-[#70AE48]/80 rounded-t-2xl">
               <button
                 onClick={closeModal}
                 className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur rounded-full hover:bg-white/30 transition-colors text-white"
@@ -308,7 +349,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                     selectedPerson.role.includes('Créateur') ? 'bg-gradient-to-br from-purple-500 to-purple-700' :
                     selectedPerson.role.includes('foncier') ? 'bg-gradient-to-br from-blue-500 to-blue-700' :
                     selectedPerson.role.includes('Agence') ? 'bg-gradient-to-br from-orange-500 to-orange-700' :
-                    'bg-gradient-to-br from-green-500 to-green-700'
+                    'bg-gradient-to-br from-[#70AE48] to-[#70AE48]/80'
                   }`}>
                     {selectedPerson.avatar || '?'}
                   </div>
@@ -316,7 +357,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
               </div>
             </div>
 
-            {/* Zone scrollable — flex-1 + overflow-y-auto */}
+            {/* Zone scrollable */}
             <div className="flex-1 overflow-y-auto min-h-0">
               <div className="pt-16 px-6 pb-2">
 
@@ -351,35 +392,35 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                       className="p-2 hover:bg-gray-100 rounded-xl transition-colors group"
                       title="Copier l'email"
                     >
-                      {copiedEmail === 'email' ? <Check size={18} className="text-green-600" /> : <Copy size={18} className="text-gray-600 group-hover:text-[#529D21]" />}
+                      {copiedEmail === 'email' ? <Check size={18} className="text-green-600" /> : <Copy size={18} className="text-gray-600 group-hover:text-[#70AE48]" />}
                     </button>
                     <button
                       onClick={() => copyToClipboard(selectedPerson.telephone, 'phone')}
                       className="p-2 hover:bg-gray-100 rounded-xl transition-colors group"
                       title="Copier le téléphone"
                     >
-                      {copiedEmail === 'phone' ? <Check size={18} className="text-green-600" /> : <Phone size={18} className="text-gray-600 group-hover:text-[#529D21]" />}
+                      {copiedEmail === 'phone' ? <Check size={18} className="text-green-600" /> : <Phone size={18} className="text-gray-600 group-hover:text-[#70AE48]" />}
                     </button>
                     <a href={`mailto:${selectedPerson.email}`} className="p-2 hover:bg-gray-100 rounded-xl transition-colors group" title="Envoyer un email">
-                      <Mail size={18} className="text-gray-600 group-hover:text-[#529D21]" />
+                      <Mail size={18} className="text-gray-600 group-hover:text-[#70AE48]" />
                     </a>
                     <a href={`tel:${selectedPerson.telephone}`} className="p-2 hover:bg-gray-100 rounded-xl transition-colors group" title="Appeler">
-                      <PhoneCall size={18} className="text-gray-600 group-hover:text-[#529D21]" />
+                      <PhoneCall size={18} className="text-gray-600 group-hover:text-[#70AE48]" />
                     </a>
                   </div>
                 </div>
 
                 {/* Coordonnées */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-[#529D21]/30 transition-colors">
-                    <div className="flex items-center gap-2 text-[#529D21] mb-2">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-[#70AE48]/30 transition-colors">
+                    <div className="flex items-center gap-2 text-[#70AE48] mb-2">
                       <Mail size={16} />
                       <span className="text-sm font-medium">Email</span>
                     </div>
                     <p className="text-gray-900 font-medium break-all">{selectedPerson.email}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-[#529D21]/30 transition-colors">
-                    <div className="flex items-center gap-2 text-[#529D21] mb-2">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-[#70AE48]/30 transition-colors">
+                    <div className="flex items-center gap-2 text-[#70AE48] mb-2">
                       <Phone size={16} />
                       <span className="text-sm font-medium">Téléphone</span>
                     </div>
@@ -391,7 +432,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                     <div className="flex items-center gap-2 mb-3 text-gray-700">
-                      <MapPin size={16} className="text-[#529D21]" />
+                      <MapPin size={16} className="text-[#70AE48]" />
                       <h4 className="font-semibold">Adresse</h4>
                     </div>
                     <div className="space-y-1 text-sm">
@@ -405,7 +446,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                   {selectedPerson.company_name && (
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                       <div className="flex items-center gap-2 mb-3 text-gray-700">
-                        <Briefcase size={16} className="text-[#529D21]" />
+                        <Briefcase size={16} className="text-[#70AE48]" />
                         <h4 className="font-semibold">Entreprise</h4>
                       </div>
                       <p className="font-medium text-gray-900">{selectedPerson.company_name}</p>
@@ -416,7 +457,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                   {selectedPerson.permissions && selectedPerson.permissions.length > 0 && (
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                       <div className="flex items-center gap-2 mb-3 text-gray-700">
-                        <Shield size={16} className="text-[#529D21]" />
+                        <Shield size={16} className="text-[#70AE48]" />
                         <h4 className="font-semibold">Permissions</h4>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -433,7 +474,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                   {selectedPerson.delegated_at && (
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                       <div className="flex items-center gap-2 mb-3 text-gray-700">
-                        <Calendar size={16} className="text-[#529D21]" />
+                        <Calendar size={16} className="text-[#70AE48]" />
                         <h4 className="font-semibold">Délégation</h4>
                       </div>
                       <div className="space-y-1 text-sm">
@@ -464,9 +505,9 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                 {/* Bien concerné */}
                 {propertyInfo && (
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="bg-gradient-to-r from-[#529D21]/5 to-[#F5A623]/5 rounded-xl p-4">
+                    <div className="bg-gradient-to-r from-[#70AE48]/5 to-[#70AE48]/5 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <Home size={16} className="text-[#529D21]" />
+                        <Home size={16} className="text-[#70AE48]" />
                         <h4 className="font-semibold text-gray-900">Bien concerné</h4>
                       </div>
                       <div className="flex items-center justify-between">
@@ -474,7 +515,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                           <p className="font-medium text-gray-900">{propertyInfo.name}</p>
                           <p className="text-sm text-gray-600">{propertyInfo.address}</p>
                         </div>
-                        <span className="px-3 py-1.5 bg-[#529D21]/10 text-[#529D21] rounded-lg text-xs font-medium">
+                        <span className="px-3 py-1.5 bg-[#70AE48]/10 text-[#70AE48] rounded-lg text-xs font-medium">
                           Bien actuel
                         </span>
                       </div>
@@ -485,7 +526,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
               </div>
             </div>
 
-            {/* Footer fixe — flex-shrink-0 */}
+            {/* Footer fixe */}
             <div className="flex-shrink-0 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
               <button
                 onClick={closeModal}
@@ -493,7 +534,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
               >
                 Fermer
               </button>
-              <button className="px-6 py-2.5 bg-gradient-to-r from-[#529D21] to-[#F5A623] text-white rounded-xl hover:shadow-lg transition-all font-medium">
+              <button className="px-6 py-2.5 bg-[#70AE48] text-white rounded-xl hover:bg-[#5c8f3a] transition-all font-medium shadow-lg shadow-[#70AE48]/20">
                 Contacter
               </button>
             </div>
@@ -501,12 +542,12 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
         </div>
       )}
 
-      {/* Header simplifié */}
+      {/* Header */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 animate-slideDown">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Users2 className="w-6 h-6 text-[#529D21]" />
+              <Users2 className="w-6 h-6 text-[#70AE48]" />
               Intervenants
             </h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -514,8 +555,8 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
             </p>
           </div>
           {propertyInfo && (
-            <div className="flex items-center gap-2 bg-gradient-to-r from-[#529D21]/10 to-[#F5A623]/10 px-4 py-2 rounded-xl">
-              <Home size={16} className="text-[#529D21]" />
+            <div className="flex items-center gap-2 bg-gradient-to-r from-[#70AE48]/10 to-[#70AE48]/5 px-4 py-2 rounded-xl">
+              <Home size={16} className="text-[#70AE48]" />
               <span className="text-sm font-medium text-gray-700">{propertyInfo.name}</span>
               <span className="text-xs text-gray-500">- {propertyInfo.address}</span>
             </div>
@@ -533,7 +574,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                 placeholder="Rechercher par nom, email, téléphone ou entreprise..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#529D21]/20 focus:border-[#529D21] transition-all"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#70AE48]/20 focus:border-[#70AE48] transition-all"
               />
               {searchTerm && (
                 <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -542,14 +583,14 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
               )}
             </div>
             <div className="relative">
-              <button onClick={() => setShowDropdown(!showDropdown)} className="w-full sm:w-44 flex items-center justify-between gap-2 px-4 py-3 border border-gray-200 rounded-xl text-gray-700 hover:border-[#529D21] hover:bg-gray-50 transition-all">
+              <button onClick={() => setShowDropdown(!showDropdown)} className="w-full sm:w-44 flex items-center justify-between gap-2 px-4 py-3 border border-gray-200 rounded-xl text-gray-700 hover:border-[#70AE48] hover:bg-gray-50 transition-all">
                 <span>{itemsPerPage} lignes</span>
                 <ChevronDown size={16} className={`text-gray-500 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
               </button>
               {showDropdown && (
                 <div className="absolute top-full right-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg z-10 animate-fadeIn">
                   {['5', '10', '25', '50', '100'].map((n) => (
-                    <button key={n} onClick={() => { setItemsPerPage(n); setShowDropdown(false); setCurrentPage(1); }} className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${itemsPerPage === n ? 'bg-[#529D21]/10 text-[#529D21] font-medium' : ''}`}>
+                    <button key={n} onClick={() => { setItemsPerPage(n); setShowDropdown(false); setCurrentPage(1); }} className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${itemsPerPage === n ? 'bg-[#70AE48]/10 text-[#70AE48] font-medium' : ''}`}>
                       {n} lignes
                     </button>
                   ))}
@@ -560,7 +601,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
         </div>
       </div>
 
-      {/* Tableau simplifié - sans colonne Rôle */}
+      {/* Tableau */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden animate-slideUp">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -575,7 +616,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
             <tbody>
               {paginatedPeople.length > 0 ? (
                 paginatedPeople.map((person, index) => {
-                  let avatarGradient = 'from-green-500 to-green-600';
+                  let avatarGradient = 'from-[#70AE48] to-[#70AE48]/80';
                   let avatarIcon = <User size={20} />;
                   if (person.role.includes('Créateur')) { avatarGradient = 'from-purple-500 to-purple-700'; avatarIcon = <Crown size={20} />; }
                   else if (person.role.includes('foncier')) { avatarGradient = 'from-blue-500 to-blue-700'; avatarIcon = <Building size={20} />; }
@@ -607,23 +648,23 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-[#529D21] font-medium flex items-center gap-1"><Phone size={14} className="text-gray-400" />{person.telephone}</span>
-                        <button onClick={() => copyToClipboard(person.telephone, `phone-${person.id}`)} className="text-xs text-gray-400 hover:text-[#529D21] mt-1 flex items-center gap-1"><Copy size={10} />Copier</button>
+                        <span className="text-[#70AE48] font-medium flex items-center gap-1"><Phone size={14} className="text-gray-400" />{person.telephone}</span>
+                        <button onClick={() => copyToClipboard(person.telephone, `phone-${person.id}`)} className="text-xs text-gray-400 hover:text-[#70AE48] mt-1 flex items-center gap-1"><Copy size={10} />Copier</button>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-[#529D21] font-medium flex items-center gap-1"><Mail size={14} className="text-gray-400" /><span className="truncate max-w-[150px]">{person.email}</span></span>
-                        <button onClick={() => copyToClipboard(person.email, `email-${person.id}`)} className="text-xs text-gray-400 hover:text-[#529D21] mt-1 flex items-center gap-1"><Copy size={10} />Copier</button>
+                        <span className="text-[#70AE48] font-medium flex items-center gap-1"><Mail size={14} className="text-gray-400" /><span className="truncate max-w-[150px]">{person.email}</span></span>
+                        <button onClick={() => copyToClipboard(person.email, `email-${person.id}`)} className="text-xs text-gray-400 hover:text-[#70AE48] mt-1 flex items-center gap-1"><Copy size={10} />Copier</button>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => openModal(person)} className="p-2.5 bg-gradient-to-r from-[#529D21]/10 to-[#F5A623]/10 rounded-xl hover:from-[#529D21]/20 hover:to-[#F5A623]/20 transition-all" title="Voir les détails">
-                            <Eye size={18} className="text-gray-600 hover:text-[#529D21] transition-colors" />
+                          <button onClick={() => openModal(person)} className="p-2.5 bg-gradient-to-r from-[#70AE48]/10 to-[#70AE48]/10 rounded-xl hover:from-[#70AE48]/20 hover:to-[#70AE48]/20 transition-all" title="Voir les détails">
+                            <Eye size={18} className="text-gray-600 hover:text-[#70AE48] transition-colors" />
                           </button>
                           <a href={`mailto:${person.email}`} className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors" title="Envoyer un email">
-                            <Mail size={18} className="text-gray-400 hover:text-[#529D21]" />
+                            <Mail size={18} className="text-gray-400 hover:text-[#70AE48]" />
                           </a>
                           <a href={`tel:${person.telephone}`} className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors" title="Appeler">
-                            <Phone size={18} className="text-gray-400 hover:text-[#529D21]" />
+                            <Phone size={18} className="text-gray-400 hover:text-[#70AE48]" />
                           </a>
                         </div>
                       </td>
@@ -637,7 +678,7 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
                       <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4"><Users size={32} className="text-gray-400" /></div>
                       <p className="text-gray-500 font-medium">Aucune personne trouvée</p>
                       <p className="text-sm text-gray-400 mt-1">Essayez de modifier votre recherche</p>
-                      <button onClick={() => { setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-[#529D21] text-white rounded-lg hover:bg-[#529D21]/90 transition-colors">
+                      <button onClick={() => { setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-[#70AE48] text-white rounded-lg hover:bg-[#5c8f3a] transition-colors">
                         Réinitialiser la recherche
                       </button>
                     </div>
@@ -658,21 +699,13 @@ export const Landlord: React.FC<LandlordProps> = ({ notify }) => {
             <div className="flex items-center gap-2">
               <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronsLeft size={16} /></button>
               <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronLeft size={16} /></button>
-              <span className="px-4 py-2 bg-[#529D21] text-white rounded-lg font-medium">{currentPage} / {totalPages || 1}</span>
+              <span className="px-4 py-2 bg-[#70AE48] text-white rounded-lg font-medium">{currentPage} / {totalPages || 1}</span>
               <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronRight size={16} /></button>
               <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"><ChevronsRight size={16} /></button>
             </div>
           </div>
         )}
       </div>
-
-      {allPeople.length === 0 && !error && (
-        <div className="mt-6 bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-2xl p-12 text-center animate-fadeIn">
-          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4"><Info size={32} className="text-yellow-600" /></div>
-          <h3 className="text-xl font-semibold text-yellow-800 mb-2">Aucune information disponible</h3>
-          <p className="text-yellow-600 max-w-md mx-auto">Aucun intervenant n'est associé à votre location pour le moment.</p>
-        </div>
-      )}
     </div>
   );
 };

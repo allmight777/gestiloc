@@ -1,17 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Menu,
-  X,
   LogOut,
-  Sun,
-  Moon,
   Bell,
   User,
-  Wallet,
-  ExternalLink,
   HelpCircle,
-  Users,
-  UserPlus,
 } from "lucide-react";
 import { Tab, ToastMessage } from '../types';
 import { Toast } from './ui/Toast';
@@ -50,6 +43,13 @@ type UserData = {
   name?: string | null;
 };
 
+const CONFIG = {
+  LARAVEL_URL: 'http://localhost:8000',
+  REACT_URL:   'http://localhost:8080',
+  LOGIN_URL:   '/login',
+  LOGOUT_URL:  '/logout',
+};
+
 export const Layout: React.FC<LayoutProps> = ({
   children,
   activeTab,
@@ -61,20 +61,17 @@ export const Layout: React.FC<LayoutProps> = ({
   toggleTheme,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<UserData | null>(null);
-  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
-  const [showHelp, setShowHelp] = useState(false);
+  const [user, setUser]                         = useState<UserData | null>(null);
+  const [showHelp, setShowHelp]                 = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(3);
+  const [showLogoutModal, setShowLogoutModal]   = useState(false);
+  const [notificationCount]                     = useState(3);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("user");
       if (raw) setUser(JSON.parse(raw));
-    } catch (e) {
-      console.error("Impossible de lire user depuis localStorage", e);
-    }
+    } catch { /* ignore */ }
   }, []);
 
   const ownerName = useMemo(() => {
@@ -87,498 +84,456 @@ export const Layout: React.FC<LayoutProps> = ({
     if (!user) return "C";
     const a = (user.first_name?.[0] || user.name?.[0] || "").toUpperCase();
     const b = (user.last_name?.[0] || "").toUpperCase();
-    const initials = `${a}${b}`.trim();
-    return initials || (user.email?.[0] || "C").toUpperCase();
+    return `${a}${b}`.trim() || (user.email?.[0] || "C").toUpperCase();
   }, [user]);
 
-  // ✅ FONCTION AMÉLIORÉE : Navigation vers Laravel avec token
-  const goToLaravelPage = (path: string) => {
-    console.log('🚀 Navigation React -> Laravel:', path);
-    
-    // Récupérer le token de toutes les sources
-    const token = getTokenFromAllSources();
-    
-    if (!token) {
-      console.error('❌ Aucun token trouvé pour Laravel');
-      alert('Session expirée, redirection vers la connexion...');
-      setTimeout(() => {
-        window.location.href = 'http://localhost:8000/login';
-      }, 500);
-      return;
-    }
-
-    const laravelBaseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-    let fullPath = path;
-    
-    // Assurer le format correct
-    if (!fullPath.startsWith('/')) {
-      fullPath = '/' + fullPath;
-    }
-    
-    // Construire l'URL complète
-    let fullUrl = `${laravelBaseUrl}${fullPath}`;
-    const separator = fullUrl.includes('?') ? '&' : '?';
-    const timestamp = Date.now();
-    
-    fullUrl += `${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
-    
-    console.log('✅ URL Laravel générée:', fullUrl);
-    
-    // Redirection
-    setTimeout(() => {
-      window.location.href = fullUrl;
-    }, 100);
+  const getToken = () => {
+    let t = localStorage.getItem('token');
+    if (t) return t;
+    t = new URLSearchParams(window.location.search).get('api_token');
+    if (t) { localStorage.setItem('token', t); return t; }
+    return sessionStorage.getItem('token');
   };
 
-  // ✅ FONCTION AMÉLIORÉE : Récupération du token
-  const getTokenFromAllSources = () => {
-    console.log('🔍 Recherche du token...');
-    
-    // 1. LocalStorage
-    let token = localStorage.getItem('token');
-    if (token) {
-      console.log('✅ Token trouvé dans localStorage');
-      return token;
-    }
-    
-    // 2. URL
-    const urlParams = new URLSearchParams(window.location.search);
-    token = urlParams.get('api_token');
-    if (token) {
-      console.log('✅ Token trouvé dans URL');
-      localStorage.setItem('token', token);
-      return token;
-    }
-    
-    // 3. SessionStorage
-    token = sessionStorage.getItem('token');
-    if (token) {
-      console.log('✅ Token trouvé dans sessionStorage');
-      return token;
-    }
-    
-    console.log('❌ Aucun token trouvé');
-    return null;
+  const goToLaravel = (path: string) => {
+    const token = getToken();
+    if (!token) { window.location.href = `${CONFIG.LARAVEL_URL}${CONFIG.LOGIN_URL}`; return; }
+    const sep = path.includes('?') ? '&' : '?';
+    window.location.href = `${CONFIG.LARAVEL_URL}${path.startsWith('/') ? path : '/'+path}${sep}api_token=${encodeURIComponent(token)}&_t=${Date.now()}`;
   };
 
-  // ✅ FONCTION : Navigation unifiée
   const handleNavigation = (item: MenuItem) => {
-    console.log('📱 Navigation:', item.label, 'path:', item.path, 'isLaravel:', item.isLaravel, 'isReact:', item.isReact);
-    
     if (!item.path) return;
-    
     if (item.isLaravel) {
-      goToLaravelPage(item.path);
-    } else if (item.isReact) {
-      // Navigation interne React
+      goToLaravel(item.path);
+    } else {
       onNavigate(item.path as Tab);
       setIsMobileMenuOpen(false);
-    } else {
-      // Par défaut, considérer comme Laravel pour les chemins spécifiques
-      if (item.path.startsWith('/coproprietaire/gestionnaires')) {
-        goToLaravelPage(item.path);
-      } else {
-        onNavigate(item.path as Tab);
-      }
-      setIsMobileMenuOpen(false);
     }
-    
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleLogoutClick = () => {
-    setShowLogoutModal(true);
-  };
-
-  const handleConfirmLogout = async () => {
-    await onLogout();
-    setShowLogoutModal(false);
-  };
-
-  // ✅ Menu synchronisé avec Blade
   const menuSections = [
     {
       title: "Menu principal",
       items: [
-        {
-          id: 'dashboard',
-          label: 'Tableau de bord',
-          emoji: '📊',
-          path: "/coproprietaire/dashboard",
-          isReact: true
-        },
+        { id: 'dashboard', label: 'Tableau de bord', emoji: '📊', path: "/coproprietaire/dashboard", isReact: true },
       ]
     },
     {
       title: "GESTIONS DES BIENS",
       items: [
-        { 
-          id: "add-property", 
-          label: "Ajouter un bien", 
-          emoji: '➕',
-          path: "/coproprietaire/biens/create",
-          isLaravel: true
-        },
-        { 
-          id: "my-properties", 
-          label: "Mes biens", 
-          emoji: '🏠',
-          path: "/coproprietaire/biens",
-          isReact: true
-        },
+        { id: "add-property",  label: "Ajouter un bien",  emoji: '➕', path: "/coproprietaire/biens/create", isLaravel: true },
+        { id: "my-properties", label: "Mes biens",        emoji: '🏠', path: "/coproprietaire/biens",        isReact: true  },
       ]
     },
     {
       title: "GESTION LOCATIVE",
       items: [
-        { 
-          id: "new-rental", 
-          label: "Nouvelle location", 
-          emoji: '🔑',
-          path: "/coproprietaire/assign-property/create",
-          isLaravel: true
-        },
-        { 
-          id: "add-tenant", 
-          label: "Ajouter un locataire", 
-          emoji: '📍',
-          path: "/coproprietaire/tenants/create",
-          isLaravel: true
-        },
-        { 
-          id: "tenant-list", 
-          label: "Liste des locataires", 
-          emoji: '📄',
-          path: "/coproprietaire/tenants",
-          isLaravel: true
-        },
-        { 
-          id: "payment-management", 
-          label: "Gestion des paiements", 
-          emoji: '📅',
-          path: "/coproprietaire/paiements",
-          isLaravel: true
-        },
+        { id: "new-rental",        label: "Nouvelle location",      emoji: '🔑', path: "/coproprietaire/assign-property/create", isLaravel: true },
+        { id: "add-tenant",        label: "Ajouter un locataire",   emoji: '📍', path: "/coproprietaire/tenants/create",          isLaravel: true },
+        { id: "tenant-list",       label: "Liste des locataires",   emoji: '📄', path: "/coproprietaire/tenants",                 isLaravel: true },
+        { id: "payment-management",label: "Gestion des paiements",  emoji: '📅', path: "/coproprietaire/paiements",               isLaravel: true },
       ]
     },
     {
       title: "DOCUMENTS",
       items: [
-        { 
-          id: "lease-contracts", 
-          label: "Contrats de bail", 
-          emoji: '📄',
-          path: "/coproprietaire/leases",
-          isLaravel: true
-        },
-        { 
-          id: "condition-reports", 
-          label: "Etats de lieux", 
-          emoji: '📄',
-          path: "/coproprietaire/etats-des-lieux",
-          isLaravel: true
-        },
-        { 
-          id: "due-notices", 
-          label: "Avis d'échéance", 
-          emoji: '📄',
-          path: "/coproprietaire/notices",
-          isLaravel: true
-        },
-        { 
-          id: "rent-receipts", 
-          label: "Quittances de loyers", 
-          emoji: '📄',
-          path: "/coproprietaire/quittances",
-          isLaravel: true
-        },
-        { 
-          id: "invoices", 
-          label: "Factures et documents divers", 
-          emoji: '📄',
-          path: "/coproprietaire/factures",
-          isLaravel: true
-        },
-        { 
-          id: "document-archiving", 
-          label: "Archivage de documents", 
-          emoji: '📄',
-          path: "/coproprietaire/documents",
-          isReact: true
-        },
+        { id: "lease-contracts",    label: "Contrats de bail",              emoji: '📄', path: "/coproprietaire/leases",           isLaravel: true },
+        { id: "condition-reports",  label: "Etats de lieux",                emoji: '📄', path: "/coproprietaire/etats-des-lieux",  isLaravel: true },
+        { id: "due-notices",        label: "Avis d'échéance",               emoji: '📄', path: "/coproprietaire/notices",          isLaravel: true },
+        { id: "rent-receipts",      label: "Quittances de loyers",          emoji: '📄', path: "/coproprietaire/quittances",       isLaravel: true },
+        { id: "invoices",           label: "Factures et documents divers",  emoji: '📄', path: "/coproprietaire/factures",         isLaravel: true },
+        { id: "document-archiving", label: "Archivage de documents",        emoji: '📄', path: "/coproprietaire/documents",        isReact: true   },
       ]
     },
     {
       title: "REPARATIONS ET TRAVAUX",
       items: [
-        { 
-          id: "repairs", 
-          label: "Réparations et travaux", 
-          emoji: '✂️',
-          path: "/coproprietaire/maintenance",
-          isLaravel: true
-        },
+        { id: "repairs", label: "Réparations et travaux", emoji: '✂️', path: "/coproprietaire/maintenance", isLaravel: true },
       ]
     },
     {
       title: "COMPTABILITE ET STATISTIQUES",
       items: [
-        { 
-          id: "accounting", 
-          label: "Comptabilité et statistiques", 
-          emoji: '💼',
-          path: "/coproprietaire/comptabilite",
-          isLaravel: true
-        },
+        { id: "accounting", label: "Comptabilité et statistiques", emoji: '💼', path: "/coproprietaire/comptabilite", isLaravel: true },
       ]
     },
     {
       title: "GESTION DES COPROPRIÉTAIRES",
       items: [
-        { 
-          id: "coowner-list", 
-          label: "Liste des gestionnaires", 
-          emoji: '👥',
-          path: "/coproprietaire/gestionnaires",
-          isLaravel: true
-        },
-        { 
-          id: "invite-coowner", 
-          label: "Inviter un gestionnaire", 
-          emoji: '➕',
-          path: "/coproprietaire/gestionnaires/creer",
-          isLaravel: true
-        },
+        { id: "coowner-list",  label: "Liste des gestionnaires",  emoji: '👥', path: "/coproprietaire/gestionnaires",       isLaravel: true },
+        { id: "invite-coowner",label: "Inviter un gestionnaire",  emoji: '➕', path: "/coproprietaire/gestionnaires/creer", isLaravel: true },
       ]
     },
     {
       title: "CONFIGURATION",
       items: [
-        { 
-          id: "settings", 
-          label: "Paramètres", 
-          emoji: '⚙️',
-          path: "/coproprietaire/parametres",
-          isReact: true
-        },
+        { id: "settings", label: "Paramètres", emoji: '📜', path: "/coproprietaire/parametres", isReact: true },
       ]
     }
   ];
 
-  const flatMenu = useMemo(() => {
-    const items: MenuItem[] = [];
-    menuSections.forEach(section => {
-      section.items.forEach(item => {
-        items.push(item);
-      });
-    });
-    return items;
-  }, []);
+  const flatMenu = useMemo(() => menuSections.flatMap(s => s.items), []);
 
   const activeTitle = useMemo(() => {
-    const found = flatMenu.find((i) => 
-      i.path === activeTab || 
-      i.id === activeTab
-    );
+    const found = flatMenu.find(i => i.path === activeTab || i.id === activeTab);
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
 
+  /* ── Item de menu — style copié pixel-perfect depuis le Blade ── */
   const renderMenuItem = (item: MenuItem) => {
     const isActive = item.path === activeTab || item.id === activeTab;
-
-    const baseBtn = "w-full flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group cursor-pointer";
-    const activeBtn = `bg-gradient-to-r from-[#70AE48] to-[#8BC34A] text-white shadow-lg`;
-    const idleBtn = "text-gray-700 hover:bg-[#70AE48]/10 hover:text-[#70AE48]";
 
     return (
       <button
         key={String(item.id)}
         onClick={() => handleNavigation(item)}
-        className={`${baseBtn} ${isActive ? activeBtn : idleBtn} mb-1`}
         type="button"
         title={item.label}
+        style={{
+          /* reset total pour éviter tout héritage Tailwind/global */
+          all: 'unset',
+          boxSizing: 'border-box',
+          /* layout — identique à .menu-item du Blade */
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.875rem 1rem',
+          marginBottom: '0.5rem',
+          /* typographie — identique au Blade */
+          fontSize: '0.875rem',        // 14 px
+          fontWeight: 500,
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          lineHeight: 1.4,
+          /* forme */
+          borderRadius: '1rem',
+          border: '1px solid transparent',
+          transition: 'all 0.2s',
+          cursor: 'pointer',
+          /* pas de retour à la ligne */
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          /* couleurs selon état */
+          background: isActive
+            ? 'linear-gradient(to right, #70AE48, #8BC34A)'
+            : 'transparent',
+          color: isActive ? '#ffffff' : '#374151',   // gris-700 comme Blade
+          boxShadow: isActive
+            ? '0 10px 15px -3px rgba(112,174,72,0.3)'
+            : 'none',
+        }}
+        onMouseEnter={e => {
+          if (!isActive) {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.background   = '#f0f9e6';
+            el.style.color        = '#70AE48';
+            el.style.borderColor  = '#d4edc9';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!isActive) {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.background   = 'transparent';
+            el.style.color        = '#374151';
+            el.style.borderColor  = 'transparent';
+          }
+        }}
       >
-        <div className="flex items-center gap-3.5">
-          {item.emoji ? (
-            <span className="text-lg" role="img" aria-label={item.label}>
+        {/* contenu — identique à .menu-item-content du Blade */}
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.875rem',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+        }}>
+          {item.emoji && (
+            <span
+              role="img"
+              aria-label={item.label}
+              style={{
+                fontSize: '1.1em',
+                minWidth: '24px',
+                textAlign: 'center',
+                flexShrink: 0,
+              }}
+            >
               {item.emoji}
             </span>
-          ) : null}
-          <span className="text-left whitespace-nowrap overflow-hidden text-ellipsis">
+          )}
+          <span style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
             {item.label}
           </span>
-        </div>
+        </span>
       </button>
     );
   };
 
+  /* ── Contenu de la sidebar (réutilisé desktop + mobile) ── */
+  const SidebarContent = () => (
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      width: '300px', height: '100%',
+      background: 'white',
+      borderRight: '1px solid #e5e7eb',
+    }}>
+      {/* Header vert */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '0 1.5rem', height: '64px',
+        background: '#70AE48',
+        borderBottom: '1px solid #e5e7eb',
+        flexShrink: 0,
+      }}>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', margin: 0 }}>GestiLoc</h1>
+      </div>
+
+      {/* Navigation */}
+      <nav style={{
+        flex: 1,
+        padding: '1.25rem 1.25rem 0',
+        overflowY: 'auto',
+        /* masquer la scrollbar */
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      } as React.CSSProperties}>
+        <style>{`nav.sidebar-nav-inner::-webkit-scrollbar { display:none; }`}</style>
+        {menuSections.map(section => (
+          <div key={section.title} style={{ marginBottom: '1.5rem' }}>
+            {/* Titre de groupe — identique à .menu-group-title */}
+            <div style={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#6b7280',
+              marginBottom: '0.75rem',
+              paddingLeft: '1rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            }}>
+              {section.title}
+            </div>
+            <div>{section.items.map(renderMenuItem)}</div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Footer profil */}
+      <div style={{
+        padding: '1.25rem',
+        borderTop: '1px solid #e5e7eb',
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{
+            width: '2.5rem', height: '2.5rem', borderRadius: '9999px',
+            background: 'linear-gradient(to right, #70AE48, #8BC34A)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontSize: '0.875rem', fontWeight: 'bold', flexShrink: 0,
+          }}>
+            {ownerInitials}
+          </div>
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <div style={{
+              fontSize: '0.875rem', fontWeight: 600, color: '#111827',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {ownerName}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>Co-propriétaire</div>
+          </div>
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            title="Déconnexion"
+            style={{
+              all: 'unset', boxSizing: 'border-box',
+              padding: '0.5rem', borderRadius: '9999px',
+              color: '#9ca3af', cursor: 'pointer', flexShrink: 0,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#4b5563'; (e.currentTarget as HTMLElement).style.background = '#f3f4f6'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9ca3af'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            <LogOut style={{ width: '1.25rem', height: '1.25rem' }} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
-      {/* Modales */}
-      <NotificationsModal 
-        isOpen={showNotifications} 
-        onClose={() => setShowNotifications(false)} 
-      />
-      
-      <HelpModal 
-        isOpen={showHelp} 
-        onClose={() => setShowHelp(false)} 
-      />
-
+      <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
+      <HelpModal         isOpen={showHelp}          onClose={() => setShowHelp(false)} />
       <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
-        onConfirm={handleConfirmLogout}
+        onConfirm={async () => { await onLogout(); setShowLogoutModal(false); }}
       />
 
-      <style>{`
-        .sidebar-menu-container {
-          overflow-y: auto !important;
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-        
-        .sidebar-menu-container::-webkit-scrollbar {
-          display: none !important;
-        }
-        
-        main {
-          overflow-y: auto !important;
-        }
-        
-        ::-webkit-scrollbar {
-          display: block;
-        }
-      `}</style>
-      
-      <div className="min-h-screen bg-white">
-        <div className="flex h-screen bg-white">
-          {/* Sidebar - Desktop */}
-          <aside className="hidden lg:flex lg:flex-shrink-0">
-            <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
-              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#70AE48' }}>
-                <h1 className="text-xl font-bold text-white">GestiLoc</h1>
-              </div>
-              
-              <div className="flex-1 sidebar-menu-container px-5 py-6">
-                {menuSections.map((section) => (
-                  <div key={section.title} className="mb-6">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
-                      {section.title}
-                    </div>
-                    <div className="space-y-1">
-                      {section.items.map(renderMenuItem)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="p-5 border-t border-gray-200 flex-shrink-0">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {ownerInitials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 truncate">{ownerName}</div>
-                    <div className="text-xs text-gray-600">Co-propriétaire</div>
-                  </div>
-                  <button
-                    onClick={handleLogoutClick}
-                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
-                    title="Déconnexion"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
+      <div style={{ minHeight: '100vh', background: 'white' }}>
+        <div style={{ display: 'flex', height: '100vh' }}>
+
+          {/* ── Sidebar Desktop ── */}
+          <aside style={{ display: 'none' }} className="layout-sidebar-desktop">
+            <SidebarContent />
           </aside>
 
-          {/* Main content */}
-          <div className="flex flex-col flex-1 bg-white">
-            <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#70AE48' }}>
+          {/* ── Sidebar Mobile overlay ── */}
+          {isMobileMenuOpen && (
+            <div
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+          <div style={{
+            position: 'fixed', top: 0,
+            left: isMobileMenuOpen ? 0 : '-300px',
+            height: '100vh', zIndex: 50,
+            transition: 'left 0.3s ease',
+            boxShadow: isMobileMenuOpen ? '0 0 20px rgba(0,0,0,0.1)' : 'none',
+          }}>
+            <SidebarContent />
+          </div>
+
+          {/* ── Zone principale ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: 'white', minWidth: 0 }}>
+
+            {/* Top bar */}
+            <div style={{
+              height: '64px', background: '#70AE48',
+              display: 'flex', alignItems: 'center',
+              padding: '0 1.5rem', flexShrink: 0, zIndex: 10,
+            }}>
+              {/* Burger mobile */}
               <button
                 type="button"
-                className="px-4 text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white lg:hidden hover:bg-white/10 transition-all duration-200"
                 onClick={() => setIsMobileMenuOpen(true)}
+                className="layout-mobile-burger"
+                style={{
+                  display: 'none',
+                  padding: '0.625rem',
+                  background: 'rgba(255,255,255,0.2)', border: 'none',
+                  borderRadius: '0.5rem', color: 'white', cursor: 'pointer',
+                  marginRight: '0.75rem',
+                }}
               >
-                <Menu className="h-6 w-6" />
+                <Menu style={{ width: '1.5rem', height: '1.5rem' }} />
               </button>
-              <div className="flex-1 px-6 flex justify-between items-center">
-                <div className="flex-1">
-                  <div className="max-w-lg">
-                    <h1 className="text-2xl font-bold text-white">{activeTitle}</h1>
-                  </div>
-                </div>
-                <div className="ml-4 flex items-center md:ml-6 space-x-4">
-                  <button
-                    onClick={() => setShowNotifications(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm relative"
-                    title="Notifications"
-                  >
-                    <Bell className="w-4 h-4" />
-                    <span className="hidden md:inline">Notifications</span>
-                    {notificationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-white">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </button>
 
-                  {/* Bouton Aide */}
-                  <button
-                    onClick={() => setShowHelp(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
-                    title="Aide"
-                  >
-                    <HelpCircle className="w-4 h-4" />
-                    <span className="hidden md:inline">Aide</span>
-                  </button>
+              <h1 style={{ flex: 1, fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+                {activeTitle}
+              </h1>
 
-                  {/* Bouton Mon compte */}
-                  <button
-                    onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
-                    title="Mon compte"
-                  >
-                    <User className="w-4 h-4" />
-                    <span className="hidden md:inline">Mon compte</span>
-                  </button>
+              {/* Actions top bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {/* Notifications */}
+                <button
+                  onClick={() => setShowNotifications(true)}
+                  style={{
+                    all: 'unset', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.625rem 1.25rem', borderRadius: '12px',
+                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.2)', color: 'white',
+                    whiteSpace: 'nowrap', position: 'relative',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.3)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.2)'; }}
+                >
+                  <Bell style={{ width: '1.125rem', height: '1.125rem', flexShrink: 0 }} />
+                  <span className="layout-topbar-label">Notifications</span>
+                  {notificationCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: '-5px', right: '-5px',
+                      background: '#ef4444', color: 'white',
+                      fontSize: '0.7rem', fontWeight: 'bold',
+                      minWidth: '18px', height: '18px', borderRadius: '9px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px', border: '2px solid white',
+                    }}>
+                      {notificationCount}
+                    </span>
+                  )}
+                </button>
 
-                  <button
-                    onClick={handleLogoutClick}
-                    className="p-2 rounded-full text-white hover:bg-white/20 lg:hidden transition-all duration-200"
-                    title="Déconnexion"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
+                {/* Aide */}
+                <button
+                  onClick={() => setShowHelp(true)}
+                  style={{
+                    all: 'unset', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.625rem 1.25rem', borderRadius: '12px',
+                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.2)', color: 'white',
+                    whiteSpace: 'nowrap', backdropFilter: 'blur(10px)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.3)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.2)'; }}
+                >
+                  <HelpCircle style={{ width: '1.125rem', height: '1.125rem', flexShrink: 0 }} />
+                  <span className="layout-topbar-label">Aide</span>
+                </button>
+
+                {/* Mon compte */}
+                <button
+                  onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
+                  style={{
+                    all: 'unset', boxSizing: 'border-box',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    padding: '0.625rem 1.25rem', borderRadius: '12px',
+                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
+                    background: 'rgba(255,255,255,0.2)', color: 'white',
+                    whiteSpace: 'nowrap', backdropFilter: 'blur(10px)',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.3)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.2)'; }}
+                >
+                  <User style={{ width: '1.125rem', height: '1.125rem', flexShrink: 0 }} />
+                  <span className="layout-topbar-label">Mon compte</span>
+                </button>
               </div>
             </div>
 
-            {/* Page content */}
-            <main className="flex-1 overflow-y-auto focus:outline-none bg-white">
-              <div className="py-6">
-                <div className="max-w-7xl mx-auto px-6">
-                  {children}
-                </div>
+            {/* Contenu de la page */}
+            <main style={{ flex: 1, overflowY: 'auto', background: 'white' }}>
+              <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
+                {children}
               </div>
             </main>
           </div>
         </div>
 
-        {/* Toast container */}
-        <div className="fixed bottom-4 right-4 z-50 space-y-2">
-          {toasts.map((toast) => (
-            <Toast
-              key={toast.id}
-              message={toast.message}
-              type={toast.type}
-              onClose={() => removeToast(toast.id)}
-            />
+        {/* Toasts */}
+        <div style={{ position: 'fixed', bottom: '1rem', right: '1rem', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {toasts.map(toast => (
+            <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => removeToast(toast.id)} />
           ))}
         </div>
       </div>
+
+      {/* CSS utilitaire — responsive uniquement */}
+      <style>{`
+        @media (min-width: 1024px) {
+          .layout-sidebar-desktop { display: flex !important; flex-shrink: 0; }
+          .layout-mobile-burger   { display: none !important; }
+        }
+        @media (max-width: 1023px) {
+          .layout-sidebar-desktop { display: none !important; }
+          .layout-mobile-burger   { display: flex !important; }
+          .layout-topbar-label    { display: none; }
+        }
+      `}</style>
     </>
   );
 };

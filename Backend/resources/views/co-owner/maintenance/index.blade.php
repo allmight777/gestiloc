@@ -68,7 +68,6 @@
                 <input type="hidden" name="status_filter" value="{{ request('status_filter') }}">
             @endif
 
-<<<<<<< HEAD
             <div class="filters-row">
                 <div class="filter-select-wrapper">
                     <select name="property_id" class="filter-select" onchange="this.form.submit()">
@@ -81,13 +80,6 @@
                     </select>
                     <i data-lucide="chevron-down" class="select-icon"></i>
                 </div>
-=======
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
->>>>>>> origin/main
 
                 <div class="filter-select-wrapper">
                     <select name="year" class="filter-select" onchange="this.form.submit()">
@@ -161,7 +153,6 @@
                     {{ $statusLabel }}
                 </div>
 
-<<<<<<< HEAD
                 <!-- Titre -->
                 <h3 class="intervention-title">{{ $request->title }}</h3>
 
@@ -170,16 +161,6 @@
                     <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
                     <span>{{ $request->property->name ?? 'Bien' }} • {{ $request->property->city ?? 'Ville non spécifiée' }}</span>
                 </div>
-=======
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
-
-            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-            let fullUrl = baseUrl + path;
->>>>>>> origin/main
 
                 <!-- Détails en grille -->
                 <div class="intervention-details">
@@ -278,7 +259,6 @@
     </div>
 </div>
 
-<<<<<<< HEAD
 <style>
     .maintenance-container {
         max-width: 1400px;
@@ -295,134 +275,6 @@
         align-items: flex-start;
         margin-bottom: 2rem;
         gap: 2rem;
-=======
-        // Gestion de la sidebar mobile
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        document.getElementById('overlay').addEventListener('click', toggleSidebar);
-
-        // Logout
-        function logout() {
-            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
-            }
-        }
-
-        // Au chargement
-        function checkMobile() {
-            const mobileBtn = document.querySelector('.mobile-menu-btn');
-            if (window.innerWidth <= 768) {
-                mobileBtn.style.display = 'block';
-            } else {
-                mobileBtn.style.display = 'none';
-            }
-        }
-
-        window.addEventListener('resize', checkMobile);
-        checkMobile();
-
-        // Ajouter le token à la page actuelle si présent dans l'URL
-        const urlToken = getUrlParam('api_token');
-        if (urlToken) {
-            localStorage.setItem('token', urlToken);
-        }
-
-        // Filtres
-        function filterByStatus(status) {
-            filterItems('status', status);
-        }
-
-        function filterByPriority(priority) {
-            filterItems('priority', priority);
-        }
-
-        function filterByProperty(propertyId) {
-            filterItems('property', propertyId);
-        }
-
-        function filterItems(type, value) {
-            const cards = document.querySelectorAll('.notice-card');
-            cards.forEach(card => {
-                const cardValue = card.getAttribute(`data-${type}`);
-                if (value === 'all' || cardValue === value) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-
-        function resetFilters() {
-            document.querySelectorAll('.filter-select').forEach(select => {
-                select.value = 'all';
-            });
-            const cards = document.querySelectorAll('.notice-card');
-            cards.forEach(card => {
-                card.style.display = '';
-            });
-        }
-
-        // Ajouter l'animation de spin pour le loader
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
-    <script>
-    // Initialiser les icônes
-    lucide.createIcons();
-
-    // Navigation vers React (8080)
-    function goToReact(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'http://localhost:8080';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation React vers:', fullUrl);
-        window.location.href = fullUrl;
-    }
-
-    // Navigation vers Laravel (8000)
-    function navigateTo(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation Laravel vers:', fullUrl);
-        window.location.href = fullUrl;
->>>>>>> origin/main
     }
 
     .header-content h1 {
@@ -858,7 +710,6 @@
             grid-template-columns: 1fr;
         }
 
-<<<<<<< HEAD
         .filters-row {
             grid-template-columns: 1fr;
         }
@@ -871,14 +722,6 @@
             overflow-x: auto;
             flex-wrap: nowrap;
             padding-bottom: 0.5rem;
-=======
-    // Logout
-    function logout() {
-        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
->>>>>>> origin/main
         }
     }
 </style>

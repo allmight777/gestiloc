@@ -68,6 +68,10 @@ export default function Login() {
         } else if (roles.includes("landlord") || roles.includes("proprietaire")) {
           redirectPath = "/proprietaire";
           userRole = "proprietaire";
+        } else if (roles.includes("coproprietaire") || roles.includes("co_owner")) {
+          // ✅ AJOUT DE LA CONDITION POUR COPROPRIÉTAIRE
+          redirectPath = "/coproprietaire";
+          userRole = "coproprietaire";
         } else if (roles.includes("tenant") || roles.includes("locataire")) {
           redirectPath = "/locataire";
           userRole = "locataire";
@@ -150,7 +154,7 @@ export default function Login() {
     const redirects: Record<string, string> = {
       locataire: "/locataire",
       proprietaire: "/proprietaire",
-      coproprietaire: "/coproprietaire",
+      coproprietaire: "/coproprietaire", // ✅ Ajout de la redirection démo
       admin: "/admin",
     };
 
