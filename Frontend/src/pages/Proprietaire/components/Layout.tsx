@@ -1,41 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Building,
-  LayoutDashboard,
-  Home,
-  Users,
-  FileSignature,
-  FilePlus,
-  FileText,
-  FileCheck,
-  UserPlus,
-  Bell,
-  LogOut,
-  ChevronRight,
-  ChevronDown,
   Menu,
   X,
+  LogOut,
   Sun,
   Moon,
-  CreditCard,
-  Plus,
-  BarChart3,
-  List,
+  Bell,
+  User,
   Wallet,
-  ClipboardList,
-  AlertTriangle,
-  FolderOpen,
-  Archive,
-  Wrench,
-  Calculator,
-  Settings,
+  ExternalLink,
   HelpCircle,
-  Building2, // Pour les agences
-  UserCog,   // Pour la gestion des utilisateurs
+  Users, // Ajout de l'icône pour la liste
+  UserPlus, // Ajout de l'icône pour l'invitation
 } from "lucide-react";
 
-import { Tab, Notification, ToastMessage } from "../types";
-import { Toast } from "./ui/Toast";
+import { Tab, ToastMessage } from '../types';
+import { Toast } from './ui/Toast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -51,10 +31,11 @@ interface LayoutProps {
 interface MenuItem {
   id: Tab | string;
   label: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   path?: string;
-  submenu?: MenuItem[];
-  badge?: number;
+  emoji?: string;
+  isLaravel?: boolean;
+  isReact?: boolean;
 }
 
 type UserData = {
@@ -62,27 +43,10 @@ type UserData = {
   email: string;
   first_name?: string | null;
   last_name?: string | null;
-  phone?: string | null;
-  roles?: string[];
-  default_role?: string | null;
+  role?: string;
+  avatar?: string | null;
+  name?: string | null;
 };
-
-const notifications: Notification[] = [
-  {
-    id: "1",
-    type: "critical",
-    message: "Loyer novembre en retard",
-    subtext: "Régularisez avant pénalités",
-    isRead: false,
-  },
-  {
-    id: "2",
-    type: "important",
-    message: "Intervention confirmée",
-    subtext: "22/11 - 14h-16h",
-    isRead: false,
-  },
-];
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
@@ -94,19 +58,10 @@ export const Layout: React.FC<LayoutProps> = ({
   isDarkMode,
   toggleTheme,
 }) => {
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  // Owner (from localStorage)
   const [user, setUser] = useState<UserData | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     try {
@@ -118,94 +73,281 @@ export const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   const ownerName = useMemo(() => {
-    if (!user) return "Propriétaire";
+    if (!user) return "Co-propriétaire";
     const full = `${user.first_name || ""} ${user.last_name || ""}`.trim();
-    return full || user.email || "Propriétaire";
+    return full || user.name || user.email || "Co-propriétaire";
   }, [user]);
 
   const ownerInitials = useMemo(() => {
-    if (!user) return "P";
-    const a = (user.first_name?.[0] || "").toUpperCase();
+    if (!user) return "C";
+    const a = (user.first_name?.[0] || user.name?.[0] || "").toUpperCase();
     const b = (user.last_name?.[0] || "").toUpperCase();
     const initials = `${a}${b}`.trim();
-    return initials || (user.email?.[0] || "P").toUpperCase();
+    return initials || (user.email?.[0] || "C").toUpperCase();
   }, [user]);
 
-  // ===================== MENUS ORGANISÉS PAR CATÉGORIES =====================
+  // ✅ FONCTION AMÉLIORÉE : Navigation vers Laravel avec token
+  const goToLaravelPage = (path: string) => {
+    console.log('🚀 Navigation React -> Laravel:', path);
+    
+    // Récupérer le token de toutes les sources
+    const token = getTokenFromAllSources();
+    
+    if (!token) {
+      console.error('❌ Aucun token trouvé pour Laravel');
+      alert('Session expirée, redirection vers la connexion...');
+      setTimeout(() => {
+        window.location.href = 'http://localhost:8000/login';
+      }, 500);
+      return;
+    }
+
+    const laravelBaseUrl = 'http://localhost:8000';
+    let fullPath = path;
+    
+    // Assurer le format correct
+    if (!fullPath.startsWith('/')) {
+      fullPath = '/' + fullPath;
+    }
+    
+    // Construire l'URL complète
+    let fullUrl = `${laravelBaseUrl}${fullPath}`;
+    const separator = fullUrl.includes('?') ? '&' : '?';
+    const timestamp = Date.now();
+    
+    fullUrl += `${separator}api_token=${encodeURIComponent(token)}&_t=${timestamp}`;
+    
+    console.log('✅ URL Laravel générée:', fullUrl);
+    
+    // Redirection
+    setTimeout(() => {
+      window.location.href = fullUrl;
+    }, 100);
+  };
+
+  // ✅ FONCTION AMÉLIORÉE : Récupération du token
+  const getTokenFromAllSources = () => {
+    console.log('🔍 Recherche du token...');
+    
+    // 1. LocalStorage
+    let token = localStorage.getItem('token');
+    if (token) {
+      console.log('✅ Token trouvé dans localStorage');
+      return token;
+    }
+    
+    // 2. URL
+    const urlParams = new URLSearchParams(window.location.search);
+    token = urlParams.get('api_token');
+    if (token) {
+      console.log('✅ Token trouvé dans URL');
+      localStorage.setItem('token', token);
+      return token;
+    }
+    
+    // 3. SessionStorage
+    token = sessionStorage.getItem('token');
+    if (token) {
+      console.log('✅ Token trouvé dans sessionStorage');
+      return token;
+    }
+    
+    console.log('❌ Aucun token trouvé');
+    return null;
+  };
+
+  // ✅ FONCTION : Navigation unifiée
+  const handleNavigation = (item: MenuItem) => {
+    console.log('📱 Navigation:', item.label, 'path:', item.path);
+    
+    if (!item.path) return;
+    
+    if (item.isLaravel) {
+      goToLaravelPage(item.path);
+    } else if (item.isReact) {
+      // Navigation interne React
+      onNavigate(item.path as Tab);
+      setIsMobileMenuOpen(false);
+    } else {
+      // Navigation interne standard
+      onNavigate(item.path as Tab);
+      setIsMobileMenuOpen(false);
+    }
+    
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // ✅ Menu synchronisé avec Blade - AJOUT DE LA SECTION COPROPRIÉTAIRES
   const menuSections = [
     {
-      title: "MENU PRINCIPAL",
+      title: "Menu principal",
       items: [
-        { id: "dashboard", label: "Tableau de bord", icon: BarChart3, path: "/proprietaire/dashboard" },
-      ],
+        {
+          id: 'dashboard',
+          label: 'Tableau de bord',
+          emoji: '📊',
+          path: "/coproprietaire/dashboard",
+          isReact: true
+        },
+      ]
     },
     {
       title: "GESTIONS DES BIENS",
       items: [
-        { id: "ajouter-bien", label: "Ajouter un bien", icon: Plus, path: "/proprietaire/ajouter-bien" },
-        { id: "mes-biens", label: "Mes biens", icon: Home, path: "/proprietaire/mes-biens" },
-      ],
+        { 
+          id: "add-property", 
+          label: "Ajouter un bien", 
+          emoji: '+',
+          path: "/coproprietaire/biens/create",
+          isLaravel: true
+        },
+        { 
+          id: "my-properties", 
+          label: "Mes biens", 
+          emoji: '🏠',
+          path: "/coproprietaire/biens",
+          isReact: true
+        },
+      ]
     },
     {
       title: "GESTION LOCATIVE",
       items: [
-        { id: "nouvelle-location", label: "Nouvelle location", icon: FileSignature, path: "/proprietaire/nouvelle-location" },
-        { id: "ajouter-locataire", label: "Ajouter un locataire", icon: UserPlus, path: "/proprietaire/ajouter-locataire" },
-        { id: "locataires", label: "Liste des locataires", icon: List, path: "/proprietaire/locataires" },
-        { id: "paiements", label: "Gestion des paiements", icon: Wallet, path: "/proprietaire/paiements" },
-      ],
+        { 
+          id: "new-rental", 
+          label: "Nouvelle location", 
+          emoji: '🔑',
+          path: "/coproprietaire/assign-property/create",
+          isLaravel: true
+        },
+        { 
+          id: "add-tenant", 
+          label: "Ajouter un locataire", 
+          emoji: '📍',
+          path: "/coproprietaire/tenants/create",
+          isLaravel: true
+        },
+        { 
+          id: "tenant-list", 
+          label: "Liste des locataires", 
+          emoji: '📄',
+          path: "/coproprietaire/tenants",
+          isLaravel: true
+        },
+        { 
+          id: "payment-management", 
+          label: "Gestion des paiements", 
+          emoji: '📅',
+          path: "/coproprietaire/paiements",
+          isLaravel: true
+        },
+      ]
     },
     {
       title: "DOCUMENTS",
       items: [
-        { id: "baux", label: "Contrats de bails", icon: FileText, path: "/proprietaire/documents/baux" },
-        { id: "etats-lieux", label: "États de lieux", icon: ClipboardList, path: "/proprietaire/etats-lieux" },
-        { id: "avis-echeance", label: "Avis d'échéance", icon: AlertTriangle, path: "/proprietaire/avis-echeance" },
-        { id: "quittances", label: "Quittances de loyers", icon: Bell, path: "/proprietaire/quittances" },
-        { id: "factures", label: "Factures et documents divers", icon: FolderOpen, path: "/proprietaire/factures" },
-        { id: "archives", label: "Archivage de documents", icon: Archive, path: "/proprietaire/archives" },
-      ],
+        { 
+          id: "lease-contracts", 
+          label: "Contrats de bail", 
+          emoji: '📄',
+          path: "/coproprietaire/leases",
+          isLaravel: true
+        },
+        { 
+          id: "condition-reports", 
+          label: "Etats de lieux", 
+          emoji: '📄',
+          path: "/coproprietaire/etats-des-lieux",
+          isLaravel: true
+        },
+        { 
+          id: "due-notices", 
+          label: "Avis d'échéance", 
+          emoji: '📄',
+          path: "/coproprietaire/notices",
+          isLaravel: true
+        },
+        { 
+          id: "rent-receipts", 
+          label: "Quittances de loyers", 
+          emoji: '📄',
+          path: "/coproprietaire/quittances",
+          isLaravel: true
+        },
+        { 
+          id: "invoices", 
+          label: "Factures et documents divers", 
+          emoji: '📄',
+          path: "/coproprietaire/factures",
+          isLaravel: true
+        },
+        { 
+          id: "document-archiving", 
+          label: "Archivage de documents", 
+          emoji: '📄',
+          path: "/coproprietaire/documents",
+          isReact: true
+        },
+      ]
     },
     {
-      title: "RÉPARATIONS ET TRAVAUX",
+      title: "REPARATIONS ET TRAVAUX",
       items: [
-        { id: "reparations", label: "Répartitions et travaux", icon: Wrench, path: "/proprietaire/reparations" },
-      ],
+        { 
+          id: "repairs", 
+          label: "Réparations et travaux", 
+          emoji: '✂️',
+          path: "/coproprietaire/maintenance",
+          isLaravel: true
+        },
+      ]
     },
     {
-      title: "COMPTABILITÉ ET STATISTIQUES",
+      title: "COMPTABILITE ET STATISTIQUES",
       items: [
-        { id: "comptabilite", label: "Comptabilité et statistiques", icon: Calculator, path: "/proprietaire/comptabilite" },
-      ],
+        { 
+          id: "accounting", 
+          label: "Comptabilité et statistiques", 
+          emoji: '💼',
+          path: "/coproprietaire/comptabilite",
+          isLaravel: true
+        },
+      ]
     },
+    // ✅ NOUVELLE SECTION : GESTION DES COPROPRIÉTAIRES
     {
       title: "GESTION DES COPROPRIÉTAIRES",
       items: [
         { 
-          id: "coproprietaires", 
+          id: "coowner-list", 
           label: "Liste des co-propriétaires", 
-          icon: Users, 
-          path: "/proprietaire/coproprietaires" 
+          emoji: '👥',
+          path: "/coproprietaire/coproprietaires",
+          isLaravel: true
         },
         { 
-          id: "inviter-coproprietaire", 
+          id: "invite-coowner", 
           label: "Inviter un co-propriétaire", 
-          icon: UserPlus, 
-          path: "/proprietaire/inviter-coproprietaire" 
+          emoji: '➕',
+          path: "/coproprietaire/coproprietaires/inviter",
+          isLaravel: true
         },
-      ],
+      ]
     },
-
- 
     {
       title: "CONFIGURATION",
       items: [
-        { id: "parametres", label: "Paramètres", icon: Settings, path: "/proprietaire/parametres" },
-      ],
-    },
+        { 
+          id: "settings", 
+          label: "Paramètres", 
+          emoji: '⚙️',
+          path: "/coproprietaire/parametres",
+          isReact: true
+        },
+      ]
+    }
   ];
 
-  // ✅ Créer un flat menu à partir de menuSections pour la navigation
   const flatMenu = useMemo(() => {
     const items: MenuItem[] = [];
     menuSections.forEach(section => {
@@ -217,353 +359,197 @@ export const Layout: React.FC<LayoutProps> = ({
   }, []);
 
   const activeTitle = useMemo(() => {
-    const found = flatMenu.find((i) => i.path === activeTab || i.id === activeTab);
+    const found = flatMenu.find((i) => 
+      i.path === activeTab || 
+      i.id === activeTab
+    );
     return found?.label ?? "Tableau de bord";
   }, [activeTab, flatMenu]);
 
-  const handleNavigate = (tab: Tab | string) => {
-    const menuItem = flatMenu.find((i) => i.id === tab || i.path === tab);
-    if (menuItem?.path) onNavigate(menuItem.path as Tab);
-    else onNavigate(tab as Tab);
+  const renderMenuItem = (item: MenuItem) => {
+    const isActive = item.path === activeTab || item.id === activeTab;
 
-    setIsMobileMenuOpen(false);
-    setShowNotifications(false);
-    setShowHelp(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const baseBtn = "w-full flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group cursor-pointer";
+    const activeBtn = `bg-gradient-to-r from-[#70AE48] to-[#8BC34A] text-white shadow-lg`;
+    const idleBtn = "text-gray-700 hover:bg-[#70AE48]/10 hover:text-[#70AE48]";
+
+    return (
+      <button
+        key={String(item.id)}
+        onClick={() => handleNavigation(item)}
+        className={`${baseBtn} ${isActive ? activeBtn : idleBtn} mb-1`}
+        type="button"
+        title={item.label}
+      >
+        <div className="flex items-center gap-3.5">
+          {item.emoji ? (
+            <span className="text-lg" role="img" aria-label={item.label}>
+              {item.emoji}
+            </span>
+          ) : null}
+          <span className="text-left whitespace-nowrap overflow-hidden text-ellipsis">
+            {item.label}
+          </span>
+        </div>
+      </button>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-white flex font-sans text-black transition-colors duration-300">
-      <div className="fixed inset-0 pointer-events-none z-0" />
-
-      {/* ✅ Scrollbar custom (fond blanc, thumb gris) */}
+    <>
       <style>{`
-        .sidebar-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(107,114,128,.7) transparent; /* thumb / track */
+        /* Masquer UNIQUEMENT la barre de défilement dans le menu latéral */
+        .sidebar-menu-container {
+          overflow-y: auto !important;
+          scrollbar-width: none !important; /* Firefox */
+          -ms-overflow-style: none !important; /* IE and Edge */
         }
-        .sidebar-scroll::-webkit-scrollbar { width: 10px; }
-        .sidebar-scroll::-webkit-scrollbar-track {
-          background: #ffffff;
-          border-radius: 999px;
+        
+        .sidebar-menu-container::-webkit-scrollbar {
+          display: none !important; /* Chrome, Safari, Opera */
         }
-        .sidebar-scroll::-webkit-scrollbar-thumb {
-          background: rgba(107,114,128,.55);
-          border-radius: 999px;
-          border: 3px solid #ffffff; /* track blanc autour */
+        
+        /* Le reste de la page garde son comportement normal */
+        main {
+          overflow-y: auto !important;
         }
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(107,114,128,.8);
+        
+        /* Les barres de défilement normales restent visibles ailleurs */
+        ::-webkit-scrollbar {
+          display: block;
         }
       `}</style>
-
-      {/* Toasts */}
-      <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3">
-        {toasts.map((toast) => (
-          <Toast key={toast.id} toast={toast} onClose={removeToast} />
-        ))}
-      </div>
-
-      {/* Mobile Backdrop */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Sidebar FIXED desktop */}
-      <aside
-        className={`
-          fixed top-4 bottom-4 left-4 z-50 w-72
-          bg-white border border-blue-200
-          shadow-xl rounded-3xl
-          transform transition-all duration-300 ease-in-out flex flex-col
-          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"}
-        `}
-      >
-        {/* Brand */}
-        <div className="p-8 flex items-center justify-between lg:justify-start gap-3 border-b border-blue-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
-              <Building size={20} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="font-bold text-xl text-black tracking-tight leading-none">GestiLoc</h1>
-              <span className="text-[10px] text-blue-600 font-bold tracking-widest uppercase">
-                Espace Propriétaire
-              </span>
-            </div>
-          </div>
-
-          <button
-            className="lg:hidden text-gray-400"
-            onClick={() => setIsMobileMenuOpen(false)}
-            aria-label="Fermer le menu"
-            type="button"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Nav avec catégories */}
-        <nav className="flex-1 px-4 overflow-y-auto py-2 sidebar-scroll">
-          {menuSections.map((section) => (
-            <div key={section.title} className="mb-6">
-              {/* Section Title */}
-              <h3 className="px-4 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                {section.title}
-              </h3>
-              {/* Section Items */}
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id || activeTab === item.path;
-                  return (
-                    <button
-                      key={String(item.id)}
-                      onClick={() => handleNavigate(item.path ?? item.id)}
-                      className={`w-full flex items-center gap-3.5 px-4 py-3 text-sm font-medium rounded-xl transition-all ${
-                        isActive
-                          ? "bg-gradient-to-r from-[#529D21] to-[#7CB342] text-white shadow-lg shadow-green-500/30"
-                          : "text-gray-600 hover:bg-green-50 hover:text-[#529D21]"
-                      }`}
-                      type="button"
-                    >
-                      <Icon
-                        size={18}
-                        className={`flex-shrink-0 ${isActive ? "text-white" : "text-gray-500"}`}
-                      />
-                      <span className="truncate">{item.label}</span>
-                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />}
-                    </button>
-                  );
-                })}
+      
+      <div className="min-h-screen bg-white">
+        <div className="flex h-screen bg-white">
+          {/* Sidebar - Desktop */}
+          <aside className="hidden lg:flex lg:flex-shrink-0">
+            <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
+              {/* Header avec fond vert #70AE48 */}
+              <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#70AE48' }}>
+                <h1 className="text-xl font-bold text-white">
+                  GestiLoc
+                </h1>
+              </div>
+              
+              {/* Menu avec scroll mais sans barre visible */}
+              <div className="flex-1 sidebar-menu-container px-5 py-6">
+                {menuSections.map((section) => (
+                  <div key={section.title} className="mb-6">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 pl-4">
+                      {section.title}
+                    </div>
+                    <div className="space-y-1">
+                      {section.items.map(renderMenuItem)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Footer */}
+              <div className="p-5 border-t border-gray-200 flex-shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {ownerInitials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{ownerName}</div>
+                    <div className="text-xs text-gray-600">Co-propriétaire</div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                    title="Déconnexion"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
+          </aside>
 
-          <div className="my-4 mx-4 border-t border-blue-100" />
-
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3.5 px-4 py-3.5 text-sm font-medium rounded-2xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors group"
-            type="button"
-          >
-            <LogOut size={20} className="text-gray-500 group-hover:text-red-500 transition-colors" />
-            Déconnexion
-          </button>
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 mt-auto border-t border-blue-100">
-          {/* Theme Toggle */}
-          <div className="bg-blue-50 p-1 rounded-xl flex mb-4 border border-blue-200">
-            <button
-              onClick={toggleTheme}
-              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${
-                !isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
-              type="button"
-            >
-              <Sun size={14} className="mr-2" /> Light
-            </button>
-            <button
-              onClick={toggleTheme}
-              className={`flex-1 flex items-center justify-center py-2 rounded-lg text-xs font-bold ${
-                isDarkMode ? "bg-white shadow text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
-              type="button"
-            >
-              <Moon size={14} className="mr-2" /> Dark
-            </button>
-          </div>
-
-          {/* User Card */}
-          <div
-            className="bg-blue-50 p-3 rounded-2xl flex items-center gap-3 border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
-            onClick={() => handleNavigate("/proprietaire/profile")}
-            role="button"
-          >
-            <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white">
-                {ownerInitials}
-              </div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-            </div>
-            <div className="overflow-hidden flex-1">
-              <p className="text-sm font-bold text-black truncate">{ownerName}</p>
-              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 truncate">Propriétaire</p>
-            </div>
-            <ChevronRight size={16} className="text-gray-400" />
-          </div>
-        </div>
-      </aside>
-
-      {/* Main offset */}
-      <main className="flex-1 flex flex-col min-h-screen w-full transition-all duration-300 relative z-10 bg-white lg:ml-80">
-        {/* Header */}
-        <header
-          className={`sticky top-0 z-30 transition-all duration-200 ${
-            scrolled ? "bg-white shadow-sm border-b border-blue-100" : "border-b border-blue-100"
-          }`}
-        >
-          <div className="px-4 lg:px-8 py-4 lg:py-6 flex justify-between items-center">
-            <div className="flex items-center gap-3 lg:hidden">
+          {/* Main content */}
+          <div className="flex flex-col flex-1 bg-white">
+            {/* Top bar avec fond vert #70AE48 */}
+            <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#70AE48' }}>
               <button
+                type="button"
+                className="px-4 text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white lg:hidden hover:bg-white/10 transition-all duration-200"
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 text-gray-600 hover:bg-blue-50 rounded-xl transition-colors"
-                aria-label="Ouvrir le menu"
-                type="button"
               >
-                <Menu size={24} />
+                <Menu className="h-6 w-6" />
               </button>
-              <h2 className="font-bold text-lg text-black">{activeTitle}</h2>
-            </div>
+              <div className="flex-1 px-6 flex justify-between items-center">
+                <div className="flex-1">
+                  <div className="max-w-lg">
+                    <h1 className="text-2xl font-bold text-white">{activeTitle}</h1>
+                  </div>
+                </div>
+                <div className="ml-4 flex items-center md:ml-6 space-x-2">
+                  {/* Bouton Notifications */}
+                  <button
+                    onClick={() => onNavigate('/coproprietaire/notifications' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span className="hidden md:inline">Notifications</span>
+                  </button>
 
-            <div className="hidden lg:block">
-              <h2 className="text-2xl font-bold text-black tracking-tight">{activeTitle}</h2>
-            </div>
+                  {/* Bouton Aide */}
+                  <button
+                    onClick={() => onNavigate('/coproprietaire/aide' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Aide"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    <span className="hidden md:inline">Aide</span>
+                  </button>
 
-            <div className="flex items-center gap-4 relative">
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs font-bold text-gray-700">Bail actif</span>
+                  {/* Bouton Mon compte */}
+                  <button
+                    onClick={() => onNavigate('/coproprietaire/parametres' as Tab)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    title="Mon compte"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="hidden md:inline">Mon compte</span>
+                  </button>
+
+                  <button
+                    onClick={onLogout}
+                    className="p-2 rounded-full text-white hover:bg-white/20 lg:hidden transition-all duration-200"
+                    title="Déconnexion"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-
-              <button
-                className="relative p-2.5 bg-blue-50 text-gray-600 hover:text-blue-600 rounded-full transition-all shadow-sm hover:shadow-md focus:outline-none border border-blue-200"
-                onClick={() => setShowNotifications(!showNotifications)}
-                aria-label="Afficher les notifications"
-                type="button"
-              >
-                <Bell size={20} />
-                {notifications.some((n) => !n.isRead) && (
-                  <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-                )}
-              </button>
-
-              <button
-                className="relative p-2.5 bg-blue-50 text-gray-600 hover:text-blue-600 rounded-full transition-all shadow-sm hover:shadow-md focus:outline-none border border-blue-200"
-                onClick={() => setShowHelp(!showHelp)}
-                aria-label="Afficher l'aide"
-                type="button"
-              >
-                <HelpCircle size={20} />
-              </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-blue-200 overflow-hidden animate-zoom-in ring-1 ring-black/5">
-                  <div className="p-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
-                    <h3 className="font-bold text-sm text-black">Notifications</h3>
-                    <button className="text-xs text-blue-600 font-medium hover:underline" type="button">
-                      Tout marquer lu
-                    </button>
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto sidebar-scroll">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer relative group"
-                      >
-                        <div className="flex gap-3">
-                          <div
-                            className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                              notif.type === "critical"
-                                ? "bg-red-500 shadow-lg shadow-red-500/40"
-                                : "bg-blue-600 shadow-lg shadow-blue-600/40"
-                            }`}
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-black group-hover:text-blue-600 transition-colors">
-                              {notif.message}
-                            </p>
-                            {notif.subtext && (
-                              <p className="text-xs text-gray-600 mt-0.5">{notif.subtext}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <button className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" type="button">
-                      Voir toutes les notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {showHelp && (
-                <div className="absolute right-0 top-16 w-80 bg-white rounded-2xl shadow-2xl border border-blue-200 overflow-hidden animate-zoom-in ring-1 ring-black/5">
-                  <div className="p-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
-                    <h3 className="font-bold text-sm text-black">Aide</h3>
-                    <button 
-                      onClick={() => setShowHelp(false)}
-                      className="text-xs text-blue-600 font-medium hover:underline" 
-                      type="button"
-                    >
-                      Fermer
-                    </button>
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto sidebar-scroll">
-                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-green-500 shadow-lg shadow-green-500/40" />
-                        <div>
-                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
-                            Guide de démarrage
-                          </p>
-                          <p className="text-xs text-gray-600 mt-0.5">Apprenez les bases de GestiLoc</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-blue-600 shadow-lg shadow-blue-600/40" />
-                        <div>
-                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
-                            Centre d'aide complet
-                          </p>
-                          <p className="text-xs text-gray-600 mt-0.5">Accédez à tous nos guides</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border-b border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-purple-600 shadow-lg shadow-purple-600/40" />
-                        <div>
-                          <p className="text-sm font-medium text-black hover:text-blue-600 transition-colors">
-                            Contactez le support
-                          </p>
-                          <p className="text-xs text-gray-600 mt-0.5">Notre équipe est là pour vous aider</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => {
-                        setShowHelp(false);
-                        handleNavigate("/help");
-                      }}
-                      className="w-full px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800" 
-                      type="button"
-                    >
-                      Voir toute l'aide
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
-          </div>
-        </header>
 
-        {/* Content */}
-        <div className="px-4 md:px-8 pb-8 max-w-7xl mx-auto w-full">{children}</div>
-      </main>
-    </div>
+            {/* Page content - garde son scroll normal */}
+            <main className="flex-1 overflow-y-auto focus:outline-none bg-white">
+              <div className="py-6">
+                <div className="max-w-7xl mx-auto px-6">
+                  {children}
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+
+        {/* Toast container */}
+        <div className="fixed bottom-4 right-4 z-50 space-y-2">
+          {toasts.map((toast) => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </>
   );
 };

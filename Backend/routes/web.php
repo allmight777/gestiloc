@@ -12,6 +12,7 @@ use App\Http\Controllers\CoOwner\CoOwnerPaymentController;
 use App\Http\Controllers\CoOwner\CoOwnerAccountingController;
 use App\Http\Controllers\CoOwner\CoOwnerInvoiceController;
 use App\Http\Controllers\CoOwner\CoOwnerPropertyController;
+use App\Http\Controllers\CoOwner\CoOwnerManagementController;
 use App\Http\Controllers\CoOwner\CoOwnerConditionReportController;
 use App\Http\Controllers\ReactRedirectController;
 use App\Http\Controllers\Auth\LoginController;
@@ -202,6 +203,26 @@ Route::prefix('coproprietaire/quittances')->name('co-owner.quittances.')->group(
     Route::get('/{receipt}/download', [CoOwnerRentReceiptController::class, 'downloadPdf'])->name('download');
     Route::post('/{receipt}/send-email', [CoOwnerRentReceiptController::class, 'sendByEmail'])->name('send-email');
     Route::delete('/{receipt}', [CoOwnerRentReceiptController::class, 'destroy'])->name('destroy');
+});
+
+
+
+// Routes pour la gestion des copropriétaires (Landlord)
+Route::prefix('coproprietaire/gestionnaires')->name('co-owner.management.')->middleware(['auth'])->group(function () {
+    Route::get('/', [CoOwnerManagementController::class, 'index'])->name('index');
+    Route::get('/creer', [CoOwnerManagementController::class, 'create'])->name('create');
+    Route::post('/inviter', [CoOwnerManagementController::class, 'invite'])->name('invite');
+    Route::get('/{id}', [CoOwnerManagementController::class, 'show'])->name('show');
+    Route::post('/{id}/revoke', [CoOwnerManagementController::class, 'revoke'])->name('revoke');
+    Route::post('/{id}/reactivate', [CoOwnerManagementController::class, 'reactivate'])->name('reactivate');
+
+    // Routes pour les délégations
+    Route::post('/{id}/delegate', [CoOwnerManagementController::class, 'delegate'])->name('delegate');
+    Route::delete('/delegations/{delegationId}/revoke', [CoOwnerManagementController::class, 'revokeDelegation'])->name('delegations.revoke');
+
+    // Routes pour les invitations
+    Route::post('/invitations/{id}/resend', [CoOwnerManagementController::class, 'resendInvitation'])->name('invitations.resend');
+    Route::delete('/invitations/{id}/cancel', [CoOwnerManagementController::class, 'cancelInvitation'])->name('invitations.cancel');
 });
 
 

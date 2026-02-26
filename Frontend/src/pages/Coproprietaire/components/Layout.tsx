@@ -10,10 +10,14 @@ import {
   Wallet,
   ExternalLink,
   HelpCircle,
+  Users,
+  UserPlus,
 } from "lucide-react";
-
 import { Tab, ToastMessage } from '../types';
 import { Toast } from './ui/Toast';
+import NotificationsModal from './NotificationsModal';
+import HelpModal from './HelpModal';
+import LogoutModal from './LogoutModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -60,6 +64,9 @@ export const Layout: React.FC<LayoutProps> = ({
   const [user, setUser] = useState<UserData | null>(null);
   const [expandedMenu, setExpandedMenu] = useState<string | null>("biens");
   const [showHelp, setShowHelp] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(3);
 
   useEffect(() => {
     try {
@@ -156,7 +163,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   // ✅ FONCTION : Navigation unifiée
   const handleNavigation = (item: MenuItem) => {
-    console.log('📱 Navigation:', item.label, 'path:', item.path);
+    console.log('📱 Navigation:', item.label, 'path:', item.path, 'isLaravel:', item.isLaravel, 'isReact:', item.isReact);
     
     if (!item.path) return;
     
@@ -167,12 +174,25 @@ export const Layout: React.FC<LayoutProps> = ({
       onNavigate(item.path as Tab);
       setIsMobileMenuOpen(false);
     } else {
-      // Navigation interne standard
-      onNavigate(item.path as Tab);
+      // Par défaut, considérer comme Laravel pour les chemins spécifiques
+      if (item.path.startsWith('/coproprietaire/gestionnaires')) {
+        goToLaravelPage(item.path);
+      } else {
+        onNavigate(item.path as Tab);
+      }
       setIsMobileMenuOpen(false);
     }
     
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    await onLogout();
+    setShowLogoutModal(false);
   };
 
   // ✅ Menu synchronisé avec Blade
@@ -195,7 +215,7 @@ export const Layout: React.FC<LayoutProps> = ({
         { 
           id: "add-property", 
           label: "Ajouter un bien", 
-          emoji: '+',
+          emoji: '➕',
           path: "/coproprietaire/biens/create",
           isLaravel: true
         },
@@ -313,16 +333,34 @@ export const Layout: React.FC<LayoutProps> = ({
       ]
     },
     {
+      title: "GESTION DES COPROPRIÉTAIRES",
+      items: [
+        { 
+          id: "coowner-list", 
+          label: "Liste des gestionnaires", 
+          emoji: '👥',
+          path: "/coproprietaire/gestionnaires",
+          isLaravel: true
+        },
+        { 
+          id: "invite-coowner", 
+          label: "Inviter un gestionnaire", 
+          emoji: '➕',
+          path: "/coproprietaire/gestionnaires/creer",
+          isLaravel: true
+        },
+      ]
+    },
+    {
       title: "CONFIGURATION",
       items: [
         { 
           id: "settings", 
           label: "Paramètres", 
-          emoji: '📜',
+          emoji: '⚙️',
           path: "/coproprietaire/parametres",
           isReact: true
         },
-        
       ]
     }
   ];
@@ -376,24 +414,38 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <>
+      {/* Modales */}
+      <NotificationsModal 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
+      
+      <HelpModal 
+        isOpen={showHelp} 
+        onClose={() => setShowHelp(false)} 
+      />
+
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleConfirmLogout}
+      />
+
       <style>{`
-        /* Masquer UNIQUEMENT la barre de défilement dans le menu latéral */
         .sidebar-menu-container {
           overflow-y: auto !important;
-          scrollbar-width: none !important; /* Firefox */
-          -ms-overflow-style: none !important; /* IE and Edge */
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
         }
         
         .sidebar-menu-container::-webkit-scrollbar {
-          display: none !important; /* Chrome, Safari, Opera */
+          display: none !important;
         }
         
-        /* Le reste de la page garde son comportement normal */
         main {
           overflow-y: auto !important;
         }
         
-        /* Les barres de défilement normales restent visibles ailleurs */
         ::-webkit-scrollbar {
           display: block;
         }
@@ -404,14 +456,10 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Sidebar - Desktop */}
           <aside className="hidden lg:flex lg:flex-shrink-0">
             <div className="flex flex-col w-[300px] bg-white border-r border-gray-200">
-              {/* Header avec fond vert #70AE48 */}
               <div className="flex items-center flex-shrink-0 px-6 h-16 border-b border-gray-200" style={{ backgroundColor: '#70AE48' }}>
-                <h1 className="text-xl font-bold text-white">
-                  GestiLoc
-                </h1>
+                <h1 className="text-xl font-bold text-white">GestiLoc</h1>
               </div>
               
-              {/* Menu avec scroll mais sans barre visible */}
               <div className="flex-1 sidebar-menu-container px-5 py-6">
                 {menuSections.map((section) => (
                   <div key={section.title} className="mb-6">
@@ -425,7 +473,6 @@ export const Layout: React.FC<LayoutProps> = ({
                 ))}
               </div>
               
-              {/* Footer */}
               <div className="p-5 border-t border-gray-200 flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-[#70AE48] to-[#8BC34A] rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -436,7 +483,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     <div className="text-xs text-gray-600">Co-propriétaire</div>
                   </div>
                   <button
-                    onClick={onLogout}
+                    onClick={handleLogoutClick}
                     className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
                     title="Déconnexion"
                   >
@@ -449,7 +496,6 @@ export const Layout: React.FC<LayoutProps> = ({
 
           {/* Main content */}
           <div className="flex flex-col flex-1 bg-white">
-            {/* Top bar avec fond vert #70AE48 */}
             <div className="relative z-10 flex-shrink-0 flex h-16 border-b border-gray-200 lg:border-none" style={{ backgroundColor: '#70AE48' }}>
               <button
                 type="button"
@@ -467,17 +513,22 @@ export const Layout: React.FC<LayoutProps> = ({
                 <div className="ml-4 flex items-center md:ml-6 space-x-2">
                   {/* Bouton Notifications */}
                   <button
-                    onClick={() => onNavigate('/coproprietaire/notifications' as Tab)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
+                    onClick={() => setShowNotifications(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm relative"
                     title="Notifications"
                   >
                     <Bell className="w-4 h-4" />
                     <span className="hidden md:inline">Notifications</span>
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-white">
+                        {notificationCount}
+                      </span>
+                    )}
                   </button>
 
                   {/* Bouton Aide */}
                   <button
-                    onClick={() => onNavigate('/coproprietaire/aide' as Tab)}
+                    onClick={() => setShowHelp(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
                     title="Aide"
                   >
@@ -496,7 +547,7 @@ export const Layout: React.FC<LayoutProps> = ({
                   </button>
 
                   <button
-                    onClick={onLogout}
+                    onClick={handleLogoutClick}
                     className="p-2 rounded-full text-white hover:bg-white/20 lg:hidden transition-all duration-200"
                     title="Déconnexion"
                   >
@@ -506,7 +557,7 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             </div>
 
-            {/* Page content - garde son scroll normal */}
+            {/* Page content */}
             <main className="flex-1 overflow-y-auto focus:outline-none bg-white">
               <div className="py-6">
                 <div className="max-w-7xl mx-auto px-6">
