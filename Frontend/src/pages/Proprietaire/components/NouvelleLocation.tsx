@@ -1,28 +1,118 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { propertyService, tenantService, leaseService, Property, TenantApi, TenantInvitationApi, TenantIndexResponse, CreateLeasePayload } from "../../../services/api";
 
-const NouvelleLocation = () => {
+interface NouvelleLocationProps {
+  notify?: (msg: string, type: "success" | "info" | "error") => void;
+}
+
+// Type pour les options du select (biens)
+interface PropertyOption {
+  id: number;
+  name: string;
+  address: string;
+}
+
+// Type pour les options du select (locataires)
+interface TenantOption {
+  id: number;
+  label: string;
+  type: 'tenant' | 'invitation';
+  email?: string;
+  // Stocker l'ID réel du locataire (pour les invitations, c'est différent de l'ID d'invitation)
+  tenantId?: number;
+}
+
+const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
   const navigate = useNavigate();
-  const [typeBail, setTypeBail] = useState("nu");
-  const [statutBail, setStatutBail] = useState("actif");
-  const [renouvellement, setRenouvellement] = useState(true);
-  const [loyer, setLoyer] = useState("");
-  const [depot, setDepot] = useState("");
-  const [dateDebut, setDateDebut] = useState("");
-  const [duree, setDuree] = useState("");
-  const [datePaiement, setDatePaiement] = useState("1");
-  const [periodicite, setPeriodicite] = useState("Mensuel");
-  const [modePaiement, setModePaiement] = useState("Espèce");
-  const [details, setDetails] = useState("");
-  const [bien, setBien] = useState("");
-  const [locataire, setLocataire] = useState("");
+  const [typeBail, setTypeBail] = useState<string>("nu");
+  const [statutBail, setStatutBail] = useState<string>("active");
+  const [renouvellement, setRenouvellement] = useState<boolean>(true);
+  const [loyer, setLoyer] = useState<string>("");
+  const [depot, setDepot] = useState<string>("");
+  const [dateDebut, setDateDebut] = useState<string>("");
+  const [duree, setDuree] = useState<string>("");
+  const [datePaiement, setDatePaiement] = useState<string>("1");
+  const [periodicite, setPeriodicite] = useState<string>("Mensuel");
+  const [modePaiement, setModePaiement] = useState<string>("Espèce");
+  const [details, setDetails] = useState<string>("");
+  const [bien, setBien] = useState<string>("");
+  const [locataire, setLocataire] = useState<string>("");
 
+  // États pour les données du backend
+  const [properties, setProperties] = useState<PropertyOption[]>([]);
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Mapper le statut du formulaire vers le format backend
+  const mapStatusToBackend = (formStatus: string): string => {
+    const statusMap: Record<string, string> = {
+      'active': 'active',
+      'en_attente': 'pending',
+      'resilié': 'terminated',
+      'expiré': 'terminated'
+    };
+    return statusMap[formStatus] || 'pending';
+  };
+
+  // Statuts disponibles pour le bail
   const statuts = [
-    { value: "actif", label: "Actif", color: "#22c55e" },
+    { value: "active", label: "Actif", color: "#22c55e" },
     { value: "en_attente", label: "En attente", color: "#94a3b8" },
     { value: "resilié", label: "Résilié", color: "#f97316" },
-    { value: "expiré", label: "Expiré", color: "#ef4444" },
   ];
+
+  // Récupérer les biens et locataires depuis le backend
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Récupérer les biens DISPONIBLES uniquement pour le formulaire de bail
+        const propertiesResponse = await propertyService.listAvailableProperties();
+        const propertiesData = propertiesResponse.data || propertiesResponse;
+        
+        // Transformer les propriétés en options avec le nom
+        const propertyOptions: PropertyOption[] = (propertiesData as Property[]).map((p: Property) => ({
+          id: p.id,
+          name: p.name || `Bien #${p.id}`,
+          address: p.address
+        }));
+        setProperties(propertyOptions);
+
+        // Récupérer les locataires et invitations
+        const tenantsResponse = await tenantService.listTenants();
+        const tenantsData = tenantsResponse as TenantIndexResponse;
+        
+        // Transformer les locataires existants
+        const tenantOptions: TenantOption[] = (tenantsData.tenants || []).map((t: TenantApi) => ({
+          id: t.id,
+          label: `${t.first_name || ''} ${t.last_name || ''}`.trim() || `Locataire #${t.id}`,
+          type: 'tenant' as const,
+          email: t.email
+        }));
+        
+        // Ajouter les invitations en attente (locataires qui ne communiquent pas encore)
+        const invitationOptions: TenantOption[] = (tenantsData.invitations || []).map((inv: TenantInvitationApi) => ({
+          id: inv.id,
+          label: `${inv.first_name || ''} ${inv.last_name || ''}`.trim() || inv.email,
+          type: 'invitation' as const,
+          email: inv.email,
+          tenantId: inv.tenant_id || undefined // Stocker l'ID du locataire associé
+        }));
+        
+        // Combiner les deux listes
+        setTenants([...tenantOptions, ...invitationOptions]);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des données:", error);
+        notify?.("Erreur lors du chargement des données", "error");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [notify]);
 
   const BOLD_FONT = "'Merriweather', Georgia, serif";
   const SMALL_FONT = "'Manrope', sans-serif";
@@ -263,12 +353,59 @@ const NouvelleLocation = () => {
             </button>
             <button 
               style={styles.createBtn}
-              onClick={() => {
-                // Logique de création du contrat ici
-                console.log("Création du contrat de location");
+              onClick={async () => {
+                // Validation des champs obligatoires
+                if (!bien || !locataire || !loyer || !dateDebut) {
+                  notify?.("Veuillez remplir tous les champs obligatoires", "error");
+                  return;
+                }
+
+                setIsSubmitting(true);
+                try {
+                  // Préparer les données du bail
+                  const leasePayload: CreateLeasePayload = {
+                    property_id: parseInt(bien),
+                    tenant_id: parseInt(locataire),
+                    start_date: dateDebut,
+                    end_date: duree ? new Date(new Date(dateDebut).setFullYear(new Date(dateDebut).getFullYear() + parseInt(duree))).toISOString().split('T')[0] : null,
+                    rent_amount: parseFloat(loyer),
+                    deposit: depot ? parseFloat(depot) : null,
+                    type: typeBail as "nu" | "forme",
+                    status: mapStatusToBackend(statutBail) as "pending" | "active" | "terminated",
+                    terms: details ? details.split('\n').filter(t => t.trim()) : []
+                  };
+
+                  console.log("Payload envoyé au backend:", leasePayload);
+
+                  // Appeler l'API pour créer le bail
+                  await leaseService.createLease(leasePayload);
+                  
+                  notify?.("Contrat de location créé avec succès!", "success");
+                  navigate("/proprietaire/documents/baux");
+                } catch (error: unknown) {
+                  console.error("Erreur lors de la création du contrat:", error);
+                  
+                  // Afficher les erreurs de validation détaillées
+                  const err = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
+                  const errorData = err.response?.data;
+                  if (errorData?.errors) {
+                    // Afficher toutes les erreurs de validation
+                    const errorMessages = Object.entries(errorData.errors)
+                      .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                      .join('\n');
+                    notify?.(`Erreurs de validation:\n${errorMessages}`, "error");
+                  } else if (errorData?.message) {
+                    notify?.(errorData.message, "error");
+                  } else {
+                    notify?.("Erreur lors de la création du contrat. Veuillez vérifier les champs.", "error");
+                  }
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
+              disabled={isSubmitting}
             >
-              Créer le contrat
+              {isSubmitting ? "Création en cours..." : "Créer le contrat"}
             </button>
           </div>
         </div>
@@ -294,10 +431,14 @@ const NouvelleLocation = () => {
                 style={styles.select} 
                 value={bien} 
                 onChange={e => setBien(e.target.value)}
+                disabled={isLoading}
               >
                 <option value="">Sélectionner un bien</option>
-                <option value="bien1">Appartement T3 - Centre ville</option>
-                <option value="bien2">Villa - Quartier résidentiel</option>
+                {properties.map(property => (
+                  <option key={property.id} value={property.id}>
+                    {property.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -308,10 +449,27 @@ const NouvelleLocation = () => {
                 style={styles.select} 
                 value={locataire} 
                 onChange={e => setLocataire(e.target.value)}
+                disabled={isLoading}
               >
                 <option value="">Sélectionner un locataire</option>
-                <option value="loc1">Jean Dupont</option>
-                <option value="loc2">Marie Martin</option>
+                {tenants.length > 0 && (
+                  <optgroup label="Locataires existants">
+                    {tenants.filter(t => t.type === 'tenant').map(tenant => (
+                      <option key={`tenant-${tenant.id}`} value={tenant.id}>
+                        {tenant.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {tenants.some(t => t.type === 'invitation') && (
+                  <optgroup label="En attente d'invitation">
+                    {tenants.filter(t => t.type === 'invitation').map(inv => (
+                      <option key={`invitation-${inv.id}`} value={inv.id}>
+                        {inv.label} ({inv.email})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 
@@ -334,9 +492,9 @@ const NouvelleLocation = () => {
                   <input 
                     type="radio" 
                     name="typeBail" 
-                    value="meuble" 
-                    checked={typeBail === "meuble"} 
-                    onChange={() => setTypeBail("meuble")} 
+                    value="forme" 
+                    checked={typeBail === "forme"} 
+                    onChange={() => setTypeBail("forme")} 
                     style={{ accentColor: "#16a34a" }} 
                   />
                   Bail meublé
@@ -491,12 +649,58 @@ const NouvelleLocation = () => {
             </button>
             <button 
               style={styles.createBtn}
-              onClick={() => {
-                // Logique de création du contrat ici
-                console.log("Création du contrat de location");
+              onClick={async () => {
+                // Validation des champs obligatoires
+                if (!bien || !locataire || !loyer || !dateDebut) {
+                  notify?.("Veuillez remplir tous les champs obligatoires", "error");
+                  return;
+                }
+
+                setIsSubmitting(true);
+                try {
+                  // Préparer les données du bail
+                  const leasePayload: CreateLeasePayload = {
+                    property_id: parseInt(bien),
+                    tenant_id: parseInt(locataire),
+                    start_date: dateDebut,
+                    end_date: duree ? new Date(new Date(dateDebut).setFullYear(new Date(dateDebut).getFullYear() + parseInt(duree))).toISOString().split('T')[0] : null,
+                    rent_amount: parseFloat(loyer),
+                    deposit: depot ? parseFloat(depot) : null,
+                    type: typeBail as "nu" | "forme",
+                    status: mapStatusToBackend(statutBail) as "pending" | "active" | "terminated",
+                    terms: details ? details.split('\n').filter(t => t.trim()) : []
+                  };
+
+                  console.log("Payload envoyé au backend:", leasePayload);
+
+                  // Appeler l'API pour créer le bail
+                  await leaseService.createLease(leasePayload);
+                  
+                  notify?.("Contrat de location créé avec succès!", "success");
+                  navigate("/proprietaire/documents/baux");
+                } catch (error: unknown) {
+                  console.error("Erreur lors de la création du contrat:", error);
+                  
+                  // Afficher les erreurs de validation détaillées
+                  const err = error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
+                  const errorData = err.response?.data;
+                  if (errorData?.errors) {
+                    const errorMessages = Object.entries(errorData.errors)
+                      .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                      .join('\n');
+                    notify?.(`Erreurs de validation:\n${errorMessages}`, "error");
+                  } else if (errorData?.message) {
+                    notify?.(errorData.message, "error");
+                  } else {
+                    notify?.("Erreur lors de la création du contrat. Veuillez vérifier les champs.", "error");
+                  }
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
+              disabled={isSubmitting}
             >
-              Créer le contrat
+              {isSubmitting ? "Création en cours..." : "Créer le contrat"}
             </button>
           </div>
         </div>

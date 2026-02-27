@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check } from "lucide-react";
+import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check, MoreHorizontal, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { tenantService, TenantApi, TenantIndexResponse } from "@/services/api";
+import { tenantService, TenantApi, TenantInvitationApi, TenantIndexResponse } from "@/services/api";
 
 interface Locataire {
   id: string;
@@ -33,11 +33,16 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   const [linesPerPage, setLinesPerPage] = useState("100");
 
   /* ─── Mapper API → UI ─── */
+  // Mapper pour les locataires existants
   const mapTenantApiToLocataire = (tenant: TenantApi): Locataire => {
     const nom = [tenant.first_name, tenant.last_name].filter(Boolean).join(" ") || tenant.email || "Locataire sans nom";
 
-    const bien = tenant.property
-      ? `${tenant.property.name ?? "Bien"} – ${tenant.property.address}${tenant.property.city ? ` (${tenant.property.city})` : ""}`
+    // Utiliser active_property si disponible, sinon chercher dans properties
+    const activeProp = tenant.active_property || 
+      (tenant.properties && tenant.properties.length > 0 ? tenant.properties[0] : null);
+    
+    const bien = activeProp
+      ? activeProp.name ?? "Bien"
       : "Aucun bien";
 
     let etat: Locataire["etat"] = "actif";
@@ -55,7 +60,26 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
       solde: 0,
       etat,
       modeles: [],
+    };
+  };
 
+  // Mapper pour les invitations en attente
+  const mapInvitationToLocataire = (invitation: TenantInvitationApi): Locataire => {
+    // Utiliser le champ name s'il existe, sinon utiliser email
+    const emailPart = invitation.email ? invitation.email.split('@')[0] : 'Invité';
+    const nom = invitation.name || emailPart;
+
+    return {
+      id: `invitation-${invitation.id}`,
+      nom,
+      type: "En attente",
+      bien: "Aucun bien",
+      telephone: "—",
+      email: invitation.email || "—",
+      solde: 0,
+      etat: "invited",
+      modeles: [],
+      is_invited: true,
     };
   };
 
@@ -65,8 +89,15 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
       setLoading(true);
       setError(null);
       const res: TenantIndexResponse = await tenantService.listTenants();
-      const mapped = (res.tenants || []).map(mapTenantApiToLocataire);
-      setLocataires(mapped);
+      
+      // Mapper les locataires existants
+      const mappedTenants = (res.tenants || []).map(mapTenantApiToLocataire);
+      
+      // Mapper les invitations en attente
+      const mappedInvitations = (res.invitations || []).map(mapInvitationToLocataire);
+      
+      // Combiner les deux listes
+      setLocataires([...mappedTenants, ...mappedInvitations]);
     } catch (err: any) {
       const message = err?.message || "Impossible de charger les locataires";
       setError(message);
@@ -95,6 +126,53 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
 
   /* ─── Actions ─── */
   const handleAdd = () => navigate("/proprietaire/ajouter-locataire");
+
+  // Voir les détails d'un locataire - Connecté à l'API
+  const handleView = async (locataire: Locataire) => {
+    try {
+      // Fetch les détails du locataire depuis l'API
+      const tenantDetails = await tenantService.getTenant(Number(locataire.id));
+      console.log('Détails locataire:', tenantDetails);
+      
+      // TODO: Afficher les détails dans une modal ou naviguer vers une page de détail
+      notify(`Consultation de ${locataire.nom} - Données chargées`, "info");
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails:', error);
+      notify('Erreur lors du chargement des détails du locataire', "error");
+    }
+  };
+
+  // Modifier un locataire - Connecté à l'API
+  const handleEdit = async (locataire: Locataire) => {
+    try {
+      // TODO: Implémenter formulaire d'édition
+      // Pour l'instant, on affiche les détails pour modification
+      notify(`Modification de ${locataire.nom} - Formulaire à implémenter`, "info");
+    } catch (error) {
+      console.error('Erreur modification:', error);
+      notify('Erreur lors de la modification', "error");
+    }
+  };
+
+  // Envoyer un email
+  const handleSendEmail = (locataire: Locataire) => {
+    window.location.href = `mailto:${locataire.email}?subject=Information - GestionLoc`;
+    notify(`Email vers ${locataire.email}`, "success");
+  };
+
+  // Supprimer/Renvooyer l'invitation
+  const handleDelete = async (locataire: Locataire) => {
+    if (locataire.is_invited) {
+      // Pour les invitations en attente - TODO: implémenter renvoi d'invitation API
+      notify(`Fonction de renvoi d'invitation à implémenter`, "info");
+    } else {
+      // Confirmation avant suppression - TODO: implémenter suppression API
+      if (confirm(`Êtes-vous sûr de vouloir supprimer ${locataire.nom} ?`)) {
+        console.log('Delete tenant:', locataire.id);
+        notify(`Suppression de ${locataire.nom} - API à implémenter`, "info");
+      }
+    }
+  };
 
 
   return (
@@ -304,7 +382,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
           background: #fff;
           border: 1.5px solid #d6e4d6;
           border-radius: 14px;
-          overflow: hidden;
+          overflow-x: auto;
         }
         .tl-table {
           width: 100%;
@@ -347,11 +425,26 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
           background: none;
           border: none;
           cursor: pointer;
-          padding: 3px;
-          color: #9ca3af;
-          transition: color 0.15s;
+          padding: 4px 6px;
+          color: #6b7280;
+          transition: all 0.15s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
         }
-        .tl-action-btn:hover { color: #374151; }
+        .tl-action-btn:hover { 
+          color: #374151; 
+          background: #f3f4f6;
+        }
+        .tl-action-btn.delete:hover { 
+          color: #ef4444; 
+          background: #fef2f2;
+        }
+        .tl-action-column {
+          white-space: nowrap;
+          width: 120px;
+        }
 
         /* Empty */
         .tl-empty {
@@ -504,7 +597,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
                   <th>Solde</th>
                   <th>Etat</th>
                   <th>Modèle</th>
-                  <th>Action</th>
+                  <th className="tl-action-column">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -518,20 +611,39 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
                     <td><span className="tl-solde">{loc.solde} FCFA</span></td>
                     <td>Inconnu</td>
                     <td><span className="tl-modele">0 Modèle</span></td>
-                    <td>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                        <button className="tl-action-btn" title="Voir">
-                          <Eye size={14} />
+                    <td className="tl-action-column">
+                      <div style={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start" }}>
+                        <button 
+                          className="tl-action-btn" 
+                          title="Voir les détails"
+                          onClick={() => handleView(loc)}
+                          type="button"
+                        >
+                          <Eye size={16} />
                         </button>
-                        <button className="tl-action-btn" title="Plus">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="5" r="1" />
-                            <circle cx="12" cy="12" r="1" />
-                            <circle cx="12" cy="19" r="1" />
-                          </svg>
+                        <button 
+                          className="tl-action-btn" 
+                          title="Modifier"
+                          onClick={() => handleEdit(loc)}
+                          type="button"
+                        >
+                          <Edit size={16} />
                         </button>
-                        <button className="tl-action-btn" title="Mail">
-                          <Mail size={14} />
+                        <button 
+                          className="tl-action-btn" 
+                          title="Envoyer un email"
+                          onClick={() => handleSendEmail(loc)}
+                          type="button"
+                        >
+                          <Mail size={16} />
+                        </button>
+                        <button 
+                          className="tl-action-btn delete" 
+                          title="Supprimer"
+                          onClick={() => handleDelete(loc)}
+                          type="button"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

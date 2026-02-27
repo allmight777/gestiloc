@@ -242,7 +242,7 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <AjouterBien />
+            <AjouterBien notify={notify} />
           </Layout>
         } />
 

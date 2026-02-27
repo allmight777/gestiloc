@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { landlordDashboardService, LandlordDashboardStats } from '@/services/api';
 
 ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -21,13 +22,37 @@ interface DashboardProps {
 }
 
 const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
-
   const barChartRef = useRef<HTMLCanvasElement>(null);
   const donutChartRef = useRef<HTMLCanvasElement>(null);
   const barChartInstance = useRef<ChartJS | null>(null);
   const donutChartInstance = useRef<ChartJS | null>(null);
 
-  // Chart.js - Bar Chart (Loyers)
+  // État pour les données du dashboard
+  const [dashboardStats, setDashboardStats] = useState<LandlordDashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch des données du dashboard au chargement
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const stats = await landlordDashboardService.getStats();
+        setDashboardStats(stats);
+      } catch (err: any) {
+        console.error('Erreur chargement dashboard:', err);
+        setError(err?.message || 'Erreur lors du chargement des données');
+        if (notify) notify('Erreur lors du chargement des statistiques', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [notify]);
+
+  // Chart.js - Bar Chart (Loyers) - with real data from API
   useEffect(() => {
     if (!barChartRef.current) return;
 
@@ -36,14 +61,27 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
       barChartInstance.current.destroy();
     }
 
+    // Préparer les données depuis l'API ou valeurs par défaut
+    const months = dashboardStats?.monthly_rent_data 
+      ? dashboardStats.monthly_rent_data.map(d => d.month)
+      : ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
+    
+    const receivedData = dashboardStats?.monthly_rent_data
+      ? dashboardStats.monthly_rent_data.map(d => d.collected)
+      : [4200, 3800, 4500, 4100, 4800, 4600];
+    
+    const expectedData = dashboardStats?.monthly_rent_data
+      ? dashboardStats.monthly_rent_data.map(d => d.expected)
+      : [5000, 5000, 5000, 5000, 5000, 5000];
+
     barChartInstance.current = new ChartJS(barChartRef.current, {
       type: 'bar',
       data: {
-        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+        labels: months,
         datasets: [
           {
             label: 'Loyers reçus',
-            data: [4200, 3800, 4500, 4100, 4800, 4600],
+            data: receivedData,
             backgroundColor: '#4CAF50',
             borderRadius: 3,
             borderSkipped: false,
@@ -52,7 +90,7 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
           },
           {
             label: 'Loyers attendus',
-            data: [5000, 5000, 5000, 5000, 5000, 5000],
+            data: expectedData,
             backgroundColor: '#FF9800',
             borderRadius: 3,
             borderSkipped: false,
@@ -101,9 +139,9 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
         barChartInstance.current.destroy();
       }
     };
-  }, []);
+  }, [dashboardStats]); // Re-créer le chart quand les données changent
 
-  // Chart.js - Donut Chart (Taux d'occupation)
+  // Chart.js - Donut Chart (Taux d'occupation) - with real data from API
   useEffect(() => {
     if (!donutChartRef.current) return;
 
@@ -111,11 +149,15 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
       donutChartInstance.current.destroy();
     }
 
+    // Données réelles depuis l'API
+    const occupiedCount = dashboardStats?.occupied_properties ?? 12;
+    const vacantCount = dashboardStats?.vacant_properties ?? 3;
+
     donutChartInstance.current = new ChartJS(donutChartRef.current, {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [12, 3],
+          data: [occupiedCount, vacantCount],
           backgroundColor: ['rgba(129, 194, 88, 1)', 'rgba(253, 234, 91, 1)'],
           borderWidth: 5,
           borderColor: '#ffffff',
@@ -157,17 +199,34 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
     { month: 'Juin', reçu: 4600, attendu: 5000 },
   ];
 
-  const documents = [
-    { icon: '/Ressource_gestiloc/Profile.png', name: 'Contrat de bail-Dupont', date: '28 Janvier · 2026' },
-    { icon: '/Ressource_gestiloc/Error.png', name: 'Avis d\'échéance – Février', date: '24 janvier 2026' },
-    { icon: '/Ressource_gestiloc/US Capitol.png', name: 'État des lieux – Apt 12', date: '27 janvier 2026' },
-    { icon: '/Ressource_gestiloc/facture_travaux.png', name: 'Facture travaux – Villa 5', date: '23 janvier 2026' },
-    { icon: '/Ressource_gestiloc/Bell.png', name: 'Quittance – Martin', date: '25 janvier 2026' },
-  ];
+  // Données documents - À connecter à l'API (endpoint /api/documents)
+  // Pour l'instant, on utilise les données du dashboard ou un tableau vide
+  const documents: Array<{ icon: string; name: string; date: string }> = dashboardStats?.recent_documents
+    ? dashboardStats.recent_documents.map(doc => ({
+        icon: '/Ressource_gestiloc/document.png',
+        name: doc.name,
+        date: new Date(doc.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+      }))
+    : [];
 
-  function handleStepClick(arg0: number): void {
-    throw new Error('Function not implemented.');
-  }
+  // Navigation handler for the onboarding steps
+  const handleStepClick = (stepId: number): void => {
+    if (onNavigate) {
+      switch (stepId) {
+        case 1:
+          onNavigate('ajouter-bien');
+          break;
+        case 2:
+          onNavigate('ajouter-locataire');
+          break;
+        case 3:
+          onNavigate('nouvelle-location');
+          break;
+        default:
+          break;
+      }
+    }
+  };
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 animate-in fade-in duration-700">
@@ -314,18 +373,18 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
           <div className="relative w-48 h-48 sm:w-56 sm:h-56 mb-8 group transition-transform hover:scale-105 duration-500">
             <canvas ref={donutChartRef}></canvas>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl sm:text-4xl font-black text-green-600 font-merriweather drop-shadow-sm">80%</span>
+              <span className="text-3xl sm:text-4xl font-black text-green-600 font-merriweather drop-shadow-sm">{loading ? '...' : `${dashboardStats?.occupancy_rate ?? 80}%`}</span>
               <span className="text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Global</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 w-full border-t border-gray-50 pt-8">
             <div className="text-center px-2">
-              <div className="text-2xl sm:text-3xl font-black text-green-500 font-merriweather">12</div>
+              <div className="text-2xl sm:text-3xl font-black text-green-500 font-merriweather">{loading ? '...' : dashboardStats?.occupied_properties ?? 12}</div>
               <div className="text-[0.7rem] font-bold text-green-700/40 uppercase tracking-widest mt-2 font-manrope">Occupés</div>
             </div>
             <div className="text-center border-l border-gray-100 px-2">
-              <div className="text-2xl sm:text-3xl font-black text-yellow-500 font-merriweather">3</div>
+              <div className="text-2xl sm:text-3xl font-black text-yellow-500 font-merriweather">{loading ? '...' : dashboardStats?.vacant_properties ?? 3}</div>
               <div className="text-[0.7rem] font-bold text-yellow-700/40 uppercase tracking-widest mt-2 font-manrope">Vacants</div>
             </div>
           </div>
@@ -352,30 +411,40 @@ const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) =>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {documents.map((doc, idx) => (
-            <div
-              key={idx}
-              className="group cursor-pointer rounded-2xl bg-white p-4 flex items-center gap-4 transition-all hover:shadow-2xl hover:shadow-green-900/5 hover:-translate-y-1.5 active:scale-[0.98] border border-gray-100/50 hover:border-green-200/50"
-            >
-              <div className="w-12 h-12 rounded-[1.2rem] bg-gray-50 flex items-center justify-center p-2.5 group-hover:bg-green-50 transition-colors shadow-inner">
-                <img src={doc.icon} alt={doc.name} className="w-full h-full object-contain filter group-hover:brightness-110" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[0.95rem] font-extrabold text-gray-900 font-manrope truncate group-hover:text-green-600 transition-colors">
-                  {doc.name}
+        {documents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {documents.map((doc, idx) => (
+              <div
+                key={idx}
+                className="group cursor-pointer rounded-2xl bg-white p-4 flex items-center gap-4 transition-all hover:shadow-2xl hover:shadow-green-900/5 hover:-translate-y-1.5 active:scale-[0.98] border border-gray-100/50 hover:border-green-200/50"
+              >
+                <div className="w-12 h-12 rounded-[1.2rem] bg-gray-50 flex items-center justify-center p-2.5 group-hover:bg-green-50 transition-colors shadow-inner">
+                  <img src={doc.icon} alt={doc.name} className="w-full h-full object-contain filter group-hover:brightness-110" />
                 </div>
-                <div className="text-[0.7rem] font-bold text-green-600 mt-1 flex items-center gap-1.5 opacity-70">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  {doc.date}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[0.95rem] font-extrabold text-gray-900 font-manrope truncate group-hover:text-green-600 transition-colors">
+                    {doc.name}
+                  </div>
+                  <div className="text-[0.7rem] font-bold text-green-600 mt-1 flex items-center gap-1.5 opacity-70">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    {doc.date}
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-green-50 text-green-500">
+                  <ChevronRight size={18} strokeWidth={3} />
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-green-50 text-green-500">
-                <ChevronRight size={18} strokeWidth={3} />
-              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <img src="/Ressource_gestiloc/document.png" alt="documents" className="w-8 h-8 object-contain opacity-40" />
             </div>
-          ))}
-        </div>
+            <p className="text-gray-500 font-medium">Aucun document récent</p>
+            <p className="text-gray-400 text-sm mt-1">Vos documents appearaitront ici une fois ajoutés</p>
+          </div>
+        )}
       </div>
     </div>
   );

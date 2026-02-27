@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TenantController;
@@ -32,6 +31,7 @@ use App\Http\Controllers\Api\PaymentLinkController;
 use App\Http\Controllers\Api\Landlord\FedapayController as LandlordFedapayController;
 use App\Http\Controllers\Api\CoOwner\FedapayController as CoOwnerFedapayController;
 use App\Http\Controllers\Api\FedapayReturnController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -150,6 +150,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/upload', [UploadController::class, 'store']);
 
     /* ========= Condition Reports ========= */
+    // Route pour un bien spécifique
     Route::prefix('properties/{property}/condition-reports')->group(function () {
         Route::get('/', [PropertyConditionReportController::class, 'index']);
         Route::post('/', [PropertyConditionReportController::class, 'store']);
@@ -158,6 +159,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{report}/sign', [PropertyConditionReportController::class, 'sign']);
         Route::delete('/{report}', [PropertyConditionReportController::class, 'destroy']);
     });
+
+    // Route pour tous les états des lieux du landlord (propriétaire)
+    Route::get('/condition-reports', [PropertyConditionReportController::class, 'allForLandlord']);
 
     Route::prefix('leases/{lease}')->group(function () {
         Route::get('/condition-reports', [PropertyConditionReportController::class, 'forLease']);
@@ -318,6 +322,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('tenants/{tenant}/properties', [TenantController::class, 'getTenantProperties']);
         Route::get('properties/{property}/history', [TenantController::class, 'getPropertyHistory']);
         Route::get('occupation-stats', [TenantController::class, 'getOccupationStats']);
+
+        // ✅ NOUVELLES ROUTES - Documents des locataires
+        Route::post('tenants/{tenant}/documents', [TenantController::class, 'uploadDocuments']);
+        Route::get('tenants/{tenant}/documents', [TenantController::class, 'listDocuments']);
 
         // Co-owners
         Route::post('co-owners/invite', [CoOwnerController::class, 'invite']);

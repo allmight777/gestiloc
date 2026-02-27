@@ -26,50 +26,9 @@ import {
   Check
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../../../services/api";
-import { uploadService, propertyService } from "../../../services/api";
+import api, { uploadService, propertyService, Property } from "../../../services/api";
 
 // Types
-interface Property {
-  id: number;
-  type: string;
-  name: string;
-  title?: string;
-  description?: string;
-  address: string;
-  city?: string;
-  district?: string;
-  zip_code?: string;
-  surface?: string;
-  room_count?: number;
-  bedroom_count?: number;
-  bathroom_count?: number;
-  rent_amount?: string;
-  status?: string;
-  reference_code?: string;
-  photos?: string[];
-  meta?: {
-    terrace?: boolean;
-    balcony?: boolean;
-    garden?: boolean;
-    parking?: boolean;
-    floor?: number;
-    elevator?: boolean;
-    furnished?: boolean;
-    heating_type?: string;
-    energy_class?: string;
-    [key: string]: any;
-  };
-  delegation_type?: string;
-  delegation_info?: {
-    co_owner_name?: string;
-    co_owner_company?: string;
-    delegated_at?: string;
-    [key: string]: any;
-  };
-  can_edit?: boolean;
-}
-
 interface PaginatedResponse<T> {
   data: T[];
   total?: number;
@@ -103,9 +62,10 @@ const biens = [
   {
     id: 2,
     statut: "Disponible",
-    type: "MAISON",
-    titre: "Villa moderne - Fidjrossè",
-    adresse: "Rue des Cocotiers, Cotonou",
+    // Mock data removed - TODO: Connect to API
+    // type: "MAISON",
+    // titre: "Villa moderne - Fidjrossè",
+    // adresse: "Rue des Cocotiers, Cotonou",
     loyer: "150.000",
     surface: "120",
     photos: 5,
@@ -1920,14 +1880,105 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
   const [activeFilter, setActiveFilter] = useState("Tous");
   const [search, setSearch] = useState("");
   const [selectedBien, setSelectedBien] = useState<typeof biens[0] | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = biens.filter((b) => {
+  // Récupérer les biens depuis le backend
+  useEffect(() => {
+    const fetchProperties = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await propertyService.listProperties();
+        //适配后端返回的数据结构
+        const propertiesData = response.data || response;
+        setProperties(propertiesData);
+      } catch (err: any) {
+        console.error("Erreur lors de la récupération des biens:", err);
+        setError("Impossible de charger les biens. Veuillez réessayer plus tard.");
+        if (notify) {
+          notify("Erreur lors du chargement des biens", "error");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, [notify]);
+
+  // Transformer les données API en format pour l'affichage
+  const transformedProperties = properties.map((p: Property) => ({
+    id: p.id,
+    statut: statusLabel[p.status] || p.status || "Inconnu",
+    type: typeLabel[p.type] || p.type || "Autre",
+    titre: p.name || p.title || "Sans titre",
+    adresse: p.address ? `${p.address}${p.district ? ", " + p.district : ""}${p.city ? ", " + p.city : ""}` : "Adresse non définie",
+    loyer: p.rent_amount ? parseFloat(p.rent_amount).toLocaleString("fr-FR") : "0",
+    surface: p.surface || "0",
+    photos: p.photos?.length || 0,
+    ref: p.reference_code || "-",
+    image: p.photos && p.photos.length > 0 ? resolvePhotoUrl(p.photos[0]) : "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+    // Garder les données originales pour l'édition
+    _original: p
+  }));
+
+  // Filtrer les biens selon le filtre et la recherche
+  const filtered = transformedProperties.filter((b: any) => {
     const matchFilter = activeFilter === "Tous" || b.statut === activeFilter;
     const matchSearch =
       b.titre.toLowerCase().includes(search.toLowerCase()) ||
       b.adresse.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
+
+  // Gérer l'ouverture de la modale d'édition avec les données du backend
+  const handleOpenEdit = (property: any) => {
+    // Transformer les données pour EditPropertyModal
+    const editData: Property = {
+      id: property._original.id,
+      type: property._original.type,
+      name: property._original.name,
+      title: property._original.title,
+      description: property._original.description,
+      address: property._original.address,
+      city: property._original.city,
+      district: property._original.district,
+      zip_code: property._original.zip_code,
+      surface: property._original.surface,
+      room_count: property._original.room_count,
+      bedroom_count: property._original.bedroom_count,
+      bathroom_count: property._original.bathroom_count,
+      rent_amount: property._original.rent_amount,
+      status: property._original.status,
+      reference_code: property._original.reference_code,
+      photos: property._original.photos,
+      meta: property._original.meta,
+    };
+    setSelectedPropertyForEdit(editData);
+    setShowEditModal(true);
+  };
+
+  // État pour la modale d'édition
+  const [selectedPropertyForEdit, setSelectedPropertyForEdit] = useState<Property | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false);
+    setSelectedPropertyForEdit(null);
+    // Recharger les biens
+    const fetchProperties = async () => {
+      try {
+        const response = await propertyService.listProperties();
+        const propertiesData = response.data || response;
+        setProperties(propertiesData);
+      } catch (err) {
+        console.error("Erreur lors du rechargement:", err);
+      }
+    };
+    fetchProperties();
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -2000,18 +2051,62 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
       </div>
 
       {/* Grid - Mobile First */}
-      <div className="animate-fadeInUp animate-delay-300 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 xl:gap-12 max-w-[1400px]">
-        {filtered.map((bien) => (
-          <BienCard key={bien.id} bien={bien} onClick={() => setSelectedBien(bien)} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 size={40} className="animate-spin text-green-500 mx-auto mb-4" />
+            <p className="text-gray-500">Chargement des biens...</p>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <AlertCircle size={40} className="text-red-500 mx-auto mb-4" />
+            <p className="text-red-500">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Home size={40} className="text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Aucun bien trouvé</p>
+            {search && (
+              <button 
+                onClick={() => setSearch("")}
+                className="mt-2 text-green-500 hover:underline"
+              >
+                Effacer la recherche
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="animate-fadeInUp animate-delay-300 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 xl:gap-12 max-w-[1400px]">
+          {filtered.map((bien: any) => (
+            <BienCard key={bien.id} bien={bien} onClick={() => handleOpenEdit(bien)} />
+          ))}
+        </div>
+      )}
 
-      {/* Modal FICHE BIEN */}
-      {selectedBien && (
-        <FicheBienModal
-          bien={selectedBien}
-          onClose={() => setSelectedBien(null)}
-        />
+      {/* Modal d'édition de bien */}
+      {showEditModal && selectedPropertyForEdit && (
+        <div className="modal-overlay">
+          <EditPropertyModal
+            property={selectedPropertyForEdit}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedPropertyForEdit(null);
+            }}
+            onSuccess={handleEditSuccess}
+            notify={notify}
+          />
+        </div>
       )}
     </div>
   );

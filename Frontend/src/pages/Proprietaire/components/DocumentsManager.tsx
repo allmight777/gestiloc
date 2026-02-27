@@ -1,5 +1,6 @@
-// 📁 DocumentsManager.tsx - VERSION MOCK (Prête pour intégration API)
-import { useState } from "react";
+// 📁 DocumentsManager.tsx - Version connectée à l'API
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import monIcone from "@/assets/downloadIcon.svg";
 import pencil from "@/assets/pencilIcon.svg";
 import moreVertical from "@/assets/more-vertical.svg";
@@ -18,6 +19,7 @@ import {
   Pencil,
   Clock,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,75 +32,63 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { leaseService, contractService, propertyService, Property, Lease } from "@/services/api";
 
 // ────────────────────────────────────────────────
-// 🎭 TYPES - À CONSERVER POUR L'INTÉGRATION API
+// 🎭 TYPES - Transformés depuis l'API
 // ────────────────────────────────────────────────
 type DocumentContrat = {
-  id: string;
+  id: number;
   titre: string;
   locataire: string;
   bien: string;
+  bienId: number;
   loyer: number;
   depot: number | null;
   debut: string;
   fin: string | null;
   statut: "active" | "terminated" | "pending";
   creeLe: string;
-  uuid?: string; // ✅ Pour le téléchargement (plus tard)
-  type?: string; // ✅ Type de bail
+  uuid?: string;
+  type?: string;
+};
+
+// Fonction pour transformer les données API en type DocumentContrat
+const transformLeaseToDocument = (lease: Lease, property?: Property): DocumentContrat => {
+  const tenantName = lease.tenant 
+    ? `${lease.tenant.first_name || ''} ${lease.tenant.last_name || ''}`.trim()
+    : 'Locataire inconnu';
+  
+  const propertyName = property?.name || property?.address || 'Bien inconnu';
+  const propertyId = property?.id || lease.property_id;
+  
+  // Format type de bail
+  const leaseType = lease.type === 'nu' ? 'Bail d\'habitation nu' : 'Bail meublé';
+  
+  return {
+    id: lease.id,
+    titre: `Contrat - ${tenantName}`,
+    locataire: tenantName,
+    bien: propertyName,
+    bienId: propertyId,
+    loyer: parseFloat(lease.rent_amount) || 0,
+    depot: lease.deposit ? parseFloat(lease.deposit) : null,
+    debut: lease.start_date,
+    fin: lease.end_date,
+    statut: lease.status as "active" | "terminated" | "pending",
+    creeLe: `Créé le ${new Date(lease.created_at).toLocaleDateString('fr-FR')}`,
+    uuid: lease.uuid,
+    type: leaseType,
+  };
 };
 
 // ────────────────────────────────────────────────
-// 📦 DONNÉES MOCK - À REMPLACER PAR API PLUS TARD
+// DONNÉES - Provenance API
 // ────────────────────────────────────────────────
-const MOCK_DOCUMENTS: DocumentContrat[] = [
-  {
-    id: "lease-1",
-    titre: "Contrat - Mons Athys",
-    locataire: "Mons Athys",
-    bien: "Appartement 02 - Aglaia",
-    loyer: 60000,
-    depot: 120000,
-    debut: "2026-01-01",
-    fin: "2026-12-31",
-    statut: "active",
-    creeLe: "Créé le 28/12/2025",
-    uuid: "550e8400-e29b-41d4-a716-446655440000",
-    type: "Bail d'habitation nu",
-  },
-  {
-    id: "lease-2",
-    titre: "Contrat - Sophie Bernard",
-    locataire: "Sophie Bernard",
-    bien: "Villa moderne - Fidjrossè",
-    loyer: 150000,
-    depot: 300000,
-    debut: "2026-01-15",
-    fin: "2027-02-14",
-    statut: "active",
-    creeLe: "Créé le 10/02/2026",
-    uuid: "660e8400-e29b-41d4-a716-446655440001",
-    type: "Bail meublé",
-  },
-  {
-    id: "lease-3",
-    titre: "Contrat - Jean-Pierre Kouassi",
-    locataire: "Jean-Pierre Kouassi",
-    bien: "Appartement 8 - Akpakpa",
-    loyer: 50000,
-    depot: 100000,
-    debut: "2026-01-01",
-    fin: "2027-02-28",
-    statut: "pending",
-    creeLe: "Créé le 04/02/2026",
-    uuid: "770e8400-e29b-41d4-a716-446655440002",
-    type: "Bail d'habitation nu",
-  },
-];
+// Supprimé: MOCK_DOCUMENTS - теперь используются данные API
 
 // ────────────────────────────────────────────────
-// 🎯 COMPOSANT PRINCIPAL - 100% MOCK
+// 🎯 COMPOSANT PRINCIPAL - Connecté à l'API
 // ────────────────────────────────────────────────
 interface DocumentsManagerProps {
   notify?: (msg: string, type: "success" | "info" | "error") => void;
@@ -107,14 +97,66 @@ interface DocumentsManagerProps {
 export const DocumentsManager = ({
   notify = console.log,
 }: DocumentsManagerProps) => {
+  const navigate = useNavigate();
   //ÉTATS LOCAUX
-  const [documents] = useState<DocumentContrat[]>(MOCK_DOCUMENTS); // ✅ Mock statique
+  const [documents, setDocuments] = useState<DocumentContrat[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [search, setSearch] = useState("");
   const [filterBien, setFilterBien] = useState("Tous les biens");
-  const [loading, setLoading] = useState(false); // ✅ Pas de chargement (mock)
+  const [loading, setLoading] = useState(true);
   const [downloadingIds, setDownloadingIds] = useState<Record<string, boolean>>(
     {},
   );
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [editingContract, setEditingContract] = useState<DocumentContrat | null>(null);
+  const [editForm, setEditForm] = useState({
+    rent_amount: "",
+    deposit: "",
+    start_date: "",
+    end_date: "",
+    type: "nu",
+    status: "active",
+  });
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Charger les données depuis l'API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Récupérer les baux depuis l'API
+        const leases = await leaseService.listLeases();
+        
+        // Récupérer les biens pour la transformation
+        let propsData: Property[] = [];
+        try {
+          const propsResponse = await propertyService.listProperties();
+          propsData = propsResponse.data || [];
+          setProperties(propsData);
+        } catch (propError) {
+          console.error('Erreur lors du chargement des biens:', propError);
+        }
+        
+        // Transformer les données
+        const transformedDocs = leases.map(lease => {
+          const property = propsData.find(p => p.id === lease.property_id);
+          return transformLeaseToDocument(lease, property);
+        });
+        
+        setDocuments(transformedDocs);
+      } catch (err) {
+        console.error('Erreur lors du chargement des contrats:', err);
+        notify('Erreur lors du chargement des contrats', 'error');
+        setDocuments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // FILTRES (Fonctionnels immédiatement)
   const filteredDocuments = documents.filter((doc) => {
@@ -133,40 +175,158 @@ export const DocumentsManager = ({
   });
 
   // LISTE UNIQUE DES BIENS POUR LE FILTRE
-
   const biensList = [
     "Tous les biens",
     ...new Set(documents.map((d) => d.bien)),
   ];
 
-  //  SIMULATION TÉLÉCHARGEMENT
+  //  TÉLÉCHARGEMENT DU CONTRAT VIA API
   const handleDownload = async (doc: DocumentContrat) => {
-    // ⚠️ SIMULATION - À REMPLACER PAR VRAI APPEL API
-    setDownloadingIds((prev) => ({ ...prev, [doc.id]: true }));
+    if (!doc.uuid) {
+      notify('UUID du contrat non disponible', 'error');
+      return;
+    }
+    
+    setDownloadingIds((prev) => ({ ...prev, [doc.id.toString()]: true }));
 
-    // Simule un délai réseau
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    notify(`📥 Téléchargement simulé : ${doc.titre}`, "success");
-    console.log("🔵 SIMULATION - Téléchargement du contrat:", {
-      id: doc.id,
-      uuid: doc.uuid,
-      nom: doc.titre,
-    });
-
-    setDownloadingIds((prev) => ({ ...prev, [doc.id]: false }));
+    try {
+      const blob = await contractService.downloadLeaseContract(doc.uuid);
+      contractService.downloadBlob(blob, `contrat_${doc.locataire.replace(' ', '_')}.pdf`);
+      notify(`📥 Contrat téléchargé : ${doc.titre}`, "success");
+    } catch (err) {
+      console.error('Erreur lors du téléchargement:', err);
+      notify('Erreur lors du téléchargement du contrat', 'error');
+    } finally {
+      setDownloadingIds((prev) => ({ ...prev, [doc.id.toString()]: false }));
+    }
   };
 
-  //  SIMULATION RAFRAÎCHISSEMENT
-
-  const handleRefresh = () => {
+  //  RAFRAÎCHISSEMENT DES DONNÉES
+  const handleRefresh = async () => {
     setLoading(true);
-    notify("🔄 Actualisation simulée...", "info");
+    notify("🔄 Actualisation des données...", "info");
 
-    setTimeout(() => {
+    try {
+      // Récupérer les baux depuis l'API
+      const leases = await leaseService.listLeases();
+      
+      // Récupérer les biens
+      let propsData: Property[] = [];
+      try {
+        const propsResponse = await propertyService.listProperties();
+        propsData = propsResponse.data || [];
+      } catch (propError) {
+        console.error('Erreur lors du chargement des biens:', propError);
+      }
+      
+      // Transformer les données
+      const transformedDocs = leases.map(lease => {
+        const property = propsData.find(p => p.id === lease.property_id);
+        return transformLeaseToDocument(lease, property);
+      });
+      
+      setDocuments(transformedDocs);
+      notify("✅ Données actualisées", "success");
+    } catch (err) {
+      console.error('Erreur lors de l\'actualisation:', err);
+      notify('Erreur lors de l\'actualisation des données', 'error');
+    } finally {
       setLoading(false);
-      notify("✅ Données actualisées (mock)", "success");
-    }, 1000);
+    }
+  };
+
+  //  CRÉER UN NOUVEAU CONTRAT
+  const handleCreateNewContract = () => {
+    navigate("/proprietaire/nouvelle-location");
+  };
+
+  //  MODIFIER UN CONTRAT
+  const handleEditContract = (doc: DocumentContrat) => {
+    setEditingContract(doc);
+    setEditForm({
+      rent_amount: doc.loyer.toString(),
+      deposit: doc.depot?.toString() || "",
+      start_date: doc.debut,
+      end_date: doc.fin || "",
+      type: doc.type === "Bail meublé" ? "forme" : "nu",
+      status: doc.statut,
+    });
+    setIsEditing(true);
+    setOpenMenuId(null);
+  };
+
+  //  SAUVEGARDER LES MODIFICATIONS
+  const handleSaveEdit = async () => {
+    if (!editingContract?.uuid) {
+      notify("UUID du contrat non disponible", "error");
+      return;
+    }
+
+    try {
+      // Convertir "forme" en "orme" car le backend attend "nu" | "orme"
+      const leaseType = editForm.type === "forme" ? "orme" : editForm.type;
+      
+      await leaseService.updateLease(editingContract.uuid, {
+        rent_amount: parseFloat(editForm.rent_amount),
+        deposit: editForm.deposit ? parseFloat(editForm.deposit) : null,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date || null,
+        type: leaseType as "nu" | "orme",
+        status: editForm.status as "pending" | "active" | "terminated",
+      } as any);
+      
+      notify("✅ Contrat modifié avec succès!", "success");
+      setIsEditing(false);
+      setEditingContract(null);
+      handleRefresh();
+    } catch (err) {
+      console.error('Erreur lors de la modification:', err);
+      notify("Erreur lors de la modification du contrat", "error");
+    }
+  };
+
+  //  FERMER LA MODALE
+  const handleCloseEdit = () => {
+    setIsEditing(false);
+    setEditingContract(null);
+  };
+
+  //  MENU CONTEXTUEL - Plus d'options
+  const handleMenuAction = async (action: string, doc: DocumentContrat) => {
+    setOpenMenuId(null);
+    
+    switch (action) {
+      case "view":
+        notify(`📄 Visualisation du contrat "${doc.titre}"`, "info");
+        break;
+      case "terminate":
+        if (doc.statut === "active") {
+          const confirmTerminate = window.confirm(`Voulez-vous vraiment résilier le contrat "${doc.titre}" ?`);
+          if (confirmTerminate) {
+            try {
+              await leaseService.terminateLease(doc.uuid || doc.id.toString());
+              notify(`✅ Contrat "${doc.titre}" résilié avec succès`, "success");
+              handleRefresh();
+            } catch (err) {
+              console.error('Erreur lors de la résiliation:', err);
+              notify('Erreur lors de la résiliation du contrat', "error");
+            }
+          }
+        } else {
+          notify("Ce contrat ne peut pas être résilié (statut non actif)", "error");
+        }
+        break;
+      case "duplicate":
+        notify(`📋 Duplication du contrat "${doc.titre}" - Fonctionnalité en cours de développement`, "info");
+        break;
+      default:
+        notify(`Action "${action}" non implémentée`, "info");
+    }
+  };
+
+  //  CHANGER LE MODE D'AFFICHAGE
+  const handleViewModeToggle = () => {
+    setViewMode(prev => prev === "grid" ? "list" : "grid");
   };
 
   //  FORMATAGE DATE
@@ -223,8 +383,11 @@ export const DocumentsManager = ({
           </p>
         </div>
 
-        {/* BOUTON CRÉATION - UI uniquement */}
-        <Button className="bg-primary-light hover:bg-primary-deep">
+        {/* BOUTON CRÉATION - Connecté à la page de création */}
+        <Button 
+          className="bg-primary-light hover:bg-primary-deep"
+          onClick={handleCreateNewContract}
+        >
           <Plus className="h-4 w-4 text-purple-700" />
           Contrat de bail
         </Button>
@@ -245,11 +408,11 @@ export const DocumentsManager = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Tous les biens">Tous les biens</SelectItem>
-              {/* À remplacer par vraie liste */}
-              <SelectItem value="Résidence du Parc">
-                Résidence du Parc
-              </SelectItem>
-              <SelectItem value="Villa bleue">Villa bleue</SelectItem>
+              {properties.map((prop) => (
+                <SelectItem key={prop.id} value={prop.name || prop.address}>
+                  {prop.name || prop.address}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -265,9 +428,12 @@ export const DocumentsManager = ({
             />
           </div>
 
-          <Button className="bg-slate-100 text-black font-normal shrink-0 border-2 border-primary-light">
+          <Button 
+            className="bg-slate-100 text-black font-normal shrink-0 border-2 border-primary-light"
+            onClick={handleViewModeToggle}
+          >
             <img src={setting} alt="Settings" className="h-6 w-6 mr-2" />
-            Affichage
+            {viewMode === "grid" ? "Liste" : "Grille"}
           </Button>
         </div>
       </div>
@@ -298,7 +464,10 @@ export const DocumentsManager = ({
                 Aucun contrat ne correspond à votre recherche. Essayez de
                 modifier vos filtres ou créez un nouveau contrat.
               </p>
-              <Button className="mt-6 bg-green-600 hover:bg-green-700 gap-2">
+              <Button 
+                className="mt-6 bg-green-600 hover:bg-green-700 gap-2"
+                onClick={handleCreateNewContract}
+              >
                 <Plus className="h-4 w-4" />
                 Nouveau contrat
               </Button>
@@ -417,26 +586,173 @@ export const DocumentsManager = ({
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5 text-gray-500 hover:text-amber-600 hover:bg-amber-50"
+                      onClick={() => handleEditContract(doc)}
                     >
                       <img src={pencil} alt="Modifier" className="h-5 w-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                    >
-                      <img
-                        src={moreVertical}
-                        alt="Plus d'options"
-                        className="h-5 w-5"
-                      />
-                    </Button>
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === doc.id ? null : doc.id);
+                        }}
+                      >
+                        <img
+                          src={moreVertical}
+                          alt="Plus d'options"
+                          className="h-5 w-5"
+                        />
+                      </Button>
+                      {openMenuId === doc.id && (
+                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200 py-1">
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMenuAction("view", doc);
+                            }}
+                          >
+                            👁️ Voir les détails
+                          </button>
+                          <button
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMenuAction("duplicate", doc);
+                            }}
+                          >
+                            📋 Dupliquer
+                          </button>
+                          {doc.statut === "active" && (
+                            <button
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMenuAction("terminate", doc);
+                              }}
+                            >
+                              ❌ Résilier le bail
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
             ))}
           </div>
         </>
+      )}
+
+      {/* MODALE D'ÉDITION DE CONTRAT */}
+      {isEditing && editingContract && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold">Modifier le contrat</h2>
+              <Button variant="ghost" size="icon" onClick={handleCloseEdit}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Loyer mensuel (FCFA)
+                </label>
+                <Input
+                  type="number"
+                  value={editForm.rent_amount}
+                  onChange={(e) => setEditForm({ ...editForm, rent_amount: e.target.value })}
+                  placeholder="40000"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Dépôt de garantie (FCFA)
+                </label>
+                <Input
+                  type="number"
+                  value={editForm.deposit}
+                  onChange={(e) => setEditForm({ ...editForm, deposit: e.target.value })}
+                  placeholder="20000"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date de début
+                </label>
+                <Input
+                  type="date"
+                  value={editForm.start_date}
+                  onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date de fin
+                </label>
+                <Input
+                  type="date"
+                  value={editForm.end_date}
+                  onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type de bail
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  value={editForm.type}
+                  onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                >
+                  <option value="nu">Bail nu</option>
+                  <option value="forme">Bail meublé</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Statut
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  <option value="pending">En attente</option>
+                  <option value="active">Actif</option>
+                  <option value="terminated">Terminé</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 p-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleCloseEdit}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

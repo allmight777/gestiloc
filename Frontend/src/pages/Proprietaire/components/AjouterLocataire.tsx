@@ -188,15 +188,85 @@ export const AjouterLocataire: React.FC = () => {
 
     setIsLoading(true);
     try {
+      // Préparer les données du locataire avec tous les champs
+      // Parser guarantor_birth_info pour extraire date et lieu
+      let guarantorBirthDate: string | undefined;
+      let guarantorBirthPlace: string | undefined;
+      
+      if (formData.guarantorBirthInfo) {
+        // Format attendu: "15/05/1985 - Cotonou" ou "15/05/1985, Cotonou"
+        const parts = formData.guarantorBirthInfo.split(/[-,]/).map(p => p.trim());
+        if (parts.length >= 1 && parts[0]) {
+          // Tenter de parser la date (format DD/MM/YYYY)
+          const dateMatch = parts[0].match(/(\d{2})\/(\d{2})\/(\d{4})/);
+          if (dateMatch) {
+            guarantorBirthDate = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`; // YYYY-MM-DD
+          }
+        }
+        if (parts.length >= 2 && parts[1]) {
+          guarantorBirthPlace = parts[1];
+        }
+      }
+
       const invitePayload = {
+        // Champs de base (obligatoires)
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim() || undefined,
+        
+        // Informations personnelles
+        birth_date: formData.birthDate || undefined,
+        birth_place: formData.birthPlace.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        city: formData.city || undefined,
+        country: formData.country || undefined,
+        marital_status: formData.maritalStatus || undefined,
+        tenant_type: formData.tenantType || undefined,
+        
+        // Contact d'urgence
+        emergency_contact_name: formData.emergencyContactName.trim() || undefined,
+        emergency_contact_phone: formData.emergencyContactPhone.trim() || undefined,
+        emergency_contact_email: formData.emergencyContactEmail.trim() || undefined,
+        
+        // Situation professionnelle
+        profession: formData.profession.trim() || undefined,
+        employer: formData.employer.trim() || undefined,
+        contract_type: formData.contractType || undefined,
+        monthly_income: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : undefined,
+        annual_income: formData.annualIncome ? parseFloat(formData.annualIncome) : undefined,
+        
+        // Garant
+        has_guarantor: formData.hasGuarantor || false,
+        guarantor_name: formData.guarantorName.trim() || undefined,
+        guarantor_phone: formData.guarantorPhone.trim() || undefined,
+        guarantor_email: formData.guarantorEmail.trim() || undefined,
+        guarantor_profession: formData.guarantorProfession.trim() || undefined,
+        guarantor_monthly_income: formData.guarantorMonthlyIncome ? parseFloat(formData.guarantorMonthlyIncome) : undefined,
+        guarantor_annual_income: formData.guarantorAnnualIncome ? parseFloat(formData.guarantorAnnualIncome) : undefined,
+        guarantor_address: formData.guarantorAddress.trim() || undefined,
+        guarantor_birth_date: guarantorBirthDate,
+        guarantor_birth_place: guarantorBirthPlace,
+        
+        // Notes
+        notes: formData.notes.trim() || undefined,
       };
-      await tenantService.inviteTenant(invitePayload);
-      pushToast("success", "Invitation envoyée", `Un email a été envoyé à ${formData.email.trim()}.`);
-      navigate("/proprietaire");
+
+      // Créer le locataire
+      const response = await tenantService.inviteTenant(invitePayload);
+      
+      // Si des documents sont uploadés, les envoyer
+      if (uploadedFiles.length > 0 && response.tenant?.id) {
+        const documentTypes = uploadedFiles.map(() => formData.documentType || 'autre');
+        await tenantService.uploadTenantDocuments(
+          response.tenant.id,
+          uploadedFiles,
+          documentTypes
+        );
+      }
+
+      pushToast("success", "Locataire créé", `Le locataire ${formData.firstName} ${formData.lastName} a été créé avec succès.`);
+      navigate("/proprietaire/locataires");
     } catch (error: any) {
       console.error("Erreur:", error);
       const apiMsg = error?.response?.data?.message || "Une erreur est survenue.";
