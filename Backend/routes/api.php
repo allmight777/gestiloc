@@ -160,8 +160,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{report}', [PropertyConditionReportController::class, 'destroy']);
     });
 
-    // Route pour tous les états des lieux du landlord (propriétaire)
-    Route::get('/condition-reports', [PropertyConditionReportController::class, 'allForLandlord']);
+    // Route globale pour tous les états des lieux du landlord
+    Route::get('/condition-reports', [PropertyConditionReportController::class, 'index']);
 
     Route::prefix('leases/{lease}')->group(function () {
         Route::get('/condition-reports', [PropertyConditionReportController::class, 'forLease']);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import './responsive.css';
 import { Layout } from './components/Layout';
-import Dashboard from './components/Dashboard';
+import { Dashboard } from './components/Dashboard';
 import { Payments } from './components/Payments';
 import { Messages } from './components/Messages';
 import { Interventions } from './components/Interventions';
@@ -29,7 +29,6 @@ import {
 } from './components/SectionPages';
 import { Tab, ToastMessage } from './types';
 import { authService } from '@/services/api';
-import { DocumentsManager } from './components/DocumentsManager';
 import PreavisList from './components/PreavisList';
 import QuittancesIndependants from './components/QuittancesLoyers';
 import LandlordIncidentsPage from './components/LandlordIncidentsPage';
@@ -47,6 +46,7 @@ import ReparationsTravaux from './components/ReparationsTravaux';
 import ComptabilitePage from './components/ComptabilitePage';
 import ParametresPage from './components/ParametresPage';
 import MonCompte from './components/MonCompte';
+import CreerEtatLieuPage from './components/CreerEtatLieu';
 
 
 const ProprietaireApp: React.FC = () => {
@@ -381,7 +381,22 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <EtatsDesLieux notify={notify} />
+            <EtatsLieux />
+          </Layout>
+        } />
+
+        {/* Route pour créer un nouvel état des lieux */}
+        <Route path="etats-lieux/nouveau" element={
+          <Layout
+            activeTab="etats-lieux"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerEtatLieuPage notify={notify} />
           </Layout>
         } />
 
@@ -401,20 +416,6 @@ const ProprietaireApp: React.FC = () => {
         } />
 
         {/* Routes documents - plus spécifique avant générale */}
-        <Route path="documents/baux/*" element={
-          <Layout
-            activeTab="baux"
-            onNavigate={handleNavigation}
-            toasts={toasts}
-            removeToast={removeToast}
-            onLogout={handleLogout}
-            isDarkMode={false}
-            toggleTheme={() => { }}
-          >
-            <DocumentsManager notify={notify} />
-          </Layout>
-        } />
-
         <Route path="documents/*" element={
           <Layout
             activeTab="documents"

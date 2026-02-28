@@ -62,18 +62,24 @@ const getStatutFromInvoice = (invoice: Invoice): "paid" | "late" | "pending" => 
 
 const transformInvoiceToPaymentRow = (invoice: Invoice): PaymentRow => {
   const statut = getStatutFromInvoice(invoice);
-  // Note: L'API retourne la relation 'lease' avec les données imbriquées
-  const leaseData = (invoice as unknown as { lease?: { property?: { name?: string; address?: string; id?: number }; tenant?: { first_name?: string; last_name?: string; email?: string; user?: { email?: string } } } }).lease;
+  // L'API retourne la relation 'lease' avec les données imbriquées
+  // InvoiceResource retourne: property.address, property.city, tenant.full_name, tenant.email
+  const leaseData = invoice.lease;
   const property = leaseData?.property;
   const tenant = leaseData?.tenant;
-  const tenantUser = tenant?.user;
+  
+  // Fallback pour le nom du bien: name > address > city > "Bien"
+  const bienLabel = property?.name || property?.address || property?.city || "Bien";
+  
+  // Fallback pour le nom du locataire: full_name > "Locataire"
+  const locataireLabel = tenant?.full_name || "Locataire";
   
   return {
     id: invoice.id,
     invoiceNumber: invoice.invoice_number,
-    locataire: tenant ? `${tenant.first_name || ""} ${tenant.last_name || ""}`.trim() : "Locataire",
-    email: tenantUser?.email || tenant?.email || "-",
-    bien: property?.name || property?.address || "Bien",
+    locataire: locataireLabel,
+    email: tenant?.email || "-",
+    bien: bienLabel,
     bienId: property?.id,
     montant: invoice.amount_total || 0,
     echeance: formatDate(invoice.due_date),
@@ -137,7 +143,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [leases, setLeases] = useState<{id: number; property: {name: string}; tenant: {first_name: string; last_name: string}}[]>([]);
+  const [leases, setLeases] = useState<{id: number; property: {name: string; address: string}; tenant: {full_name: string}}[]>([]);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   // Form state for creating invoice
@@ -991,7 +997,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                     <option value="">Sélectionner un bail</option>
                     {leases.map((lease) => (
                       <option key={lease.id} value={lease.id}>
-                        {lease.tenant?.first_name} {lease.tenant?.last_name} - {lease.property?.name}
+                        {lease.tenant?.full_name} - {lease.property?.name || lease.property?.address}
                       </option>
                     ))}
                   </select>
@@ -1023,6 +1029,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                       type="date"
                       className="pm-select"
                       value={formData.due_date}
+                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                       required
                     />

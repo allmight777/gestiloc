@@ -154,7 +154,7 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
     {
       title: "DOCUMENTS",
       items: [
-        { id: "baux", label: "Contrats bails", icon: FileText, path: "/proprietaire/documents/baux" },
+        { id: "baux", label: "Contrats bails", icon: FileText, path: "/proprietaire/baux" },
         { id: "etats-lieux", label: "États lieux", icon: ClipboardList, path: "/proprietaire/etats-lieux" },
         { id: "avis-echeance", label: "Avis échéance", icon: AlertTriangle, path: "/proprietaire/avis-echeance" },
         { id: "quittances", label: "Quittances", icon: FileText, path: "/proprietaire/quittances" },

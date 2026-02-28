@@ -25,7 +25,7 @@ interface TenantOption {
 
 const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
   const navigate = useNavigate();
-  const [typeBail, setTypeBail] = useState<string>("nu");
+  const [typeBail, setTypeBail] = useState<"nu" | "meuble">("nu");
   const [statutBail, setStatutBail] = useState<string>("active");
   const [renouvellement, setRenouvellement] = useState<boolean>(true);
   const [loyer, setLoyer] = useState<string>("");
@@ -370,7 +370,7 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                     end_date: duree ? new Date(new Date(dateDebut).setFullYear(new Date(dateDebut).getFullYear() + parseInt(duree))).toISOString().split('T')[0] : null,
                     rent_amount: parseFloat(loyer),
                     deposit: depot ? parseFloat(depot) : null,
-                    type: typeBail as "nu" | "forme",
+                    type: typeBail as "nu" | "meuble",
                     status: mapStatusToBackend(statutBail) as "pending" | "active" | "terminated",
                     terms: details ? details.split('\n').filter(t => t.trim()) : []
                   };
@@ -381,7 +381,7 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                   await leaseService.createLease(leasePayload);
                   
                   notify?.("Contrat de location créé avec succès!", "success");
-                  navigate("/proprietaire/documents/baux");
+                  navigate("/proprietaire/baux");
                 } catch (error: unknown) {
                   console.error("Erreur lors de la création du contrat:", error);
                   
@@ -464,7 +464,7 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                 {tenants.some(t => t.type === 'invitation') && (
                   <optgroup label="En attente d'invitation">
                     {tenants.filter(t => t.type === 'invitation').map(inv => (
-                      <option key={`invitation-${inv.id}`} value={inv.id}>
+                      <option key={`invitation-${inv.id}`} value={inv.tenantId ?? ''}>
                         {inv.label} ({inv.email})
                       </option>
                     ))}
@@ -492,9 +492,9 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                   <input 
                     type="radio" 
                     name="typeBail" 
-                    value="forme" 
-                    checked={typeBail === "forme"} 
-                    onChange={() => setTypeBail("forme")} 
+                    value="meuble" 
+                    checked={typeBail === "meuble"} 
+                    onChange={() => setTypeBail("meuble")} 
                     style={{ accentColor: "#16a34a" }} 
                   />
                   Bail meublé
@@ -666,7 +666,7 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                     end_date: duree ? new Date(new Date(dateDebut).setFullYear(new Date(dateDebut).getFullYear() + parseInt(duree))).toISOString().split('T')[0] : null,
                     rent_amount: parseFloat(loyer),
                     deposit: depot ? parseFloat(depot) : null,
-                    type: typeBail as "nu" | "forme",
+                    type: typeBail as "nu" | "meuble",
                     status: mapStatusToBackend(statutBail) as "pending" | "active" | "terminated",
                     terms: details ? details.split('\n').filter(t => t.trim()) : []
                   };
@@ -677,7 +677,7 @@ const NouvelleLocation: React.FC<NouvelleLocationProps> = ({ notify }) => {
                   await leaseService.createLease(leasePayload);
                   
                   notify?.("Contrat de location créé avec succès!", "success");
-                  navigate("/proprietaire/documents/baux");
+                  navigate("/proprietaire/baux");
                 } catch (error: unknown) {
                   console.error("Erreur lors de la création du contrat:", error);
                   

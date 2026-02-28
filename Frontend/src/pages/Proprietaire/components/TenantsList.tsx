@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check, MoreHorizontal, FileText } from "lucide-react";
+import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check, MoreHorizontal, FileText, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { tenantService, TenantApi, TenantInvitationApi, TenantIndexResponse } from "@/services/api";
+import { tenantService, TenantApi, TenantApiProperty, TenantInvitationApi, TenantIndexResponse } from "@/services/api";
 
 interface Locataire {
   id: string;
   nom: string;
+  prenom: string;
   type: string;
-  bien: string;
+  biens: string[];
   telephone: string;
   email: string;
   solde: number;
   etat: "actif" | "inactif" | "suspendu" | "invited";
-  modeles: string[];
+  modeles: number;
   is_invited?: boolean;
+  invitation_envoyee?: boolean;
 }
 
 interface LocatairesProps {
@@ -35,51 +37,72 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   /* ─── Mapper API → UI ─── */
   // Mapper pour les locataires existants
   const mapTenantApiToLocataire = (tenant: TenantApi): Locataire => {
-    const nom = [tenant.first_name, tenant.last_name].filter(Boolean).join(" ") || tenant.email || "Locataire sans nom";
+    const nom = tenant.last_name || "";
+    const prenom = tenant.first_name || "";
+    const fullName = [prenom, nom].filter(Boolean).join(" ") || tenant.email || "Locataire sans nom";
 
-    // Utiliser active_property si disponible, sinon chercher dans properties
-    const activeProp = tenant.active_property || 
-      (tenant.properties && tenant.properties.length > 0 ? tenant.properties[0] : null);
-    
-    const bien = activeProp
-      ? activeProp.name ?? "Bien"
-      : "Aucun bien";
+    // Récupérer tous les biens du locataire
+    const biens: string[] = [];
+    if (tenant.active_property) {
+      biens.push(tenant.active_property.name || tenant.active_property.address || "Bien");
+    }
+    if (tenant.properties && tenant.properties.length > 0) {
+      tenant.properties.forEach((prop: TenantApiProperty) => {
+        const propName = prop.name || prop.address || "Bien";
+        if (!biens.includes(propName)) {
+          biens.push(propName);
+        }
+      });
+    }
+
+    // Déterminer le type (personne physique ou morale)
+    // Pour l'instant, on utilise "Personne Physique" par défaut
+    const type = "Personne Physique";
 
     let etat: Locataire["etat"] = "actif";
     if (tenant.status === "invited") etat = "invited";
     else if (tenant.status === "inactive") etat = "inactif";
     else if (tenant.status === "suspended") etat = "suspendu";
 
+    // Le solde devrait venir du bail (current_balance) - si disponible
+    const leaseData = tenant.lease as { current_balance?: number } | undefined;
+    const solde = leaseData?.current_balance || 0;
+
     return {
       id: String(tenant.id),
-      nom,
-      type: "Personne Physique",
-      bien,
+      nom: nom,
+      prenom: prenom,
+      type,
+      biens: biens.length > 0 ? biens : ["Aucun bien"],
       telephone: tenant.phone || "Non renseigné",
       email: tenant.email || "—",
-      solde: 0,
+      solde: Number(solde),
       etat,
-      modeles: [],
+      modeles: biens.length,
+      is_invited: false,
     };
   };
 
   // Mapper pour les invitations en attente
   const mapInvitationToLocataire = (invitation: TenantInvitationApi): Locataire => {
-    // Utiliser le champ name s'il existe, sinon utiliser email
+    const nom = invitation.last_name || "";
+    const prenom = invitation.first_name || "";
     const emailPart = invitation.email ? invitation.email.split('@')[0] : 'Invité';
-    const nom = invitation.name || emailPart;
+    const fullName = [prenom, nom].filter(Boolean).join(" ") || invitation.name || emailPart;
 
     return {
       id: `invitation-${invitation.id}`,
-      nom,
+      nom: nom,
+      prenom: prenom,
       type: "En attente",
-      bien: "Aucun bien",
+      biens: ["Aucun bien"],
       telephone: "—",
       email: invitation.email || "—",
       solde: 0,
       etat: "invited",
-      modeles: [],
+      modeles: 0,
       is_invited: true,
+      invitation_envoyee: true,
     };
   };
 
@@ -98,8 +121,9 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
       
       // Combiner les deux listes
       setLocataires([...mappedTenants, ...mappedInvitations]);
-    } catch (err: any) {
-      const message = err?.message || "Impossible de charger les locataires";
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      const message = error?.message || "Impossible de charger les locataires";
       setError(message);
       notify(message, "error");
     } finally {
@@ -115,13 +139,15 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   const filteredLocataires = locataires.filter((l) => {
     const matchSearch =
       l.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchBien = filterBien === "Tous les biens" || l.bien.includes(filterBien);
+    
+    const matchBien = filterBien === "Tous les biens" || l.biens.some(b => b.includes(filterBien));
     const matchTab = activeTab === "actifs" ? true : false;
     return matchSearch && matchBien && matchTab;
   });
 
-  const biensUniques = Array.from(new Set(locataires.map((l) => l.bien)));
+  const biensUniques = Array.from(new Set(locataires.flatMap((l) => l.biens)));
   const actifCount = locataires.filter((l) => l.etat === "actif" || l.etat === "invited").length;
 
   /* ─── Actions ─── */
@@ -130,12 +156,11 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   // Voir les détails d'un locataire - Connecté à l'API
   const handleView = async (locataire: Locataire) => {
     try {
-      // Fetch les détails du locataire depuis l'API
-      const tenantDetails = await tenantService.getTenant(Number(locataire.id));
-      console.log('Détails locataire:', tenantDetails);
-      
-      // TODO: Afficher les détails dans une modal ou naviguer vers une page de détail
-      notify(`Consultation de ${locataire.nom} - Données chargées`, "info");
+      if (!locataire.is_invited) {
+        const tenantDetails = await tenantService.getTenant(Number(locataire.id));
+        console.log('Détails locataire:', tenantDetails);
+      }
+      notify(`Consultation de ${locataire.prenom} ${locataire.nom}`, "info");
     } catch (error) {
       console.error('Erreur lors de la récupération des détails:', error);
       notify('Erreur lors du chargement des détails du locataire', "error");
@@ -144,36 +169,63 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
 
   // Modifier un locataire - Connecté à l'API
   const handleEdit = async (locataire: Locataire) => {
-    try {
-      // TODO: Implémenter formulaire d'édition
-      // Pour l'instant, on affiche les détails pour modification
-      notify(`Modification de ${locataire.nom} - Formulaire à implémenter`, "info");
-    } catch (error) {
-      console.error('Erreur modification:', error);
-      notify('Erreur lors de la modification', "error");
-    }
+    notify(`Modification de ${locataire.prenom} ${locataire.nom}`, "info");
   };
 
   // Envoyer un email
   const handleSendEmail = (locataire: Locataire) => {
-    window.location.href = `mailto:${locataire.email}?subject=Information - GestionLoc`;
-    notify(`Email vers ${locataire.email}`, "success");
+    if (locataire.email && locataire.email !== "—") {
+      window.location.href = `mailto:${locataire.email}?subject=Information - GestionLoc`;
+      notify(`Email vers ${locataire.email}`, "success");
+    } else {
+      notify('Email non disponible pour ce locataire', "error");
+    }
   };
 
   // Supprimer/Renvooyer l'invitation
   const handleDelete = async (locataire: Locataire) => {
     if (locataire.is_invited) {
-      // Pour les invitations en attente - TODO: implémenter renvoi d'invitation API
-      notify(`Fonction de renvoi d'invitation à implémenter`, "info");
+      notify(`Renvoi d'invitation pour ${locataire.email} - Fonctionnalité à implémenter`, "info");
     } else {
-      // Confirmation avant suppression - TODO: implémenter suppression API
-      if (confirm(`Êtes-vous sûr de vouloir supprimer ${locataire.nom} ?`)) {
+      if (confirm(`Êtes-vous sûr de vouloir supprimer ${locataire.prenom} ${locataire.nom} ?`)) {
         console.log('Delete tenant:', locataire.id);
-        notify(`Suppression de ${locataire.nom} - API à implémenter`, "info");
+        notify(`Suppression de ${locataire.prenom} ${locataire.nom} - API à implémenter`, "info");
       }
     }
   };
 
+  // Rafraîchir les données
+  const handleRefresh = () => {
+    fetchTenants();
+  };
+
+  // Formater le solde
+  const formatSolde = (solde: number): string => {
+    if (solde === 0) return "0 FCA";
+    return `${solde.toLocaleString('fr-FR')} FCA`;
+  };
+
+  // Obtenir le libellé de l'état
+  const getEtatLabel = (etat: Locataire["etat"]): string => {
+    switch (etat) {
+      case "actif": return "Actif";
+      case "inactif": return "Inactif";
+      case "suspendu": return "Suspendu";
+      case "invited": return "En attente";
+      default: return "Inconnu";
+    }
+  };
+
+  // Obtenir la classe CSS pour l'état
+  const getEtatClass = (etat: Locataire["etat"]): string => {
+    switch (etat) {
+      case "actif": return "tl-status-actif";
+      case "inactif": return "tl-status-inactif";
+      case "suspendu": return "tl-status-suspendu";
+      case "invited": return "tl-status-invite";
+      default: return "";
+    }
+  };
 
   return (
     <>
@@ -411,11 +463,43 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
           font-weight: 700;
           font-size: 0.78rem;
         }
+        .tl-type-badge.pending {
+          color: #f59e0b;
+        }
         .tl-solde {
           font-weight: 600;
           font-size: 0.78rem;
-          color: #83C757;
         }
+        .tl-solde.positive { color: #83C757; }
+        .tl-solde.negative { color: #ef4444; }
+        .tl-solde.zero { color: #6b7280; }
+
+        .tl-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 0.72rem;
+          font-weight: 700;
+        }
+        .tl-status-actif {
+          background: #dcfce7;
+          color: #166534;
+        }
+        .tl-status-inactif {
+          background: #f3f4f6;
+          color: #6b7280;
+        }
+        .tl-status-suspendu {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        .tl-status-invite {
+          background: #dbeafe;
+          color: #1d4ed8;
+        }
+
         .tl-modele {
           font-size: 0.78rem;
           color: #83C757;
@@ -444,6 +528,17 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
         .tl-action-column {
           white-space: nowrap;
           width: 120px;
+        }
+
+        /* Invitation indicator */
+        .tl-invite-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #f59e0b;
+          font-size: 0.7rem;
+          font-weight: 600;
+          margin-left: 4px;
         }
 
         /* Empty */
@@ -492,6 +587,19 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
           color: #6b7280;
           font-size: 0.85rem;
         }
+
+        /* Refresh button */
+        .tl-refresh-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          color: #6b7280;
+          transition: all 0.15s;
+        }
+        .tl-refresh-btn:hover {
+          color: #83C757;
+        }
       `}</style>
 
       <div className="tl-page">
@@ -501,10 +609,15 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
             <h1 className="tl-title">Liste des locataires</h1>
             <p className="tl-subtitle">Créez un nouveau contrat entre un bien et un locataire</p>
           </div>
-          <button className="tl-btn-add" onClick={handleAdd}>
-            <Plus size={15} />
-            Ajouter un locataire
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="tl-refresh-btn" onClick={handleRefresh} title="Rafraîchir">
+              <RefreshCw size={20} />
+            </button>
+            <button className="tl-btn-add" onClick={handleAdd}>
+              <Plus size={15} />
+              Ajouter un locataire
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -603,14 +716,44 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
               <tbody>
                 {filteredLocataires.map((loc) => (
                   <tr key={loc.id}>
-                    <td style={{ fontWeight: 600 }}>{loc.nom}</td>
-                    <td><span className="tl-type-badge">{loc.type}</span></td>
-                    <td>{loc.bien}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>
+                        {loc.prenom} {loc.nom}
+                        {loc.is_invited && (
+                          <span className="tl-invite-indicator" title="Invitation en attente">
+                            <AlertCircle size={12} />
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`tl-type-badge ${loc.is_invited ? 'pending' : ''}`}>
+                        {loc.type}
+                      </span>
+                    </td>
+                    <td>
+                      {loc.biens.length === 1 
+                        ? loc.biens[0] 
+                        : `${loc.biens.length} biens`
+                      }
+                    </td>
                     <td>{loc.telephone}</td>
                     <td>{loc.email}</td>
-                    <td><span className="tl-solde">{loc.solde} FCFA</span></td>
-                    <td>Inconnu</td>
-                    <td><span className="tl-modele">0 Modèle</span></td>
+                    <td>
+                      <span className={`tl-solde ${loc.solde > 0 ? 'negative' : loc.solde < 0 ? 'positive' : 'zero'}`}>
+                        {formatSolde(loc.solde)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`tl-status ${getEtatClass(loc.etat)}`}>
+                        {getEtatLabel(loc.etat)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="tl-modele">
+                        {loc.modeles} bien{loc.modeles !== 1 ? 's' : ''}
+                      </span>
+                    </td>
                     <td className="tl-action-column">
                       <div style={{ display: "flex", gap: 2, alignItems: "center", justifyContent: "flex-start" }}>
                         <button 

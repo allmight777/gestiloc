@@ -898,6 +898,7 @@ export interface PropertyConditionReport {
   signature_data?: string | null;
   signed_by?: string | null;
   signed_at?: string | null;
+  created_at?: string;
 
   photos?: PropertyConditionPhoto[];
   lease?: Lease | null;
@@ -1199,11 +1200,11 @@ export interface LandlordDashboardStats {
 }
 
 export const landlordDashboardService = {
-  // GET /api/landlord/dashboard - Statistiques du dashboard propriétaire
+  // GET /api/dashboard - Statistiques du dashboard propriétaire
   getStats: async (): Promise<LandlordDashboardStats> => {
     try {
       await initializeCsrfToken();
-      const response = await api.get<LandlordDashboardStats>('/landlord/dashboard');
+      const response = await api.get<LandlordDashboardStats>('/dashboard');
       return response.data;
     } catch (error) {
       const apiError = error as ApiError;
@@ -1213,7 +1214,7 @@ export const landlordDashboardService = {
     }
   },
 
-  // GET /api/landlord/occupation-stats - Stats d'occupation
+  // GET /api/occupation-stats - Stats d'occupation
   getOccupationStats: async (): Promise<{
     occupied: number;
     vacant: number;

@@ -1,5 +1,6 @@
 // src/pages/Proprietaire/EtatsDesLieux.tsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -54,7 +55,9 @@ type typeEtatLieu = {
 };
 
 // ────────────────────────────────────────────────
-export default function EtatsDesLieux() {
+export default function EstadosDesLieux() {
+  const navigate = useNavigate();
+  
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("Tous");
@@ -64,6 +67,7 @@ export default function EtatsDesLieux() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [properties, setProperties] = useState<{id: number, name: string}[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Charger les données depuis l'API
   useEffect(() => {
@@ -283,7 +287,7 @@ export default function EtatsDesLieux() {
           </Button>
           <Button 
             className="bg-primary-light hover:bg-primary-deep gap-2"
-            onClick={() => window.location.href = "/copproprietaire/etats-des-lieux/create"}
+            onClick={() => navigate("/proprietaire/etats-lieux/nouveau")}
           >
             <Plus className="h-3 w-3 text-purple-600" />
             Créer un nouvel état de lieu

@@ -33,7 +33,29 @@ export interface Invoice {
   invoice_number?: string;
   created_at?: string;
   updated_at?: string;
-  [key: string]: any;
+  paid_at?: string | null;
+  payment_method?: string;
+  // Relations imbriquées retournées par InvoiceResource
+  lease?: {
+    id: number;
+    rent_amount: number;
+    charges_amount: number;
+    tenant?: {
+      id: number;
+      full_name: string;
+      email?: string;
+      phone?: string;
+    };
+    property?: {
+      id: number;
+      name?: string;
+      address?: string;
+      city?: string;
+      zip_code?: string;
+      surface?: number;
+      room_count?: number;
+    };
+  };
 }
 
 export interface PayLinkResponse {
