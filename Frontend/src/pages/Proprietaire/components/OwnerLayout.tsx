@@ -24,10 +24,12 @@ import {
   Calculator,
   Settings,
   HelpCircle,
+  Check,
 } from "lucide-react";
 
 import { Tab, Notification, ToastMessage } from "../types";
 import { Toast } from "./ui/Toast";
+import { landlordNotificationsService, LandlordNotification } from "../../../services/api";
 
 interface OwnerLayoutProps {
   children: React.ReactNode;
@@ -67,22 +69,7 @@ const COLORS = {
   border: "#e5e7eb",
 };
 
-const notifications: Notification[] = [
-  {
-    id: "1",
-    type: "critical",
-    message: "Loyer novembre en retard",
-    subtext: "Régularisez avant pénalités",
-    isRead: false,
-  },
-  {
-    id: "2",
-    type: "important",
-    message: "Intervention confirmée",
-    subtext: "22/11 - 14h-16h",
-    isRead: false,
-  },
-];
+
 
 export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
   children,
@@ -97,6 +84,8 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [notifications, setNotifications] = useState<LandlordNotification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -112,6 +101,43 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
       console.error("Impossible de lire user depuis localStorage", e);
     }
   }, []);
+
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    try {
+      const data = await landlordNotificationsService.getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await landlordNotificationsService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (error) {
+      console.error('Erreur lors du marquage des notifications:', error);
+    }
+  };
+
+  // Mark single notification as read
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await landlordNotificationsService.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (error) {
+      console.error('Erreur lors du marquage de la notification:', error);
+    }
+  };
 
   const ownerName = useMemo(() => {
     if (!user) return "Propriétaire";
@@ -133,6 +159,7 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
       title: "TABLEAU DE BORD",
       items: [
         { id: "dashboard", label: "Tableau de bord", icon: BarChart3, path: "/proprietaire/dashboard" },
+        { id: "notifications", label: "Notifications", icon: Bell, path: "/proprietaire/notifications" },
       ],
     },
     {
@@ -379,7 +406,7 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
                 type="button"
               >
                 <Bell size={20} />
-                {notifications.some((n) => !n.isRead) && (
+                {notifications.some((n) => !n.is_read) && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
                 )}
               </button>
@@ -388,32 +415,59 @@ export const OwnerLayout: React.FC<OwnerLayoutProps> = ({
                 <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-[#e5e7eb] overflow-hidden">
                   <div className="p-4 border-b border-[#e5e7eb] flex justify-between items-center bg-[#f5f7f4]">
                     <h3 className="font-semibold text-sm text-[#1f2937]">Notifications</h3>
-                    <button className="text-xs text-[#6DBE45] font-medium hover:underline" type="button">
+                    <button 
+                      onClick={handleMarkAllAsRead}
+                      className="text-xs text-[#6DBE45] font-medium hover:underline" 
+                      type="button"
+                    >
                       Tout marquer lu
                     </button>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className="p-4 border-b border-[#e5e7eb] hover:bg-[#f5f7f4] transition-colors cursor-pointer"
-                      >
-                        <div className="flex gap-3">
-                          <div
-                            className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                              notif.type === "critical" ? "bg-red-500" : "bg-[#6DBE45]"
-                            }`}
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-[#1f2937]">{notif.message}</p>
-                            {notif.subtext && (
-                              <p className="text-xs text-[#6b7280] mt-0.5">{notif.subtext}</p>
-                            )}
+                    {loadingNotifications ? (
+                      <div className="p-4 text-center text-sm text-[#6b7280]">
+                        Chargement...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-[#6b7280]">
+                        Aucune notification
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          className={`p-4 border-b border-[#e5e7eb] hover:bg-[#f5f7f4] transition-colors cursor-pointer ${
+                            !notif.is_read ? 'bg-blue-50/50' : ''
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div
+                              className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
+                                notif.type === 'error' || notif.type === 'warning' ? "bg-red-500" : "bg-[#6DBE45]"
+                              }`}
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-[#1f2937]">{notif.title}</p>
+                              <p className="text-xs text-[#6b7280] mt-0.5">{notif.message}</p>
+                              {notif.subtext && (
+                                <p className="text-xs text-[#9ca3af] mt-1">{notif.subtext}</p>
+                              )}
+                              {!notif.is_read && (
+                                <span className="inline-flex items-center gap-1 mt-1 text-xs text-[#6DBE45]">
+                                  <Check size={10} /> Nouveau
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                    <button className="w-full px-4 py-3 text-sm font-medium text-[#6DBE45] hover:bg-[#f5f7f4]" type="button">
+                      ))
+                    )}
+                    <button 
+                      className="w-full px-4 py-3 text-sm font-medium text-[#6DBE45] hover:bg-[#f5f7f4]"
+                      onClick={() => handleNavigate('/proprietaire/notifications')}
+                      type="button"
+                    >
                       Voir toutes les notifications
                     </button>
                   </div>

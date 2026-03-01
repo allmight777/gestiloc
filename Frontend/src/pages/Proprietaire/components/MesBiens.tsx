@@ -1933,31 +1933,10 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
     return matchFilter && matchSearch;
   });
 
-  // Gérer l'ouverture de la modale d'édition avec les données du backend
+  // Gérer l'ouverture de la page de modification
   const handleOpenEdit = (property: any) => {
-    // Transformer les données pour EditPropertyModal
-    const editData: Property = {
-      id: property._original.id,
-      type: property._original.type,
-      name: property._original.name,
-      title: property._original.title,
-      description: property._original.description,
-      address: property._original.address,
-      city: property._original.city,
-      district: property._original.district,
-      zip_code: property._original.zip_code,
-      surface: property._original.surface,
-      room_count: property._original.room_count,
-      bedroom_count: property._original.bedroom_count,
-      bathroom_count: property._original.bathroom_count,
-      rent_amount: property._original.rent_amount,
-      status: property._original.status,
-      reference_code: property._original.reference_code,
-      photos: property._original.photos,
-      meta: property._original.meta,
-    };
-    setSelectedPropertyForEdit(editData);
-    setShowEditModal(true);
+    // Naviguer vers la page de modification du bien
+    navigate(`/proprietaire/biens/${property._original.id}/modifier`);
   };
 
   // État pour la modale d'édition
@@ -2094,20 +2073,7 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
         </div>
       )}
 
-      {/* Modal d'édition de bien */}
-      {showEditModal && selectedPropertyForEdit && (
-        <div className="modal-overlay">
-          <EditPropertyModal
-            property={selectedPropertyForEdit}
-            onClose={() => {
-              setShowEditModal(false);
-              setSelectedPropertyForEdit(null);
-            }}
-            onSuccess={handleEditSuccess}
-            notify={notify}
-          />
-        </div>
-      )}
+      {/* Modal d'édition supprimé - on utilise maintenant la page ModifierBien */}
     </div>
   );
 }

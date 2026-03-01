@@ -34,7 +34,7 @@ export default function CreerEtatLieu({
   isOpen = true, 
   onClose, 
   onSuccess,
-  properties = [],
+  properties: propFromProps = [],
   mode = 'modal',
   notify
 }: CreerEtatLieuProps) {
@@ -42,12 +42,34 @@ export default function CreerEtatLieu({
   const [error, setError] = useState<string | null>(null);
   
   // Données
+  const [properties, setProperties] = useState<{id: number; name: string}[]>(propFromProps);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
   const [leases, setLeases] = useState<Lease[]>([]);
   const [selectedLeaseId, setSelectedLeaseId] = useState<string>("");
   const [reportType, setReportType] = useState<"entry" | "exit" | "intermediate">("entry");
   const [reportDate, setReportDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+
+  // Charger les propriétés en mode page
+  useEffect(() => {
+    if (mode === 'page' && properties.length === 0) {
+      loadProperties();
+    }
+  }, [mode]);
+
+  const loadProperties = async () => {
+    try {
+      const { default: api } = await import("@/services/api");
+      const response = await api.listProperties();
+      const propsData = response.data || response;
+      setProperties((propsData as any[]).map((p: any) => ({ 
+        id: p.id, 
+        name: p.name || p.title || `Bien #${p.id}` 
+      })));
+    } catch (err) {
+      console.error("Erreur chargement propriétés:", err);
+    }
+  };
   
   // Photos
   const [photos, setPhotos] = useState<{ file: File; caption: string; date: string }[]>([]);

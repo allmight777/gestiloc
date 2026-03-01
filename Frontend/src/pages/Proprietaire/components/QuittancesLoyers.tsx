@@ -1,5 +1,6 @@
 // src/pages/Locataire/Quittances.tsx    ← ou où tu veux la placer
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Download,
@@ -132,6 +133,7 @@ export default function QuittancesLoyers() {
   const [stats, setStats] = useState<QuittanceStats>({ envoyees: 0, ceMois: 0, enAttente: 0, totalEncaisse: 0 });
   const [properties, setProperties] = useState<Property[]>([]);
   const error = null;
+  const navigate = useNavigate();
 
   // Charger les données depuis l'API
   useEffect(() => {
@@ -151,8 +153,10 @@ export default function QuittancesLoyers() {
         // Récupérer la liste des biens pour le filtre
         try {
           const propsResponse = await propertyService.listProperties();
-          if (propsResponse.data) {
+          if (propsResponse.data && Array.isArray(propsResponse.data)) {
             setProperties(propsResponse.data);
+          } else if (Array.isArray(propsResponse)) {
+            setProperties(propsResponse);
           }
         } catch (propError) {
           console.error('Erreur lors du chargement des biens:', propError);
@@ -249,7 +253,11 @@ export default function QuittancesLoyers() {
             </p>
           </div>
 
-          <Button className="bg-primary-light hover:bg-primary-deep" size="default">
+          <Button 
+            className="bg-primary-light hover:bg-primary-deep" 
+            size="default"
+            onClick={() => navigate('/proprietaire/quittances/nouveau')}
+          >
             <Plus className="h-9 w-9 text-purple-600" />
             Créer une quittance de loyer
           </Button>

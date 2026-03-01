@@ -60,7 +60,7 @@ export default function EstadosDesLieux() {
   
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("Tous");
+  const [filterType, setFilterType] = useState("all");
   
   // États pour les données API
   const [etatsLieux, setEtatsLieux] = useState<typeEtatLieu[]>([]);
@@ -94,8 +94,8 @@ export default function EstadosDesLieux() {
             year: 'numeric'
           }) : '';
           
-          // Déterminer le type
-          const typeLabel = report.type === 'entry' ? 'entrée' : report.type === 'exit' ? 'sortie' : 'intermédiaire';
+          // Déterminer le type - on garde uniquement entrée ou sortie
+          const typeLabel = report.type === 'entry' ? 'entrée' : 'sortie';
           
           // Déterminer le statut
           const isSigned = !!report.signed_at;
@@ -165,7 +165,7 @@ export default function EstadosDesLieux() {
       e.locataire.toLowerCase().includes(search.toLowerCase()) ||
       e.bien.toLowerCase().includes(search.toLowerCase());
     const matchType =
-      filterType === "Tous" || e.type === filterType.toLowerCase();
+      filterType === "all" || e.type === filterType;
     const matchProperty = 
       filterBien === "Tous les biens" || 
       e.bien === filterBien ||
@@ -174,9 +174,9 @@ export default function EstadosDesLieux() {
   });
 
   const filters = [
-    { label: "Tous", icon: null },
-    { label: "Entrée", icon: Entry },
-    { label: "Sortie", icon: Exit },
+    { label: "Tous", value: "all", icon: null },
+    { label: "Entrée", value: "entrée", icon: Entry },
+    { label: "Sortie", value: "sortie", icon: Exit },
   ];
 
   const [downloadingIds, setDownloadingIds] = useState<Record<number, boolean>>(
@@ -187,23 +187,20 @@ export default function EstadosDesLieux() {
     // Set loading state
     setDownloadingIds((prev) => ({ ...prev, [e.id]: true }));
 
-    // Simulate PDF generation/download
+    // Simulate PDF generation/download - Version React-safe
     setTimeout(() => {
-      const element = document.createElement("a");
-      element.setAttribute(
-        "href",
-        `data:text/plain;charset=utf-8,${encodeURIComponent(
-          `État des lieux: ${e.titre}\nBien: ${e.bien}\nLocataire: ${e.locataire}\nDate: ${e.date}\nÉtat général: ${e.etatGeneral}\nPhotos: ${e.photosCount}`,
-        )}`,
-      );
-      element.setAttribute(
-        "download",
-        `EDL_${e.titre.replace(/\s+/g, "_")}.txt`,
-      );
-      element.style.display = "none";
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      const content = `État des lieux: ${e.titre}\nBien: ${e.bien}\nLocataire: ${e.locataire}\nDate: ${e.date}\nÉtat général: ${e.etatGeneral}\nPhotos: ${e.photosCount}`;
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `EDL_${e.titre.replace(/\s+/g, '_')}.txt`;
+      link.click();
+      
+      // Cleanup
+      URL.revokeObjectURL(url);
 
       // Clear loading state
       setDownloadingIds((prev) => ({ ...prev, [e.id]: false }));
@@ -226,7 +223,7 @@ export default function EstadosDesLieux() {
           month: 'short',
           year: 'numeric'
         }) : '';
-        const typeLabel = report.type === 'entry' ? 'entrée' : report.type === 'exit' ? 'sortie' : 'intermédiaire';
+        const typeLabel = report.type === 'entry' ? 'entrée' : 'sortie';
         const isSigned = !!report.signed_at;
         const statut = isSigned ? 'signé' : 'en attente';
         const etatGeneral = report.photos && report.photos.length > 0 ? 'Bon' : 'Non évalué';
@@ -310,7 +307,7 @@ export default function EstadosDesLieux() {
             key={`${filter.label}-${filter.icon}`}
             variant={filterType === filter.label ? "default" : "outline"}
             size="sm"
-            onClick={() => setFilterType(filter.label)}
+            onClick={() => setFilterType(filter.value)}
             className={
               filterType === filter.label
                 ? " bg-primary-light hover:bg-primary-deep"
@@ -362,7 +359,7 @@ export default function EstadosDesLieux() {
             />
           </div>
 
-          <Button className="bg-slate-100 text-black font-normal shrink-0 border-2 border-primary-light w-full sm:w-auto">
+          <Button className="bg-slate-100 text-black font-normal shrink-0 border-2 border-primary-light w-full sm:w-auto" onClick={() => notify('Fonctionnalité d\'affichage en cours de développement', 'info')}>
             <img src={setting} alt="Settings" className="h-6 w-6 mr-2" />
             Affichage
           </Button>
@@ -390,7 +387,7 @@ export default function EstadosDesLieux() {
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 bg-gray-50">
           {filtered.map((e) => (
             <Card
-              key={`${e.id}-${e.type}`}
+              key={e.id}
               className={`overflow-hidden bg-[#f8fafc] rounded-xl hover:shadow-md transition-shadow shadow-lg border-l-4 ${e.type === "entrée" ? "border-l-green-500" : "border-l-rose-700"
                 }`}
             >

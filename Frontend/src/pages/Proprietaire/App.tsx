@@ -39,14 +39,21 @@ import WithdrawalMethod from './components/RetraitMethode';
 import ContratsBaux from './components/ContratsBaux';
 import EtatsDesLieux from './components/EtatsDesLieux';
 import AvisEcheance from './components/AvisEcheance';
-import QuittancesLoyersPage from './components/QuittancesPage';
 import FacturesDocs from './components/FacturesDocs';
 import ArchivageDocs from './components/ArchivageDocs';
 import ReparationsTravaux from './components/ReparationsTravaux';
 import ComptabilitePage from './components/ComptabilitePage';
 import ParametresPage from './components/ParametresPage';
 import MonCompte from './components/MonCompte';
+import CreerQuittance from './components/CreerQuittance';
+import CreerAvisEcheance from './components/CreerAvisEcheance';
+import CreerFactureDoc from './components/CreerFactureDoc';
+import CreerIntervention from './components/CreerIntervention';
+import CreerTransaction from './components/CreerTransaction';
 import CreerEtatLieuPage from './components/CreerEtatLieu';
+import NotificationsPage from './components/NotificationsPage';
+import ModifierBien from './components/ModifierBien';
+import DetailFacture from './components/DetailFacture';
 
 
 const ProprietaireApp: React.FC = () => {
@@ -260,6 +267,21 @@ const ProprietaireApp: React.FC = () => {
           </Layout>
         } />
 
+        {/* Route pour créer une nouvelle intervention */}
+        <Route path="incidents/nouveau" element={
+          <Layout
+            activeTab="incidents"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerIntervention notify={notify} />
+          </Layout>
+        } />
+
         <Route path="ajouter-locataire" element={
           <Layout
             activeTab="bureau"
@@ -284,7 +306,22 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <QuittancesLoyersPage notify={notify} />
+            <QuittancesIndependants notify={notify} />
+          </Layout>
+        } />
+
+        {/* Route pour créer une nouvelle quittance */}
+        <Route path="quittances/nouveau" element={
+          <Layout
+            activeTab="quittances"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerQuittance notify={notify} />
           </Layout>
         } />
 
@@ -314,6 +351,21 @@ const ProprietaireApp: React.FC = () => {
             toggleTheme={() => { }}
           >
             <AvisEcheance notify={notify} />
+          </Layout>
+        } />
+
+        {/* Route pour créer un nouvel avis d'échéance */}
+        <Route path="avis-echeance/nouveau" element={
+          <Layout
+            activeTab="avis-echeance"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerAvisEcheance notify={notify} />
           </Layout>
         } />
 
@@ -458,6 +510,36 @@ const ProprietaireApp: React.FC = () => {
           </Layout>
         } />
 
+        {/* Route pour créer une nouvelle facture/document */}
+        <Route path="factures/nouveau" element={
+          <Layout
+            activeTab="factures"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerFactureDoc notify={notify} />
+          </Layout>
+        } />
+
+        {/* Route pour voir les détails d'une facture */}
+        <Route path="factures/:id" element={
+          <Layout
+            activeTab="factures"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <DetailFacture notify={notify} />
+          </Layout>
+        } />
+
         <Route path="archives" element={
           <Layout
             activeTab="archives"
@@ -484,6 +566,21 @@ const ProprietaireApp: React.FC = () => {
             toggleTheme={() => { }}
           >
             <ComptabilitePage notify={notify} />
+          </Layout>
+        } />
+
+        {/* Route pour créer une nouvelle transaction */}
+        <Route path="comptabilite/nouveau" element={
+          <Layout
+            activeTab="comptabilite"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <CreerTransaction notify={notify} />
           </Layout>
         } />
 
@@ -553,6 +650,36 @@ const ProprietaireApp: React.FC = () => {
             toggleTheme={() => { }}
           >
             <InviteCoOwner notify={notify} />
+          </Layout>
+        } />
+
+        {/* Route pour les notifications */}
+        <Route path="notifications" element={
+          <Layout
+            activeTab="notifications"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <NotificationsPage notify={notify} onNavigate={handleNavigation} />
+          </Layout>
+        } />
+
+        {/* Route pour modifier un bien */}
+        <Route path="biens/:id/modifier" element={
+          <Layout
+            activeTab="biens"
+            onNavigate={handleNavigation}
+            toasts={toasts}
+            removeToast={removeToast}
+            onLogout={handleLogout}
+            isDarkMode={false}
+            toggleTheme={() => { }}
+          >
+            <ModifierBien notify={notify} />
           </Layout>
         } />
 

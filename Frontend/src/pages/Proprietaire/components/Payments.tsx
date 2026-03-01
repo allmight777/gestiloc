@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -133,6 +134,7 @@ const mockPayments: PaymentRow[] = [
 /* ─── Component ─── */
 
 export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"actifs" | "archives">("actifs");
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [linesPerPage, setLinesPerPage] = useState("100");
@@ -761,7 +763,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="pm-btn-display">
+            <button className="pm-btn-display" onClick={() => notify('Fonctionnalité d\'affichage en cours de développement', 'info')}>
               <Settings size={15} />
               Affichage
             </button>
@@ -808,7 +810,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
         <div className="pm-actions">
           <button 
             className="pm-action-btn green" 
-            onClick={openCreateModal}
+            onClick={() => navigate('/proprietaire/factures/nouveau')}
             disabled={actionLoading !== null}
           >
             <Plus size={15} />
@@ -909,7 +911,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                       <button 
                         className="pm-action-icon" 
                         title="Voir"
-                        onClick={() => { console.log('View invoice details - to be implemented'); notify('Détails de la facture à implémenter', 'info'); }}
+                        onClick={() => navigate(`/proprietaire/factures/${p.id}`)}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="5" r="1" />

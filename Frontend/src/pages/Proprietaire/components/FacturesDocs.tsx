@@ -1,150 +1,161 @@
-import React, { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
-
-interface FactureData {
-    id: string;
-    typeBadge: string;
-    typeBadgeColor: string;
-    titre: string;
-    lieu: string;
-    champ1Label: string; champ1Value: string;
-    champ2Label: string; champ2Value: string;
-    champ3Label: string; champ3Value: string;
-    champ4Label: string; champ4Value: string;
-    dateBas: string;
-}
-
-const mockFactures: FactureData[] = [
-    {
-        id: '1', typeBadge: 'FACTURE TRAVAUX', typeBadgeColor: '#f59e0b',
-        titre: 'Réparation fuite d\'eau', lieu: 'Thomas Moreau • Marseille',
-        champ1Label: 'PRESTATAIRE', champ1Value: 'Plomberie Express',
-        champ2Label: 'DATE', champ2Value: '15 Jan 2025',
-        champ3Label: 'N° FACTURE', champ3Value: 'PL-2025-0089',
-        champ4Label: 'MONTANT TTC', champ4Value: '245 €',
-        dateBas: 'Ajouté le 15 Jan 2025',
-    },
-    {
-        id: '2', typeBadge: 'DIAGNOSTIC AMIANTE', typeBadgeColor: '#ef4444',
-        titre: 'Diagnostic amiante avant travaux', lieu: 'Marie Lefevre • Lyon 6ème',
-        champ1Label: 'DIAGNOSTIQUEUR', champ1Value: 'Control Habitat',
-        champ2Label: 'DATE VISITE', champ2Value: '05 Jan 2025',
-        champ3Label: 'RÉSULTAT', champ3Value: 'Absence d\'amiante',
-        champ4Label: 'COÛT', champ4Value: '180 €',
-        dateBas: 'Ajouté le 05 Jan 2025',
-    },
-    {
-        id: '3', typeBadge: 'ASSURANCE GLI', typeBadgeColor: '#3b82f6',
-        titre: 'Garantie Loyers Impayés 2025', lieu: 'Martin Dupont • Boulogne-Billancourt',
-        champ1Label: 'COMPAGNIE', champ1Value: 'Garantme',
-        champ2Label: 'VALIDITÉ', champ2Value: '01/01 - 31/12/25',
-        champ3Label: 'N° POLICE', champ3Value: 'GLI-789456123',
-        champ4Label: 'PRIME ANNUELLE', champ4Value: '280 €',
-        dateBas: 'Ajouté le 10 Jan 2025',
-    },
-    {
-        id: '4', typeBadge: 'FACTURE TRAVAUX', typeBadgeColor: '#f59e0b',
-        titre: 'Remise en peinture appartement', lieu: 'Antoine Mercier • Bordeaux',
-        champ1Label: 'PRESTATAIRE', champ1Value: 'Color Pro',
-        champ2Label: 'DATE', champ2Value: '20 Déc 2024',
-        champ3Label: 'N° FACTURE', champ3Value: 'CP-2024-1245',
-        champ4Label: 'MONTANT TTC', champ4Value: '1 850 €',
-        dateBas: 'Payé le 20 Déc 2024',
-    },
-    {
-        id: '5', typeBadge: 'FACTURE EAU', typeBadgeColor: '#0ea5e9',
-        titre: 'Consommation eau Janvier 2025', lieu: 'Jean-Pierre Roussel • La Rochelle',
-        champ1Label: 'FOURNISSEUR', champ1Value: 'Veolia Eau',
-        champ2Label: 'PÉRIODE', champ2Value: 'Jan 2025',
-        champ3Label: 'CONSOMMATION', champ3Value: '12 m³',
-        champ4Label: 'MONTANT TTC', champ4Value: '45 €',
-        dateBas: 'Ajouté le 02 Fev 2025',
-    },
-    {
-        id: '6', typeBadge: 'CERTIFICAT', typeBadgeColor: '#8b5cf6',
-        titre: 'Certificat conformité électrique', lieu: 'Claire Dubois • Nantes',
-        champ1Label: 'ORGANISME', champ1Value: 'Consuel',
-        champ2Label: 'DATE D\'ÉMISSION', champ2Value: '18 Déc 2024',
-        champ3Label: 'N° ATTESTATION', champ3Value: 'CON-2024-89456',
-        champ4Label: '', champ4Value: 'Conforme',
-        dateBas: 'Ajouté le 18 Déc 2024',
-    },
-    {
-        id: '7', typeBadge: 'FACTURE TRAVAUX', typeBadgeColor: '#f59e0b',
-        titre: 'Réparation chaudière', lieu: 'Montée Alba • Villeurbanne',
-        champ1Label: 'PRESTATAIRE', champ1Value: 'Chauffage Pro',
-        champ2Label: 'DATE', champ2Value: '28 Jan 2025',
-        champ3Label: 'N° FACTURE', champ3Value: 'F-2025-0042',
-        champ4Label: 'MONTANT TTC', champ4Value: '385 €',
-        dateBas: 'Ajouté le 28 Jan 2025',
-    },
-    {
-        id: '8', typeBadge: 'ASSURANCE HABITATION', typeBadgeColor: '#22c55e',
-        titre: 'Assurance PNO 2025', lieu: 'Sophia Bernard • Paris 15ème',
-        champ1Label: 'COMPAGNIE', champ1Value: 'AXA Assurances',
-        champ2Label: 'VALIDITÉ', champ2Value: '01/01 - 31/12/25',
-        champ3Label: 'N° CONTRAT', champ3Value: 'AXA-45678912',
-        champ4Label: 'PRIME ANNUELLE', champ4Value: '420 €',
-        dateBas: 'Ajouté le 15 Jan 2025',
-    },
-    {
-        id: '9', typeBadge: 'DIAGNOSTIC DPE', typeBadgeColor: '#06b6d4',
-        titre: 'Diagnostic performance énergétique', lieu: 'Martin Dupont • Boulogne-Billancourt',
-        champ1Label: 'DIAGNOSTIQUEUR', champ1Value: 'Expert Diag',
-        champ2Label: 'DATE VISITE', champ2Value: '10 Jan 2025',
-        champ3Label: 'VALIDITÉ', champ3Value: 'Jusqu\'au 10/01/35',
-        champ4Label: 'CLASSE ÉNERGIE', champ4Value: 'C (120 kWh/m²)',
-        dateBas: 'Ajouté le 10 Jan 2025',
-    },
-    {
-        id: '10', typeBadge: 'TAXE FONCIÈRE', typeBadgeColor: '#dc2626',
-        titre: 'Taxe foncière 2024', lieu: 'Jean-Pierre Roussel • La Rochelle',
-        champ1Label: 'ANNÉE FISCALE', champ1Value: '2024',
-        champ2Label: 'DATE LIMITE', champ2Value: '15 Oct 2024',
-        champ3Label: 'RÉFÉRENCE', champ3Value: 'TF-2024-8945',
-        champ4Label: 'MONTANT', champ4Value: '1 280 €',
-        dateBas: 'Payé le 12 Oct 2024',
-    },
-    {
-        id: '11', typeBadge: 'FACTURE ÉNERGIE', typeBadgeColor: '#eab308',
-        titre: 'Électricité Janvier 2025', lieu: 'Montée Alba • Villeurbanne',
-        champ1Label: 'FOURNISSEUR', champ1Value: 'EDF',
-        champ2Label: 'PÉRIODE', champ2Value: 'Jan 2025',
-        champ3Label: 'N° CLIENT', champ3Value: '1234567890',
-        champ4Label: 'MONTANT TTC', champ4Value: '88 €',
-        dateBas: 'Ajouté le 05 Fev 2025',
-    },
-    {
-        id: '12', typeBadge: 'ATTESTATION', typeBadgeColor: '#a855f7',
-        titre: 'Attestation entretien chaudière', lieu: 'Sophia Bernard • Paris 15ème',
-        champ1Label: 'PRESTATAIRE', champ1Value: 'Gaz Service Plus',
-        champ2Label: 'DATE ENTRETIEN', champ2Value: '20 Déc 2024',
-        champ3Label: 'VALIDITÉ', champ3Value: 'Jusqu\'au 20/12/25',
-        champ4Label: 'COÛT', champ4Value: '125 €',
-        dateBas: 'Ajouté le 20 Déc 2024',
-    },
-];
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, FileText, Download, Eye, Edit, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { invoiceService, Invoice } from '@/services/api';
 
 interface FacturesDocsProps {
     notify: (msg: string, type: 'success' | 'info' | 'error') => void;
 }
 
+const typeLabels: Record<string, { label: string; color: string }> = {
+    rent: { label: 'LOYER', color: '#83C757' },
+    charge: { label: 'CHARGES', color: '#3b82f6' },
+    deposit: { label: 'DÉPÔT', color: '#f59e0b' },
+    repair: { label: 'RÉPARATION', color: '#ef4444' },
+};
+
 const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [searchTerm, setSearchTerm] = useState('');
-    const filters = ['Tous', 'Facture', 'Travaux', 'Assurances', 'Diagnostics', 'Autres'];
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
+    const filters = ['Tous', 'Loyer', 'Charges', 'Dépôt', 'Réparation'];
 
-    const filtered = mockFactures.filter(f =>
-        f.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.lieu.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Charger les factures depuis l'API
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            try {
+                setIsLoading(true);
+                const data = await invoiceService.listInvoices();
+                setInvoices(data || []);
+            } catch (error) {
+                console.error('Erreur lors du chargement des factures:', error);
+                notify?.('Erreur lors du chargement des factures', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInvoices();
+    }, [notify]);
+
+    // Voir les détails d'une facture
+    const handleView = (invoice: Invoice) => {
+        setSelectedInvoice(invoice);
+        setShowModal(true);
+    };
+
+    // Télécharger la facture en PDF
+    const handleDownload = async (invoice: Invoice) => {
+        try {
+            notify?.('Génération du PDF en cours...', 'info');
+            
+            // Appeler l'API pour générer le PDF
+            const response = await invoiceService.downloadInvoice(invoice.id);
+            
+            // Créer un blob et télécharger
+            const blob = new Blob([response as any], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `facture_${invoice.invoice_number || invoice.id}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            notify?.('Facture téléchargée avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
+            notify?.('Erreur lors du téléchargement de la facture', 'error');
+        }
+    };
+
+    // Modifier la facture
+    const handleEdit = (invoice: Invoice) => {
+        navigate(`/proprietaire/factures/${invoice.id}/modifier`);
+    };
+
+    // Fermer le modal
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedInvoice(null);
+    };
+
+    // Filtrer les factures
+    const getTypeFilter = (filter: string): string | null => {
+        switch (filter) {
+            case 'Loyer': return 'rent';
+            case 'Charges': return 'charge';
+            case 'Dépôt': return 'deposit';
+            case 'Réparation': return 'repair';
+            default: return null;
+        }
+    };
+
+    const filtered = invoices.filter(inv => {
+        const typeFilter = getTypeFilter(activeFilter);
+        
+        // Filtre par type
+        if (typeFilter && inv.type !== typeFilter) {
+            return false;
+        }
+
+        // Filtre par recherche
+        if (searchTerm) {
+            const search = searchTerm.toLowerCase();
+            const matchesTitle = inv.lease?.property?.address?.toLowerCase().includes(search);
+            const matchesTenant = inv.lease?.tenant?.first_name?.toLowerCase().includes(search) ||
+                                inv.lease?.tenant?.last_name?.toLowerCase().includes(search);
+            const matchesInvoiceNumber = inv.invoice_number?.toLowerCase().includes(search);
+            return matchesTitle || matchesTenant || matchesInvoiceNumber;
+        }
+
+        return true;
+    });
+
+    // Statistiques
+    const totalDocuments = invoices.length;
+    const thisMonthInvoices = invoices.filter(inv => {
+        const createdAt = new Date(inv.created_at || '');
+        const now = new Date();
+        return createdAt.getMonth() === now.getMonth() && 
+               createdAt.getFullYear() === now.getFullYear();
+    }).length;
+    
+    const totalAmount = invoices.reduce((sum, inv) => sum + (inv.amount_total || 0), 0);
+    const pendingInvoices = invoices.filter(inv => inv.status === 'pending').length;
 
     const stats = [
-        { label: 'TOTAL DOCUMENTS', value: '87', color: '#1a1a1a' },
-        { label: 'FACTURES CE MOIS', value: '12', color: '#1a1a1a' },
-        { label: 'DÉPENSES 2025', value: '8 450 €', color: '#83C757' },
-        { label: 'À RENOUVELER', value: '3', color: '#f59e0b' },
+        { label: 'TOTAL FACTURES', value: totalDocuments.toString(), color: '#1a1a1a' },
+        { label: 'CE MOIS', value: thisMonthInvoices.toString(), color: '#1a1a1a' },
+        { label: 'MONTANT TOTAL', value: `${totalAmount.toLocaleString('fr-FR')} €`, color: '#83C757' },
+        { label: 'EN ATTENTE', value: pendingInvoices.toString(), color: pendingInvoices > 0 ? '#f59e0b' : '#1a1a1a' },
     ];
+
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return '—';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const formatAmount = (amount?: number) => {
+        if (amount === undefined || amount === null) return '—';
+        return `${amount.toLocaleString('fr-FR')} €`;
+    };
+
+    const getStatusBadge = (status?: string) => {
+        switch (status) {
+            case 'paid': return { label: 'PAYÉE', color: '#22c55e' };
+            case 'pending': return { label: 'EN ATTENTE', color: '#f59e0b' };
+            case 'overdue': return { label: 'EN RETARD', color: '#ef4444' };
+            case 'partially_paid': return { label: 'PARTIEL', color: '#3b82f6' };
+            default: return { label: status?.toUpperCase() || '—', color: '#6b7280' };
+        }
+    };
 
     return (
         <>
@@ -177,7 +188,7 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
         .fd-item-top { padding: 1.1rem 1.3rem 0.7rem; }
         .fd-badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.60rem; font-weight: 800; letter-spacing: 0.04em; margin-bottom: 10px; }
         .fd-item-titre { font-size: 0.92rem; font-weight: 800; color: #1a1a1a; margin: 0 0 4px 0; }
-        .fd-item-lieu { font-size: 0.75rem; color: #ef4444; font-weight: 500; display: flex; align-items: center; gap: 4px; margin: 0 0 14px 0; }
+        .fd-item-lieu { font-size: 0.75rem; color: #6b7280; font-weight: 500; display: flex; align-items: center; gap: 4px; margin: 0 0 14px 0; }
         .fd-detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
         .fd-detail-label { font-size: 0.60rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 2px 0; }
         .fd-detail-value { font-size: 0.78rem; font-weight: 700; color: #1a1a1a; margin: 0; }
@@ -187,6 +198,9 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
         .fd-icon-btn { background: none; border: none; cursor: pointer; padding: 4px; font-size: 0.85rem; color: #9ca3af; }
         .fd-icon-btn.green { color: #83C757; }
         .fd-icon-btn.orange { color: #f59e0b; }
+        .fd-empty { text-align: center; padding: 3rem 1rem; color: #6b7280; }
+        .fd-empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .fd-loading { text-align: center; padding: 3rem 1rem; color: #6b7280; }
         @media (max-width: 1400px) { .fd-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 1024px) { .fd-grid { grid-template-columns: repeat(2, 1fr); } .fd-stats { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) {
@@ -211,10 +225,10 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
                 <div className="fd-header">
                     <div>
                         <h1 className="fd-title">Factures et documents divers</h1>
-                        <p className="fd-subtitle">Centralisez tous vos documents importants : factures de travaux, assurances, diagnostics, attestations. Gardez une trace de toutes vos dépenses et documents administratifs.</p>
+                        <p className="fd-subtitle">Gérez vos factures de loyer, charges, dépôts et réparations. Suivez vos paiements et téléchargez vos documents.</p>
                     </div>
-                    <button className="fd-add-btn" onClick={() => notify('Ajout document à venir', 'info')}>
-                        <Plus size={15} /> Ajouter un document
+                    <button className="fd-add-btn" onClick={() => navigate('/proprietaire/factures/nouveau')}>
+                        <Plus size={15} /> Nouvelle facture
                     </button>
                 </div>
 
@@ -234,44 +248,69 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
                 </div>
 
                 <div className="fd-card">
-                    <p className="fd-filter-title">FILTRER PAR BIEN ET PAR TYPE</p>
-                    <div className="fd-filter-row">
-                        <select className="fd-select"><option>Tous les biens</option></select>
-                        <select className="fd-select"><option>Tous les types</option></select>
-                    </div>
+                    <p className="fd-filter-title">RECHERCHER</p>
                     <div className="fd-search-wrap">
                         <Search size={16} className="fd-search-icon" />
-                        <input className="fd-search-input" placeholder="Rechercher" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                        <input className="fd-search-input" placeholder="Rechercher par bien, locataire ou numéro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
                 </div>
 
-                <div className="fd-grid">
-                    {filtered.map(f => (
-                        <div className="fd-item" key={f.id}>
-                            <div className="fd-item-top">
-                                <span className="fd-badge" style={{ background: f.typeBadgeColor + '20', color: f.typeBadgeColor }}>{f.typeBadge}</span>
-                                <p className="fd-item-titre">{f.titre}</p>
-                                <p className="fd-item-lieu">📍 {f.lieu}</p>
-                                <div className="fd-detail-row">
-                                    <div><p className="fd-detail-label">{f.champ1Label}</p><p className="fd-detail-value">{f.champ1Value}</p></div>
-                                    <div><p className="fd-detail-label">{f.champ2Label}</p><p className="fd-detail-value">{f.champ2Value}</p></div>
+                {isLoading ? (
+                    <div className="fd-loading">Chargement des factures...</div>
+                ) : filtered.length === 0 ? (
+                    <div className="fd-empty">
+                        <div className="fd-empty-icon">📄</div>
+                        <p>Aucune facture trouvée</p>
+                        {searchTerm && <p>Essayez avec d'autres termes de recherche</p>}
+                    </div>
+                ) : (
+                    <div className="fd-grid">
+                        {filtered.map(inv => {
+                            const typeInfo = typeLabels[inv.type || ''] || { label: 'FACTURE', color: '#6b7280' };
+                            const statusInfo = getStatusBadge(inv.status);
+                            
+                            return (
+                                <div className="fd-item" key={inv.id}>
+                                    <div className="fd-item-top">
+                                        <span className="fd-badge" style={{ background: typeInfo.color + '20', color: typeInfo.color }}>{typeInfo.label}</span>
+                                        <p className="fd-item-titre">{inv.invoice_number || `Facture #${inv.id}`}</p>
+                                        <p className="fd-item-lieu">📍 {inv.lease?.property?.address || 'Adresse non disponible'}</p>
+                                        <div className="fd-detail-row">
+                                            <div>
+                                                <p className="fd-detail-label">Locataire</p>
+                                                <p className="fd-detail-value">
+                                                    {inv.lease?.tenant?.first_name} {inv.lease?.tenant?.last_name}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="fd-detail-label">Échéance</p>
+                                                <p className="fd-detail-value">{formatDate(inv.due_date)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="fd-detail-row">
+                                            <div>
+                                                <p className="fd-detail-label">Montant</p>
+                                                <p className="fd-detail-value" style={{ color: '#83C757' }}>{formatAmount(inv.amount_total)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="fd-detail-label">Statut</p>
+                                                <p className="fd-detail-value" style={{ color: statusInfo.color }}>{statusInfo.label}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="fd-footer">
+                                        <span className="fd-footer-date">Créée le {formatDate(inv.created_at)}</span>
+                                        <div className="fd-footer-actions">
+                                            <button className="fd-icon-btn" title="Voir" onClick={() => handleView(inv)}><Eye /></button>
+                                            <button className="fd-icon-btn green" title="Télécharger" onClick={() => handleDownload(inv)}><Download /></button>
+                                            <button className="fd-icon-btn orange" title="Modifier" onClick={() => handleEdit(inv)}><Edit /></button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="fd-detail-row">
-                                    <div><p className="fd-detail-label">{f.champ3Label}</p><p className="fd-detail-value">{f.champ3Value}</p></div>
-                                    {f.champ4Label && <div><p className="fd-detail-label">{f.champ4Label}</p><p className="fd-detail-value" style={{ color: f.champ4Value.includes('€') ? '#83C757' : '#1a1a1a' }}>{f.champ4Value}</p></div>}
-                                </div>
-                            </div>
-                            <div className="fd-footer">
-                                <span className="fd-footer-date">{f.dateBas}</span>
-                                <div className="fd-footer-actions">
-                                    <button className="fd-icon-btn">👁️</button>
-                                    <button className="fd-icon-btn green">📥</button>
-                                    <button className="fd-icon-btn orange">✏️</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </>
     );

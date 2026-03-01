@@ -33,6 +33,7 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [searchTerm, setSearchTerm] = useState("");
   const [linesPerPage, setLinesPerPage] = useState("100");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   /* ─── Mapper API → UI ─── */
   // Mapper pour les locataires existants
@@ -685,9 +686,9 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="tl-btn-display">
+            <button className="tl-btn-display" onClick={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')}>
               <Settings size={15} />
-              Affichage
+              {viewMode === 'list' ? 'Grille' : 'Liste'}
             </button>
           </div>
         </div>
