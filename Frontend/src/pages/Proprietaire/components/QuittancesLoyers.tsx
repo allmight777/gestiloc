@@ -177,15 +177,14 @@ export default function QuittancesLoyers() {
   const handleDownloadPdf = async (quittance: Quittance) => {
     try {
       const blob = await rentReceiptService.downloadPdf(quittance.id);
-      // Créer un lien de téléchargement
+      // Utiliser URL.createObjectURL sans manipulation du DOM
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `quittance_${quittance.mois.replace(' ', '_')}_${quittance.locataire.replace(' ', '_')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quittance_${quittance.mois.replace(' ', '_')}_${quittance.locataire.replace(' ', '_')}.pdf`;
+      link.click();
+      // Révoquer l'URL après utilisation
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (err) {
       console.error('Erreur lors du téléchargement du PDF:', err);
       alert('Erreur lors du téléchargement de la quittance');
@@ -212,31 +211,7 @@ export default function QuittancesLoyers() {
   });
 
   return (
-    <>
-      <style>{`
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes pulse-gentle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-        .animate-pulse-gentle {
-          animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
-      <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-4 md:p-6">
         {/* Header */}
         <div
           className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${loading ? "opacity-50" : "opacity-100"
@@ -552,6 +527,5 @@ export default function QuittancesLoyers() {
             })}
         </div>
       </div>
-    </>
-  );
+    );
 }
