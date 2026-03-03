@@ -1,0 +1,340 @@
+/* InviteCoOwner Component Styles - Exact same as AjouterLocataire */
+
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+/* Page */
+.ico-page {
+  padding: 1.5rem 2.5rem 3rem;
+  font-family: 'Manrope', sans-serif;
+  color: #1a1a1a;
+}
+
+/* Title */
+.ico-title {
+  font-family: 'Merriweather', serif;
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #1a1a1a;
+  margin: 0 0 6px 0;
+}
+.ico-subtitle {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0 0 1.25rem 0;
+}
+
+/* Steps */
+.ico-steps {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.ico-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Manrope', sans-serif;
+}
+.ico-step.active { color: #e68a00; }
+.ico-step.completed { color: #e68a00; }
+.ico-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  flex-shrink: 0;
+}
+.ico-step.active .ico-step-dot,
+.ico-step.completed .ico-step-dot { background: #e68a00; }
+
+/* Card */
+.ico-card {
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+  padding: 1.75rem;
+}
+
+/* Grid */
+.ico-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.ico-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.ico-grid-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 1.5rem;
+}
+
+/* Field */
+.ico-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ico-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+}
+.ico-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+.ico-input:focus { border-color: #83C757; box-shadow: 0 0 0 3px rgba(131,199,87,0.12); }
+.ico-input::placeholder { color: #9ca3af; font-weight: 400; }
+
+/* Input with icon */
+.ico-input-icon {
+  position: relative;
+}
+.ico-input-icon input { padding-left: 2.5rem; }
+.ico-input-icon .ico-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+
+/* Error */
+.ico-error-msg {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+/* Section label */
+.ico-section-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Alert */
+.ico-alert {
+  background: #e8eaed;
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+.ico-alert-purple { background: #f3e8ff; border: 1.5px solid #e9d5ff; }
+.ico-alert-blue { background: #dbeafe; border: 1.5px solid #bfdbfe; }
+.ico-alert-green { background: #dcfce7; border: 1.5px solid #bbf7d0; }
+
+/* Actions / Buttons */
+.ico-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 1.5rem;
+}
+.ico-btn-prev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 32px;
+  border-radius: 10px;
+  border: none;
+  background: #83C757;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-width: 140px;
+}
+.ico-btn-prev:hover { background: #72b44a; }
+
+.ico-btn-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 32px;
+  border-radius: 10px;
+  border: 1.5px solid #e68a00;
+  background: #fff;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-width: 140px;
+}
+.ico-btn-next:hover { background: #fff8ef; }
+
+.ico-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 32px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #e68a00 0%, #f5a623 100%);
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-width: 140px;
+}
+.ico-btn-submit:hover { box-shadow: 0 4px 14px rgba(230,138,0,0.3); }
+.ico-btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Confirm Card */
+.ico-confirm-card {
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.ico-confirm-card-purple { background: #faf5ff; border: 1.5px solid #e9d5ff; }
+.ico-confirm-card-blue { background: #eff6ff; border: 1.5px solid #bfdbfe; }
+
+.ico-confirm-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  font-size: 0.85rem;
+}
+.ico-confirm-label {
+  color: #6b7280;
+}
+.ico-confirm-value {
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* Change type button */
+.ico-change-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin-top: 1rem;
+}
+.ico-change-type:hover { background: #f3f4f6; color: #374151; }
+
+/* Type selection cards */
+.ico-type-card {
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+  padding: 1.75rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ico-type-card:hover {
+  border-color: #83C757;
+  box-shadow: 0 4px 14px rgba(131,199,87,0.15);
+}
+.ico-type-card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+.ico-type-card-desc {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.ico-type-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.ico-type-card-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.ico-type-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1.5px solid #e68a00;
+  background: #fff;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+.ico-type-card-btn:hover { background: #fff8ef; }
+
+/* Animation spin */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.ico-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ico-grid-2 { grid-template-columns: 1fr; }
+  .ico-grid-3 { grid-template-columns: 1fr; }
+  .ico-grid-cards { grid-template-columns: 1fr; }
+  .ico-confirm-row { grid-template-columns: 1fr; }
+}

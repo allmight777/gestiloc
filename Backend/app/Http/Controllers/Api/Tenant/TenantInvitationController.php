@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Mail\LandlordInvitation;
+use App\Mail\TenantInvitationMail;
+use App\Models\TenantInvitation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -82,6 +84,87 @@ class TenantInvitationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de l\'envoi de l\'invitation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Renvoyer une invitation de locataire (pour le propriétaire)
+     */
+    public function resendInvitation(Request $request, $invitationId)
+    {
+        try {
+            $invitation = TenantInvitation::findOrFail($invitationId);
+
+            // Vérifier que l'invitation n'a pas déjà été acceptée
+            if ($invitation->accepted_at) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cette invitation a déjà été acceptée'
+                ], 400);
+            }
+
+            // Générer un nouveau token
+            $invitation->token = TenantInvitation::makeToken();
+            $invitation->expires_at = now()->addDays(7);
+            $invitation->save();
+
+            // Envoyer l'email d'invitation
+            $signedUrl = route('api.auth.accept-invitation', ['invitationId' => $invitation->id]);
+            $fullUrl = url($signedUrl . '?token=' . $invitation->token);
+
+            // Vérifier si le mail class existe, sinon utiliser une alternative
+            try {
+                Mail::to($invitation->email)->send(new TenantInvitationMail(
+                    $invitation->name,
+                    $fullUrl,
+                    $invitation->expires_at
+                ));
+            } catch (\Exception $e) {
+                // Si le mail n'existe pas, envoyer un mail simple
+                Log::warning('TenantInvitationMail non trouvé, utilisation alternative', [
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Envoyer un mail basique
+                $details = [
+                    'title' => 'Invitation à créer votre compte',
+                    'name' => $invitation->name,
+                    'url' => $fullUrl,
+                    'expires_at' => $invitation->expires_at->format('d/m/Y')
+                ];
+                
+                // Utiliser un mail générique
+                \Illuminate\Support\Facades\Mail::raw(
+                    "Bonjour {$invitation->name},\n\n".
+                    "Vous avez été invité à rejoindre GestiLoc. Cliquez sur le lien suivant pour créer votre compte: {$fullUrl}\n\n".
+                    "Cette invitation expire le {$details['expires_at']}",
+                    function ($message) use ($invitation) {
+                        $message->to($invitation->email)
+                                ->subject('Invitation GestiLoc - Créez votre compte');
+                    }
+                );
+            }
+
+            Log::info('Invitation renvoyée avec succès', [
+                'invitation_id' => $invitation->id,
+                'email' => $invitation->email
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation renvoyée avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur renvoi invitation', [
+                'error' => $e->getMessage(),
+                'invitation_id' => $invitationId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du renvoi de l\'invitation: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, FileText, Download, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, FileText, Download, Eye, Edit, Trash2, Mail, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { invoiceService, Invoice } from '@/services/api';
+import { landlordPayments } from '@/services/landlordPayments';
 
 interface FacturesDocsProps {
     notify: (msg: string, type: 'success' | 'info' | 'error') => void;
@@ -21,6 +22,7 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [sendingReminder, setSendingReminder] = useState<number | null>(null);
     const navigate = useNavigate();
     const filters = ['Tous', 'Loyer', 'Charges', 'Dépôt', 'Réparation'];
 
@@ -83,6 +85,21 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
     const closeModal = () => {
         setShowModal(false);
         setSelectedInvoice(null);
+    };
+
+    // Envoyer un rappel de paiement
+    const handleSendReminder = async (invoice: Invoice) => {
+        if (!invoice.id) return;
+        setSendingReminder(invoice.id);
+        try {
+            await landlordPayments.sendInvoiceReminder(invoice.id);
+            notify?.('Rappel envoyé avec succès!', 'success');
+        } catch (error) {
+            console.error('Erreur lors de l\'envoi du rappel:', error);
+            notify?.('Erreur lors de l\'envoi du rappel', 'error');
+        } finally {
+            setSendingReminder(null);
+        }
     };
 
     // Filtrer les factures
@@ -302,6 +319,15 @@ const FacturesDocs: React.FC<FacturesDocsProps> = ({ notify }) => {
                                         <span className="fd-footer-date">Créée le {formatDate(inv.created_at)}</span>
                                         <div className="fd-footer-actions">
                                             <button className="fd-icon-btn" title="Voir" onClick={() => handleView(inv)}><Eye /></button>
+                                            <button 
+                                                className="fd-icon-btn" 
+                                                title="Envoyer un rappel" 
+                                                onClick={() => handleSendReminder(inv)}
+                                                disabled={sendingReminder === inv.id || inv.status === 'paid'}
+                                                style={{ color: sendingReminder === inv.id ? '#83C757' : (inv.status === 'paid' ? '#d1d5db' : '#f59e0b') }}
+                                            >
+                                                {sendingReminder === inv.id ? <Loader2 size={16} className="animate-spin" /> : <Mail />}
+                                            </button>
                                             <button className="fd-icon-btn green" title="Télécharger" onClick={() => handleDownload(inv)}><Download /></button>
                                             <button className="fd-icon-btn orange" title="Modifier" onClick={() => handleEdit(inv)}><Edit /></button>
                                         </div>

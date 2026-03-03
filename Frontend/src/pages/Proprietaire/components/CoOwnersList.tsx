@@ -5,7 +5,6 @@ import {
   Building,
   Calendar,
   Search,
-  Filter,
   RefreshCw,
   UserPlus,
   Eye,
@@ -13,12 +12,10 @@ import {
   CheckCircle,
   Clock,
   Hand,
-  Shield,
   Key,
   FileText,
   DollarSign,
   Settings,
-  X,
   ChevronDown,
   ChevronUp,
   UserCheck,
@@ -27,20 +24,15 @@ import {
   Building2,
   Briefcase,
   User,
-  Hash,
   MapPin,
   Phone,
-  Lock,
   Edit,
-  MoreVertical,
-  Star,
-  Award,
-  Sparkles,
 } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { DelegatePropertyModal } from './DelegatePropertyModal';
 import api from '@/services/api';
+import '@/styles/co-owners-list.css';
 
 interface Property {
   id: number;
@@ -106,9 +98,10 @@ interface CoOwnerInvitation {
 
 interface CoOwnersListProps {
   notify: (msg: string, type: "success" | "info" | "error") => void;
+  onNavigate?: (tab: string) => void;
 }
 
-export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify }) => {
+export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify, onNavigate }) => {
   const [coOwners, setCoOwners] = useState<CoOwner[]>([]);
   const [invitations, setInvitations] = useState<CoOwnerInvitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,9 +212,13 @@ export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify }) => {
         console.log(`📊 Total délégations: ${transformedCoOwners.reduce((sum, co) => sum + (co.delegations?.length || 0), 0)}`);
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Erreur fetchCoOwners:', error);
-      notify(`Erreur: ${error.message || 'Impossible de charger les données'}`, 'error');
+      let errorMsg = 'Impossible de charger les données';
+      if (error instanceof Error) {
+        errorMsg = error.message || errorMsg;
+      }
+      notify(`Erreur: ${errorMsg}`, 'error');
     } finally {
       setLoading(false);
       console.log('=== FIN FETCH CO-OWNERS ===');
@@ -423,77 +420,63 @@ export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify }) => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Co-propriétaires & Agences</h1>
-        </div>
-        <Card className="p-6">
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                    <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
-                  </div>
-                  <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
-                </div>
-              </div>
-            ))}
+      <div className="col-page">
+        <h1 className="col-title">Co-propriétaires & Agences</h1>
+        <div className="col-card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+            <p style={{ color: '#6b7280' }}>Chargement en cours...</p>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="col-page">
       {/* En-tête */}
-      <div className="flex items-center justify-between">
+      <div className="col-header">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Co-propriétaires & Agences</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="col-title">Co-propriétaires & Agences</h2>
+          <p className="col-subtitle">
             Gérez vos gestionnaires et leurs délégations
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {}}
-            className="flex items-center gap-2"
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => onNavigate?.('inviter-coproprietaire')}
+            className="col-btn col-btn-primary"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus size={16} />
             Inviter un gestionnaire
-          </Button>
-          <Button
-            variant="outline"
+          </button>
+          <button
             onClick={fetchCoOwners}
-            className="flex items-center gap-2"
             disabled={loading}
+            className="col-btn col-btn-outline"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
             Actualiser
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-lg border border-gray-200">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, email, téléphone ou entreprise..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div className="flex gap-2">
+      <div className="col-filters">
+        <div className="col-filters-row">
+          <div className="col-search">
+            <span className="col-search-icon"><Search size={16} /></span>
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email, téléphone ou entreprise..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="col-search-input"
+            />
+          </div>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="col-select"
           >
             <option value="all">Tous les types</option>
             <option value="co_owner">Co-propriétaires</option>
@@ -502,7 +485,7 @@ export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify }) => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="col-select"
           >
             <option value="all">Tous les statuts</option>
             <option value="active">Actifs</option>
@@ -513,57 +496,49 @@ export const CoOwnersList: React.FC<CoOwnersListProps> = ({ notify }) => {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{coOwners.length}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
+      <div className="col-stats-grid">
+        <div className="col-stat-card">
+          <div className="col-stat-content">
+            <span className="col-stat-label">Total</span>
+            <span className="col-stat-value">{coOwners.length}</span>
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Co-propriétaires</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {coOwners.filter(c => c.invitation_type === 'co_owner').length}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <UserCheck className="w-6 h-6 text-blue-600" />
-            </div>
+          <div className="col-stat-icon col-stat-icon-blue">
+            <Users size={24} color="#2563eb" />
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Agences</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {coOwners.filter(c => c.invitation_type === 'agency').length}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-purple-600" />
-            </div>
+        </div>
+        <div className="col-stat-card">
+          <div className="col-stat-content">
+            <span className="col-stat-label">Co-propriétaires</span>
+            <span className="col-stat-value col-stat-value-blue">
+              {coOwners.filter(c => c.invitation_type === 'co_owner').length}
+            </span>
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Délégations totales</p>
-              <p className="text-2xl font-bold text-green-600">
-                {coOwners.reduce((sum, co) => sum + (co.delegations_count || 0), 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Key className="w-6 h-6 text-green-600" />
-            </div>
+          <div className="col-stat-icon col-stat-icon-blue">
+            <UserCheck size={24} color="#2563eb" />
           </div>
-        </Card>
+        </div>
+        <div className="col-stat-card">
+          <div className="col-stat-content">
+            <span className="col-stat-label">Agences</span>
+            <span className="col-stat-value col-stat-value-purple">
+              {coOwners.filter(c => c.invitation_type === 'agency').length}
+            </span>
+          </div>
+          <div className="col-stat-icon col-stat-icon-purple">
+            <Building2 size={24} color="#9333ea" />
+          </div>
+        </div>
+        <div className="col-stat-card">
+          <div className="col-stat-content">
+            <span className="col-stat-label">Délégations totales</span>
+            <span className="col-stat-value col-stat-value-green">
+              {coOwners.reduce((sum, co) => sum + (co.delegations_count || 0), 0)}
+            </span>
+          </div>
+          <div className="col-stat-icon col-stat-icon-green">
+            <Key size={24} color="#16a34a" />
+          </div>
+        </div>
       </div>
 
       {/* Liste des gestionnaires */}

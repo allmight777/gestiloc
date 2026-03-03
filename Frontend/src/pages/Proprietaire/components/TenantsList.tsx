@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check, MoreHorizontal, FileText, AlertCircle } from "lucide-react";
+import { Plus, Search, Settings, Users, Trash2, Mail, Phone, Clock, RefreshCw, Eye, Edit, UserCheck, UserX, Check, MoreHorizontal, FileText, AlertCircle, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { tenantService, TenantApi, TenantApiProperty, TenantInvitationApi, TenantIndexResponse } from "@/services/api";
 
@@ -611,6 +611,14 @@ export const TenantsList: React.FC<LocatairesProps> = ({ notify }) => {
             <p className="tl-subtitle">Créez un nouveau contrat entre un bien et un locataire</p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="tl-btn-add" 
+              style={{ background: '#6b7280' }}
+              onClick={() => navigate("/proprietaire/coproprietaires")}
+            >
+              <Building2 size={15} />
+              Mes Co-propriétaires
+            </button>
             <button className="tl-refresh-btn" onClick={handleRefresh} title="Rafraîchir">
               <RefreshCw size={20} />
             </button>

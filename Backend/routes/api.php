@@ -321,6 +321,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Tenants
         Route::post('tenants/invite', [TenantController::class, 'invite']);
         Route::get('tenants', [TenantController::class, 'index']);
+        Route::put('tenants/{tenant}', [TenantController::class, 'update']);
+        Route::delete('tenants/{tenant}', [TenantController::class, 'destroy']);
+        
+        // Tenant Invitations - Resend
+        Route::post('tenants/invitations/{id}/resend', [TenantController::class, 'resendInvitation']);
 
         // ✅ NOUVELLES ROUTES - Gestion des biens des locataires
         Route::post('tenants/{tenant}/assign-property', [TenantController::class, 'assignProperty']);
@@ -336,6 +341,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Co-owners
         Route::post('co-owners/invite', [CoOwnerController::class, 'invite']);
         Route::get('co-owners', [CoOwnerController::class, 'index']);
+        Route::post('co-owners/invitations/{id}/resend', [CoOwnerController::class, 'resendInvitation']);
+
+        // ✅ Paiements - Statistiques, Remboursement, Rejet pour landlords
+        Route::prefix('payments')->group(function () {
+            Route::get('/statistics', [PaymentManagementController::class, 'statistics']);
+            Route::post('/{id}/refund', [PaymentManagementController::class, 'refund']);
+            Route::post('/{id}/reject', [PaymentManagementController::class, 'reject']);
+        });
 
         // Transactions
         Route::post('/transactions', [TransactionController::class, 'store']);

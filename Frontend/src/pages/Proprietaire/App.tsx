@@ -635,7 +635,7 @@ const ProprietaireApp: React.FC = () => {
             isDarkMode={false}
             toggleTheme={() => { }}
           >
-            <CoOwnersList notify={notify} />
+            <CoOwnersList notify={notify} onNavigate={handleNavigation} />
           </Layout>
         } />
 

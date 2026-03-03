@@ -529,7 +529,13 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
-            <button className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98] btn-hover">
+            <button 
+              className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-green-600 hover:text-green-700 font-bold shadow-sm transition-all active:scale-[0.98] btn-hover"
+              onClick={() => {
+                // Navigate to notifications page via URL
+                window.location.href = '/proprietaire/notifications';
+              }}
+            >
               Voir toutes les notifications
             </button>
           </div>

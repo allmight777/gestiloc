@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -13,6 +14,8 @@ import {
   BarChart3,
   Loader2,
   RefreshCw,
+  Undo2,
+  XCircle,
 } from "lucide-react";
 import { landlordPayments, type Invoice, type CreateInvoicePayload } from "@/services/landlordPayments";
 import { leaseService } from "@/services/api";
@@ -147,6 +150,19 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [leases, setLeases] = useState<{id: number; property: {name: string; address: string}; tenant: {full_name: string}}[]>([]);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState('month');
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Query pour les statistiques de paiement depuis l'API
+  const { data: apiStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['paymentStatistics', statsPeriod],
+    queryFn: () => landlordPayments.getPaymentStatistics(statsPeriod),
+    staleTime: 30000, // 30 secondes
+  });
 
   // Form state for creating invoice
   const [formData, setFormData] = useState<{
@@ -352,13 +368,63 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
       setActionLoading(null);
     }
   };
+
+  // Ouvrir le modal de remboursement
+  const openRefundModal = (payment: PaymentRow) => {
+    setSelectedPayment(payment);
+    setRefundReason("");
+    setShowRefundModal(true);
+  };
+
+  // Ouvrir le modal de rejet
+  const openRejectModal = (payment: PaymentRow) => {
+    setSelectedPayment(payment);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  // Confirmer le remboursement
+  const handleRefund = async () => {
+    if (!selectedPayment) return;
+    
+    setActionLoading(`refund-${selectedPayment.id}`);
+    try {
+      await landlordPayments.refundPayment(selectedPayment.id, refundReason);
+      notify("Paiement remboursé avec succès!", "success");
+      setShowRefundModal(false);
+      fetchInvoices(); // Rafraîchir la liste
+    } catch (err) {
+      console.error("Erreur lors du remboursement:", err);
+      notify("Erreur lors du remboursement", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Confirmer le rejet
+  const handleReject = async () => {
+    if (!selectedPayment) return;
+    
+    setActionLoading(`reject-${selectedPayment.id}`);
+    try {
+      await landlordPayments.rejectPayment(selectedPayment.id, rejectReason);
+      notify("Paiement rejeté avec succès!", "success");
+      setShowRejectModal(false);
+      fetchInvoices(); // Rafraîchir la liste
+    } catch (err) {
+      console.error("Erreur lors du rejet:", err);
+      notify("Erreur lors du rejet", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
   const stats = {
-    totalExpected: payments.reduce((sum, p) => sum + p.montant, 0),
-    totalReceived: payments.filter(p => p.statut === "paid").reduce((sum, p) => sum + p.montant, 0),
-    totalLate: payments.filter(p => p.statut === "late").reduce((sum, p) => sum + p.montant, 0),
-    recoveryRate: payments.length > 0 
+    totalExpected: apiStats?.total_amount || payments.reduce((sum, p) => sum + p.montant, 0),
+    totalReceived: apiStats?.completed_amount || payments.filter(p => p.statut === "paid").reduce((sum, p) => sum + p.montant, 0),
+    totalLate: apiStats?.failed_amount || payments.filter(p => p.statut === "late").reduce((sum, p) => sum + p.montant, 0),
+    recoveryRate: apiStats?.success_rate || (payments.length > 0 
       ? Math.round((payments.filter(p => p.statut === "paid").length / payments.length) * 100) 
-      : 0,
+      : 0),
   };
 
   const statutBadge = (statut: PaymentRow["statut"]) => {
@@ -770,13 +836,13 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
           </div>
         </div>
 
-        {/* Stats cards */}
+        {/* Stats cards - with API data fallback */}
         <div className="pm-stats">
           <div className="pm-stat green">
             <p className="pm-stat-label">Loyers attendus</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/cash.png" alt="cash" />
-              {loading ? "..." : `${stats.totalExpected.toLocaleString("fr-FR")} FCFA`}
+              {statsLoading ? "..." : `${stats.totalExpected.toLocaleString("fr-FR")} FCFA`}
             </p>
             <p className="pm-stat-sub">{payments.length} paiement{payments.length !== 1 ? "s" : ""} ce mois</p>
           </div>
@@ -784,7 +850,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             <p className="pm-stat-label">Loyers reçus</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/checklist.png" alt="checklist" />
-              {loading ? "..." : `${stats.totalReceived.toLocaleString("fr-FR")} FCFA`}
+              {statsLoading ? "..." : `${stats.totalReceived.toLocaleString("fr-FR")} FCFA`}
             </p>
             <p className="pm-stat-sub">{payments.filter(p => p.statut === "paid").length} paiements ce mois</p>
           </div>
@@ -792,7 +858,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             <p className="pm-stat-label">En retard</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/Error.png" alt="error" />
-              {loading ? "..." : `${stats.totalLate.toLocaleString("fr-FR")} FCFA`}
+              {statsLoading ? "..." : `${stats.totalLate.toLocaleString("fr-FR")} FCFA`}
             </p>
             <p className="pm-stat-sub">{payments.filter(p => p.statut === "late").length} paiements en retard</p>
           </div>
@@ -800,7 +866,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             <p className="pm-stat-label">Taux de recouvrement</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/Bar chart.png" alt="chart" />
-              {loading ? "..." : `${stats.recoveryRate}%`}
+              {statsLoading ? "..." : `${stats.recoveryRate}%`}
             </p>
             <p className="pm-stat-sub">{payments.filter(p => p.statut === "paid").length}/{payments.length} payés</p>
           </div>
@@ -943,6 +1009,36 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                           <FileText size={14} />
                         )}
                       </button>
+                      {p.statut === 'paid' && (
+                        <button 
+                          className="pm-action-icon" 
+                          title="Rembourser"
+                          onClick={() => openRefundModal(p)}
+                          disabled={actionLoading === `refund-${p.id}` || actionLoading === `reject-${p.id}`}
+                          style={{ color: '#f59e0b' }}
+                        >
+                          {actionLoading === `refund-${p.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Undo2 size={14} />
+                          )}
+                        </button>
+                      )}
+                      {p.statut === 'paid' && (
+                        <button 
+                          className="pm-action-icon" 
+                          title="Rejeter"
+                          onClick={() => openRejectModal(p)}
+                          disabled={actionLoading === `refund-${p.id}` || actionLoading === `reject-${p.id}`}
+                          style={{ color: '#ef4444' }}
+                        >
+                          {actionLoading === `reject-${p.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1114,6 +1210,166 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de remboursement */}
+        {showRefundModal && selectedPayment && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '450px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#f59e0b' }}>
+                  <Undo2 size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                  Rembourser le paiement
+                </h2>
+                <button 
+                  onClick={() => setShowRefundModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6b7280' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px', padding: '12px', background: '#fef3c7', borderRadius: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <strong>Locataire:</strong> {selectedPayment.locataire}<br />
+                  <strong>Montant:</strong> {selectedPayment.montant.toLocaleString("fr-FR")} FCFA
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                  Motif du remboursement (optionnel)
+                </label>
+                <textarea
+                  className="pm-select"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Entrez le motif du remboursement..."
+                  rows={3}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRefundModal(false)}
+                  className="pm-action-btn gray"
+                  style={{ padding: '10px 20px' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleRefund}
+                  className="pm-action-btn"
+                  style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff' }}
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading !== null ? (
+                    <><Loader2 size={15} className="animate-spin" /> Traitement...</>
+                  ) : (
+                    <><Undo2 size={15} /> Confirmer le remboursement</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de rejet */}
+        {showRejectModal && selectedPayment && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '450px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>
+                  <XCircle size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                  Rejeter le paiement
+                </h2>
+                <button 
+                  onClick={() => setShowRejectModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6b7280' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px', padding: '12px', background: '#fee2e2', borderRadius: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <strong>Locataire:</strong> {selectedPayment.locataire}<br />
+                  <strong>Montant:</strong> {selectedPayment.montant.toLocaleString("fr-FR")} FCFA
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                  Motif du rejet (optionnel)
+                </label>
+                <textarea
+                  className="pm-select"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Entrez le motif du rejet..."
+                  rows={3}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="pm-action-btn gray"
+                  style={{ padding: '10px 20px' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="pm-action-btn"
+                  style={{ padding: '10px 20px', background: '#ef4444', color: '#fff' }}
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading !== null ? (
+                    <><Loader2 size={15} className="animate-spin" /> Traitement...</>
+                  ) : (
+                    <><XCircle size={15} /> Confirmer le rejet</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
