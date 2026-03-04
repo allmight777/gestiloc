@@ -20,19 +20,19 @@
     <div class="stats-row">
         <div class="stat-box">
             <div class="stat-label">INTERVENTIONS URGENTES</div>
-            <div class="stat-value urgent">{{ $stats['urgent'] }}</div>
+            <div class="stat-value urgent">{{ $stats['urgent'] ?? 0 }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-label">EN COURS</div>
-            <div class="stat-value in-progress">{{ $stats['in_progress'] }}</div>
+            <div class="stat-value in-progress">{{ $stats['in_progress'] ?? 0 }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-label">PLANIFIÉES</div>
-            <div class="stat-value planned">{{ $stats['planned'] }}</div>
+            <div class="stat-value planned">{{ $stats['planned'] ?? 0 }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-label">COÛT TOTAL {{ date('Y') }}</div>
-            <div class="stat-value cost">{{ number_format($stats['total_cost'], 0, ',', ' ') }} FCFA</div>
+            <div class="stat-value cost">{{ number_format($stats['total_cost'] ?? 0, 0, ',', ' ') }} FCFA</div>
         </div>
     </div>
 
@@ -202,7 +202,7 @@
                     @else
                         <div class="detail-item">
                             <span class="detail-label">DEVIS ESTIMÉ</span>
-                            <span class="detail-value cost-value">{{ $request->estimated_cost ? number_format($request->estimated_cost, 0, ',', ' ') . ' €' : '—' }}</span>
+                            <span class="detail-value cost-value">{{ $request->estimated_cost ? number_format($request->estimated_cost, 0, ',', ' ') . ' FCFA' : '—' }}</span>
                         </div>
                     @endif
                 </div>
@@ -211,7 +211,7 @@
                 @if($request->estimated_cost || $request->actual_cost)
                     <div class="intervention-cost">
                         <span class="cost-label">DEVIS {{ $request->status === 'resolved' ? 'FINAL' : 'ACCEPTÉ' }}</span>
-                        <span class="cost-amount">{{ number_format($request->actual_cost ?? $request->estimated_cost, 0, ',', ' ') }} €</span>
+                        <span class="cost-amount">{{ number_format($request->actual_cost ?? $request->estimated_cost, 0, ',', ' ') }} FCFA</span>
                     </div>
                 @endif
 
@@ -309,9 +309,9 @@
     }
 
     .btn-create:hover {
-        background: #70AE48;
+        background: #5a8f3a;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+        box-shadow: 0 4px 12px rgba(112, 174, 72, 0.3);
     }
 
     /* Stats Row */
@@ -429,7 +429,7 @@
         width: 100%;
         padding: 0.875rem 1rem;
         padding-right: 2.5rem;
-        border: 1px solid #84cc16;
+        border: 1px solid #70AE48;
         border-radius: 10px;
         font-size: 0.95rem;
         color: #64748b;
@@ -441,8 +441,8 @@
 
     .filter-select:focus {
         outline: none;
-        border-color: #65a30d;
-        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        border-color: #5a8f3a;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .select-icon {
@@ -472,13 +472,13 @@
         transform: translateY(-50%);
         width: 20px;
         height: 20px;
-        color: #84cc16;
+        color: #70AE48;
     }
 
     .search-input {
         width: 100%;
         padding: 0.875rem 1rem 0.875rem 2.75rem;
-        border: 1px solid #84cc16;
+        border: 1px solid #70AE48;
         border-radius: 10px;
         font-size: 0.95rem;
         color: #374151;
@@ -487,8 +487,8 @@
 
     .search-input:focus {
         outline: none;
-        border-color: #65a30d;
-        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        border-color: #5a8f3a;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .search-input::placeholder {
@@ -517,6 +517,7 @@
     .intervention-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
+        border-color: #70AE48;
     }
 
     .status-badge {
@@ -662,13 +663,13 @@
     }
 
     .action-btn.btn-primary {
-        background: #84cc16;
-        border-color: #84cc16;
+        background: #70AE48;
+        border-color: #70AE48;
         color: white;
     }
 
     .action-btn.btn-primary:hover {
-        background: #65a30d;
+        background: #5a8f3a;
     }
 
     /* Empty State */

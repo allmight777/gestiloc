@@ -5,16 +5,21 @@
 @section('content')
 <div class="content-container">
     <div class="top-actions">
-        <a href="{{ route('co-owner.tenants.index') }}" class="button button-secondary" onclick="navigateTo('/coproprietaire/tenants'); return false;">
+        <a href="{{ route('co-owner.tenants.index') }}" class="button button-secondary">
             <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
             Retour à la liste
         </a>
-
+        <div class="top-actions-right">
+            <a href="{{ route('co-owner.tenants.edit', $tenant) }}" class="button button-primary">
+                <i data-lucide="edit" style="width: 16px; height: 16px;"></i>
+                Modifier
+            </a>
+        </div>
     </div>
 
     @if (session('success'))
         <div class="alert alert-success">
-            <i data-lucide="check-circle" style="width: 20px; height: 20px; color: #059669;"></i>
+            <i data-lucide="check-circle" style="width: 20px; height: 20px; color: #70AE48;"></i>
             <div>
                 <strong>Succès !</strong>
                 <p style="margin: 0.25rem 0 0 0;">{{ session('success') }}</p>
@@ -35,9 +40,9 @@
     <!-- En-tête locataire -->
     <div class="section-card">
         <div class="tenant-header">
- <div class="tenant-avatar" style="background: #70AE48 !important;">
-    {{ strtoupper(substr($tenant->first_name, 0, 1)) }}{{ strtoupper(substr($tenant->last_name, 0, 1)) }}
-</div>
+            <div class="tenant-avatar" style="background: #70AE48 !important;">
+                {{ strtoupper(substr($tenant->first_name, 0, 1)) }}{{ strtoupper(substr($tenant->last_name, 0, 1)) }}
+            </div>
 
             <div class="tenant-info">
                 <h1 class="tenant-name">
@@ -132,7 +137,7 @@
                 <i data-lucide="home" style="width: 20px; height: 20px;"></i>
                 Biens assignés
             </span>
-            <span class="pill" style="background: rgba(79,70,229,.12); color: var(--indigo);">
+            <span class="pill" style="background: rgba(112, 174, 72, 0.12); color: #70AE48;">
                 {{ $tenant->leases->count() }} bien(s)
             </span>
         </div>
@@ -198,7 +203,10 @@
                 <i data-lucide="home" class="empty-icon"></i>
                 <h3 style="color: var(--muted); margin-bottom: 0.5rem;">Aucun bien assigné</h3>
                 <p style="color: var(--muted2); margin-bottom: 1.5rem;">Ce locataire n'a pas encore de bien assigné.</p>
-
+                <a href="{{ route('co-owner.assign-property.create') }}" class="button button-primary">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                    Assigner un bien
+                </a>
             </div>
         @endif
     </div>
@@ -322,12 +330,11 @@
 </div>
 
 <style>
-    /* Styles spécifiques à la page show tenant */
     :root {
-        --gradA: #667eea;
-        --gradB: #764ba2;
-        --indigo: #4f46e5;
-        --violet: #7c3aed;
+        --gradA: #70AE48;
+        --gradB: #8BC34A;
+        --indigo: #70AE48;
+        --violet: #8BC34A;
         --emerald: #10b981;
         --ink: #0f172a;
         --muted: #64748b;
@@ -343,7 +350,6 @@
         margin: 0 auto;
     }
 
-<<<<<<< HEAD
     .top-actions {
         display: flex;
         justify-content: space-between;
@@ -378,22 +384,22 @@
     .button-primary {
         background: #70AE48;
         color: #fff;
-        box-shadow: 0 14px 30px rgba(79,70,229,.22);
+        box-shadow: 0 14px 30px rgba(112, 174, 72, 0.22);
     }
 
     .button-primary:hover:not(:disabled) {
         transform: translateY(-1px);
-        box-shadow: 0 18px 34px rgba(79,70,229,.28);
+        box-shadow: 0 18px 34px rgba(112, 174, 72, 0.28);
     }
 
     .button-secondary {
         background: rgba(255,255,255,.92);
         color: #70AE48;
-        border: 2px solid rgba(67,56,202,.20);
+        border: 2px solid rgba(112, 174, 72, 0.20);
     }
 
     .button-secondary:hover {
-        background: rgba(67,56,202,.06);
+        background: rgba(112, 174, 72, 0.06);
     }
 
     .button-danger {
@@ -423,8 +429,8 @@
     }
 
     .alert-success {
-        background: rgba(236,253,245,.92);
-        border-color: rgba(16,185,129,.30);
+        background: rgba(112, 174, 72, 0.1);
+        border-color: rgba(112, 174, 72, 0.3);
     }
 
     .section-card {
@@ -456,7 +462,7 @@
         color: white;
         font-size: 2rem;
         font-weight: bold;
-        box-shadow: 0 14px 30px rgba(79,70,229,.22);
+        box-shadow: 0 14px 30px rgba(112, 174, 72, 0.22);
     }
 
     .tenant-info {
@@ -560,8 +566,8 @@
     }
 
     .stat-icon.primary {
-        background: rgba(79,70,229,.12);
-        color: var(--indigo);
+        background: rgba(112, 174, 72, 0.12);
+        color: #70AE48;
     }
 
     .stat-icon.success {
@@ -593,7 +599,7 @@
         color: var(--ink);
         margin-bottom: 1.5rem;
         padding-bottom: 0.85rem;
-        border-bottom: 2px solid rgba(102,126,234,.28);
+        border-bottom: 2px solid rgba(112, 174, 72, 0.28);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -607,9 +613,9 @@
         gap: .45rem;
         padding: .25rem .6rem;
         border-radius: 999px;
-        background: rgba(79,70,229,.10);
-        border: 1px solid rgba(79,70,229,.18);
-        color: #4338ca;
+        background: rgba(112, 174, 72, 0.10);
+        border: 1px solid rgba(112, 174, 72, 0.18);
+        color: #70AE48;
         font-weight: 950;
         font-size: .78rem;
     }
@@ -625,7 +631,7 @@
         border-radius: 14px;
         padding: 1.5rem;
         transition: all 0.2s ease;
-        border-left: 4px solid var(--indigo);
+        border-left: 4px solid #70AE48;
         box-shadow: 0 8px 25px rgba(17,24,39,.05);
     }
 
@@ -659,7 +665,7 @@
     }
 
     .property-rent {
-        background: linear-gradient(135deg, var(--emerald) 0%, #059669 100%);
+        background: linear-gradient(135deg, #70AE48 0%, #5d8f3a 100%);
         color: white;
         padding: 0.4rem 0.85rem;
         border-radius: 999px;
@@ -756,8 +762,6 @@
             padding: 1.25rem;
         }
 
-
-
         .tenant-header {
             flex-direction: column;
             text-align: center;
@@ -783,7 +787,6 @@
 </style>
 
 <script>
-    // Scripts spécifiques à cette page
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les icônes Lucide
         if (typeof lucide !== 'undefined') {

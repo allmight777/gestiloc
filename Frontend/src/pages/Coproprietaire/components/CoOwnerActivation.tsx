@@ -2,26 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  User,
   Lock,
   Mail,
   CheckCircle,
   AlertCircle,
   Eye,
   EyeOff,
-  Loader2,
-  Home,
   Users
 } from 'lucide-react';
 import { Button } from '../../Proprietaire/components/ui/Button';
 
-// Couleur primaire personnalisée - VERT (identique à la page auth)
 const PRIMARY_COLOR = "#70AE48";
 
 export const CoOwnerActivation: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     password: '',
     password_confirmation: ''
@@ -37,9 +33,8 @@ export const CoOwnerActivation: React.FC = () => {
   const email = searchParams.get('email');
 
   useEffect(() => {
-    // Vérifier si les paramètres sont présents
     if (!token || !email) {
-      setError('Lien d\'activation invalide. Paramètres manquants.');
+      setError("Lien d'activation invalide. Paramètres manquants.");
       setTokenValid(false);
     } else {
       setTokenValid(true);
@@ -47,11 +42,8 @@ export const CoOwnerActivation: React.FC = () => {
   }, [token, email]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setError(''); // Clear error on input
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
   };
 
   const validateForm = () => {
@@ -59,113 +51,104 @@ export const CoOwnerActivation: React.FC = () => {
       setError('Le mot de passe est requis');
       return false;
     }
-    
     if (formData.password.length < 8) {
       setError('Le mot de passe doit contenir au moins 8 caractères');
       return false;
     }
-    
     if (formData.password !== formData.password_confirmation) {
       setError('Les mots de passe ne correspondent pas');
       return false;
     }
-    
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
+
     setLoading(true);
     setError('');
 
     try {
       const response = await fetch('/api/auth/co-owner/set-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: token,
-          email: email,
+          token,
+          email,
           password: formData.password,
-          password_confirmation: formData.password_confirmation
-        })
+          password_confirmation: formData.password_confirmation,
+        }),
       });
 
-      // Vérifier si la réponse est OK avant d'essayer de parser le JSON
+      // ✅ Lire la réponse une seule fois en texte brut
       const text = await response.text();
-      
-      if (!text) {
-        if (response.ok) {
-          // Si la réponse est vide mais OK, on considère que c'est un succès
-          setSuccess(true);
-          
-          // Rediriger vers le dashboard co-propriétaire après 2 secondes
-          setTimeout(() => {
-            navigate('/coproprietaire/dashboard');
-          }, 2000);
-          return;
-        } else {
-          throw new Error('Erreur lors de l\'activation');
+      let data: any = null;
+
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // La réponse n'est pas du JSON valide
+          console.error('Réponse non-JSON reçue:', text);
         }
       }
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (parseError) {
-        console.error('Erreur de parsing JSON:', parseError);
-        if (response.ok) {
-          // Si la réponse est OK mais le JSON est invalide, on considère quand même que c'est un succès
-          setSuccess(true);
-          setTimeout(() => {
-            navigate('/coproprietaire/dashboard');
-          }, 2000);
-          return;
-        } else {
-          throw new Error('Erreur lors de l\'activation');
-        }
+      // ✅ Si la réponse HTTP n'est pas OK, afficher l'erreur sans rediriger
+      if (!response.ok) {
+        // Chercher le message d'erreur dans toutes les structures possibles de Laravel
+        const message =
+          data?.message ||
+          data?.errors?.token?.[0] ||
+          data?.errors?.email?.[0] ||
+          data?.errors?.phone?.[0] ||
+          data?.errors?.general?.[0] ||
+          data?.errors?.database?.[0] ||
+          `Erreur serveur (${response.status}). Veuillez réessayer.`;
+
+        setError(message);
+        return; // ← STOP, on ne redirige pas
       }
 
-      if (response.ok) {
-        setSuccess(true);
-        
-        // Stocker le token et les infos utilisateur si présents
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-        
-        // Rediriger vers le dashboard co-propriétaire après 2 secondes
-        setTimeout(() => {
-          navigate('/coproprietaire/dashboard');
-        }, 2000);
-      } else {
-        throw new Error(data.message || 'Erreur lors de l\'activation');
+      // ✅ La réponse est OK mais on vérifie qu'un token est bien présent
+      // ce qui confirme que le compte a vraiment été créé en base
+      if (!data || !data.token) {
+        setError(
+          data?.message ||
+          'Erreur lors de la création du compte. Veuillez réessayer ou contacter le support.'
+        );
+        return; // ← STOP, on ne redirige pas
       }
-    } catch (error) {
-      console.error('Erreur:', error);
-      setError(error instanceof Error ? error.message : 'Erreur lors de l\'activation');
+
+      // ✅ Succès confirmé par le serveur : on stocke les infos et on redirige
+      localStorage.setItem('token', data.token);
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
+      setSuccess(true);
+
+      setTimeout(() => {
+        navigate('/coproprietaire/dashboard');
+      }, 2500);
+
+    } catch (err) {
+      // Erreur réseau (pas de connexion, CORS, etc.)
+      console.error('Erreur réseau:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Erreur réseau. Vérifiez votre connexion et réessayez.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Style pour le bouton avec la couleur verte
-  const buttonStyle = {
-    backgroundColor: PRIMARY_COLOR,
-    color: "white",
-  };
+  const buttonStyle = { backgroundColor: PRIMARY_COLOR, color: 'white' };
+  const linkStyle = { color: PRIMARY_COLOR };
 
-  const linkStyle = {
-    color: PRIMARY_COLOR,
-  };
-
+  // ─── États de chargement initial ───────────────────────────────────────────
   if (tokenValid === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -174,13 +157,17 @@ export const CoOwnerActivation: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: PRIMARY_COLOR }}></div>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto"
+            style={{ borderColor: PRIMARY_COLOR }}
+          />
           <p className="mt-4 text-slate-600">Vérification du lien...</p>
         </motion.div>
       </div>
     );
   }
 
+  // ─── Lien invalide ──────────────────────────────────────────────────────────
   if (tokenValid === false) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-4">
@@ -193,49 +180,29 @@ export const CoOwnerActivation: React.FC = () => {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
               className="flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mx-auto mb-6"
             >
               <AlertCircle className="w-10 h-10 text-red-600" />
             </motion.div>
-            
-            <motion.h1
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-2xl font-bold text-slate-800 mb-3"
+            <h1 className="text-2xl font-bold text-slate-800 mb-3">Lien invalide</h1>
+            <p className="text-slate-600 mb-8">
+              {error || "Ce lien d'activation n'est pas valide ou a expiré."}
+            </p>
+            <Button
+              onClick={() => navigate('/login')}
+              style={buttonStyle}
+              className="w-full h-12 text-base font-medium border-0"
             >
-              Lien invalide
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-slate-600 mb-8"
-            >
-              {error || 'Ce lien d\'activation n\'est pas valide ou a expiré.'}
-            </motion.p>
-            
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Button
-                onClick={() => navigate('/login')}
-                style={buttonStyle}
-                className="w-full h-12 text-base font-medium border-0"
-              >
-                Retour à la connexion
-              </Button>
-            </motion.div>
+              Retour à la connexion
+            </Button>
           </div>
         </motion.div>
       </div>
     );
   }
 
+  // ─── Succès ─────────────────────────────────────────────────────────────────
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-4">
@@ -248,50 +215,35 @@ export const CoOwnerActivation: React.FC = () => {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
               className="flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mx-auto mb-6"
             >
               <CheckCircle className="w-10 h-10 text-green-600" />
             </motion.div>
-            
-            <motion.h1
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-2xl font-bold text-slate-800 mb-3"
-            >
-              Compte activé !
-            </motion.h1>
-            
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-slate-600 mb-6"
-            >
-              Votre compte co-propriétaire a été créé avec succès. 
+            <h1 className="text-2xl font-bold text-slate-800 mb-3">Compte activé !</h1>
+            <p className="text-slate-600 mb-6">
+              Votre compte co-propriétaire a été créé avec succès.
               Vous allez être redirigé vers votre tableau de bord...
-            </motion.p>
-            
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex justify-center"
-            >
-              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2" style={{ borderColor: PRIMARY_COLOR }}></div>
-            </motion.div>
+            </p>
+            <div className="flex justify-center">
+              <div
+                className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2"
+                style={{ borderColor: PRIMARY_COLOR }}
+              />
+            </div>
           </div>
         </motion.div>
       </div>
     );
   }
 
+  // ─── Formulaire principal ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
-        {/* Logo centré - identique à la page auth */}
-        <motion.div 
+
+        {/* Logo */}
+        <motion.div
           className="text-center mb-6"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -311,6 +263,7 @@ export const CoOwnerActivation: React.FC = () => {
           transition={{ duration: 0.4 }}
           className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200"
         >
+          {/* En-tête */}
           <motion.div
             initial={{ y: -10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -320,20 +273,20 @@ export const CoOwnerActivation: React.FC = () => {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
               className="flex items-center justify-center w-16 h-16 rounded-full mx-auto mb-4"
               style={{ backgroundColor: `${PRIMARY_COLOR}20` }}
             >
               <Users className="w-8 h-8" style={{ color: PRIMARY_COLOR }} />
             </motion.div>
-            
+
             <h1 className="text-2xl font-bold text-slate-800 mb-2">
               Activation du compte
             </h1>
             <p className="text-slate-600">
               Créez votre mot de passe pour activer votre compte co-propriétaire
             </p>
-            
+
             {email && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -349,21 +302,24 @@ export const CoOwnerActivation: React.FC = () => {
             )}
           </motion.div>
 
+          {/* Message d'erreur */}
           <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3"
+                className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3"
               >
-                <AlertCircle size={20} className="text-red-600" />
+                <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-800">{error}</p>
               </motion.div>
             )}
           </AnimatePresence>
 
+          {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Mot de passe */}
             <motion.div
               initial={{ x: -20, opacity: 0 }}
@@ -378,14 +334,15 @@ export const CoOwnerActivation: React.FC = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  onChange={e => handleInputChange('password', e.target.value)}
                   className="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
+                  style={{
                     borderColor: formData.password ? PRIMARY_COLOR : undefined,
-                    '--tw-ring-color': `${PRIMARY_COLOR}20`,
-                  } as React.CSSProperties}
+                    ['--tw-ring-color' as any]: `${PRIMARY_COLOR}20`,
+                  }}
                   placeholder="•••••••••"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -395,9 +352,7 @@ export const CoOwnerActivation: React.FC = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Minimum 8 caractères
-              </p>
+              <p className="text-xs text-slate-500 mt-1">Minimum 8 caractères</p>
             </motion.div>
 
             {/* Confirmation mot de passe */}
@@ -414,14 +369,15 @@ export const CoOwnerActivation: React.FC = () => {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.password_confirmation}
-                  onChange={(e) => handleInputChange('password_confirmation', e.target.value)}
+                  onChange={e => handleInputChange('password_confirmation', e.target.value)}
                   className="w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 transition-all"
-                  style={{ 
+                  style={{
                     borderColor: formData.password_confirmation ? PRIMARY_COLOR : undefined,
-                    '--tw-ring-color': `${PRIMARY_COLOR}20`,
-                  } as React.CSSProperties}
+                    ['--tw-ring-color' as any]: `${PRIMARY_COLOR}20`,
+                  }}
                   placeholder="•••••••••"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -433,7 +389,7 @@ export const CoOwnerActivation: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* Bouton d'activation */}
+            {/* Bouton submit */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -455,7 +411,7 @@ export const CoOwnerActivation: React.FC = () => {
                       <motion.div
                         className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       />
                       <span>Activation en cours...</span>
                     </>
@@ -470,7 +426,7 @@ export const CoOwnerActivation: React.FC = () => {
             </motion.div>
           </form>
 
-          {/* Lien vers connexion */}
+          {/* Lien connexion */}
           <motion.div
             className="mt-6 text-center"
             initial={{ opacity: 0 }}
@@ -491,7 +447,7 @@ export const CoOwnerActivation: React.FC = () => {
           </motion.div>
         </motion.div>
 
-        {/* Lien retour accueil */}
+        {/* Retour accueil */}
         <div className="text-center mt-6">
           <button
             onClick={() => navigate('/')}

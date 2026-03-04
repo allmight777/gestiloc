@@ -5,8 +5,6 @@
 @section('content')
 <div class="form-container">
     <div class="form-card">
-
-
         <div class="form-body">
             <div class="top-actions">
                 <a href="{{ route('co-owner.tenants.index') }}" class="button button-secondary">
@@ -39,7 +37,7 @@
             @endif
 
             @if (session('success'))
-                <div style="margin-bottom: 1rem; background: rgba(236,253,245,.92); border: 1px solid rgba(16,185,129,.30); border-radius: 14px; padding: 12px 14px; color: #065f46; font-weight: 950; display: flex; align-items: center; gap: 10px;">
+                <div style="margin-bottom: 1rem; background: rgba(112, 174, 72, 0.1); border: 1px solid rgba(112, 174, 72, 0.3); border-radius: 14px; padding: 12px 14px; color: #2e5e1e; font-weight: 950; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
                     <span>{{ session('success') }}</span>
                 </div>
@@ -503,7 +501,7 @@
                     </div>
 
                     <div id="guarantorFields" style="display: none;">
-                        <div style="background: rgba(99,102,241,.08); padding: 1.5rem; border-radius: 14px; border: 1px solid rgba(99,102,241,.18); margin-bottom: 1.5rem;">
+                        <div style="background: rgba(112, 174, 72, 0.08); padding: 1.5rem; border-radius: 14px; border: 1px solid rgba(112, 174, 72, 0.18); margin-bottom: 1.5rem;">
                             <h3 class="form-label" style="margin-bottom: 1rem;">
                                 Informations du garant
                             </h3>
@@ -736,12 +734,11 @@
 </div>
 
 <style>
-    /* Styles spécifiques à la page de création de locataire */
     :root {
-        --gradA: #667eea;
-        --gradB: #764ba2;
-        --indigo: #4f46e5;
-        --violet: #7c3aed;
+        --gradA: #70AE48;
+        --gradB: #8BC34A;
+        --indigo: #70AE48;
+        --violet: #8BC34A;
         --emerald: #10b981;
         --ink: #0f172a;
         --muted: #64748b;
@@ -763,8 +760,8 @@
         position: fixed;
         inset: 0;
         background:
-            radial-gradient(900px 520px at 12% -8%, rgba(102,126,234,.16) 0%, rgba(102,126,234,0) 62%),
-            radial-gradient(900px 520px at 92% 8%, rgba(118,75,162,.14) 0%, rgba(118,75,162,0) 64%),
+            radial-gradient(900px 520px at 12% -8%, rgba(112, 174, 72, .16) 0%, rgba(112, 174, 72, 0) 62%),
+            radial-gradient(900px 520px at 92% 8%, rgba(139, 195, 74, .14) 0%, rgba(139, 195, 74, 0) 64%),
             radial-gradient(700px 420px at 40% 110%, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 60%);
         pointer-events: none;
         z-index: -2;
@@ -777,34 +774,9 @@
         border-radius: 22px;
         box-shadow: var(--shadow);
         overflow: hidden;
-        border: 1px solid rgba(102,126,234,.18);
+        border: 1px solid rgba(112, 174, 72, .18);
         position: relative;
         backdrop-filter: blur(10px);
-    }
-
-    .form-header {
-        background: linear-gradient(135deg, var(--gradA) 0%, var(--gradB) 100%);
-        padding: 2.5rem;
-        color: white;
-        position: relative;
-        overflow: hidden;
-        z-index: 1;
-    }
-
-    .form-header h1 {
-        font-size: 2rem;
-        font-weight: 900;
-        margin: 0 0 0.6rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        letter-spacing: -0.02em;
-    }
-
-    .form-header p {
-        opacity: 0.9;
-        font-weight: 650;
-        font-size: 0.95rem;
     }
 
     .form-body {
@@ -829,7 +801,7 @@
         color: var(--ink);
         margin: 0 0 1.25rem 0;
         padding-bottom: 0.85rem;
-        border-bottom: 2px solid rgba(102,126,234,.28);
+        border-bottom: 2px solid rgba(112, 174, 72, .28);
         display: flex;
         align-items: center;
         gap: 0.6rem;
@@ -882,7 +854,7 @@
 
     .form-input:focus, .form-select:focus, .form-textarea:focus {
         outline: none;
-        border-color: rgba(112, 174, 72, .75);
+        border-color: #70AE48;
         box-shadow: 0 0 0 4px rgba(112, 174, 72, 0.14);
     }
 
@@ -1123,8 +1095,8 @@
     .file-preview {
         margin-top: 1rem;
         padding: 1rem;
-        background: rgba(16,185,129,.1);
-        border: 1px solid rgba(16,185,129,.3);
+        background: rgba(112, 174, 72, 0.1);
+        border: 1px solid rgba(112, 174, 72, 0.3);
         border-radius: 12px;
     }
 
@@ -1132,7 +1104,7 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        color: #065f46;
+        color: #2e5e1e;
         font-weight: 700;
     }
 
@@ -1157,7 +1129,6 @@
 </style>
 
 <script>
-    // Scripts spécifiques à cette page
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les icônes Lucide
         if (typeof lucide !== 'undefined') {

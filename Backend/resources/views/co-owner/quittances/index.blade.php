@@ -159,6 +159,20 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div style="background: #FEE2E2; border: 1px solid #EF4444; border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: start; gap: 12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div>
+                    <strong style="color: #991B1B; font-weight: 600; display: block; margin-bottom: 4px;">Erreur !</strong>
+                    <p style="color: #DC2626; margin: 0; font-size: 0.9rem;">{{ session('error') }}</p>
+                </div>
+            </div>
+        @endif
+
         <!-- Grille des quittances -->
         @if($receipts->isEmpty())
             <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 20px; border: 2px dashed #E5E7EB;">
@@ -364,6 +378,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les icônes Lucide si disponible
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
     // Hover effect for create button
     const createBtn = document.querySelector('.btn-create');
     if (createBtn) {
@@ -391,6 +410,16 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'translateY(0)';
         });
     });
+
+    // Animation de spin pour le loader (si besoin)
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 @endsection

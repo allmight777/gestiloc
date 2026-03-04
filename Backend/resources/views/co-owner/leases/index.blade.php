@@ -66,19 +66,11 @@
                 <!-- Titre du contrat -->
                 <h3 class="contract-title">Contrat - {{ $lease->tenant->first_name }} {{ $lease->tenant->last_name }}</h3>
 
-<<<<<<< HEAD
                 <!-- Adresse du bien -->
                 <div class="contract-location">
                     <i data-lucide="map-pin" style="width: 14px; height: 14px; color: #e74c3c;"></i>
                     <span>{{ $lease->property->name ?? 'Bien sans nom' }} - {{ $lease->property->address ?? 'Adresse non spécifiée' }}</span>
                 </div>
-=======
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
->>>>>>> origin/main
 
                 <!-- Détails financiers et dates -->
                 <div class="contract-details">
@@ -126,17 +118,12 @@
                     @endif
 
                     <div class="contract-actions">
-
-
-
-                        <a href="{{ route('co-owner.leases.documents.index', $lease) }}" class="action-btn btn-edit" title="Modifier">
-                           <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+                        <a href="{{ route('co-owner.leases.documents.index', $lease) }}" class="action-btn btn-download" title="Télécharger">
+                            <i data-lucide="download" style="width: 16px; height: 16px;"></i>
                         </a>
-
                     </div>
                 </div>
 
-<<<<<<< HEAD
                 <!-- Date de création -->
                 <div class="contract-date">
                     Créé le {{ $lease->created_at->format('d M Y') }}
@@ -163,129 +150,6 @@
         padding: 2rem;
         background: #f8fafc;
         min-height: 100vh;
-=======
-            if (!token) {
-                alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-                return;
-            }
-
-            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-            let fullUrl = baseUrl + path;
-
-            const separator = fullUrl.includes('?') ? '&' : '?';
-            fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-            console.log('Navigation Laravel vers:', fullUrl);
-            window.location.href = fullUrl;
-        }
-
-        // Helper pour récupérer un paramètre d'URL
-        function getUrlParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // Gestion des sous-menus
-        function toggleSubmenu(menuId) {
-            const submenu = document.getElementById(menuId);
-            const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
-
-            if (submenu.style.display === 'none' || !submenu.style.display) {
-                submenu.style.display = 'block';
-                parent.classList.add('active');
-            } else {
-                submenu.style.display = 'none';
-                parent.classList.remove('active');
-            }
-        }
-
-        // Gestion de la sidebar mobile
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        document.getElementById('overlay').addEventListener('click', toggleSidebar);
-
-        // Logout
-        function logout() {
-            if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
-            }
-        }
-
-        // Au chargement
-        function checkMobile() {
-            const mobileBtn = document.querySelector('.mobile-menu-btn');
-            if (window.innerWidth <= 768) {
-                mobileBtn.style.display = 'block';
-            } else {
-                mobileBtn.style.display = 'none';
-            }
-        }
-
-        window.addEventListener('resize', checkMobile);
-        checkMobile();
-
-        // Ajouter le token à la page actuelle si présent dans l'URL
-        const urlToken = getUrlParam('api_token');
-        if (urlToken) {
-            localStorage.setItem('token', urlToken);
-        }
-
-        // Actualiser les données
-        function refreshData() {
-            const button = event.currentTarget;
-            const originalHtml = button.innerHTML;
-
-            button.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i> Actualisation...';
-            button.disabled = true;
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-        }
-
-        // Ajouter l'animation de spin pour le loader
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
-
-    <script>
-    // Initialiser les icônes
-    lucide.createIcons();
-
-    // Navigation vers React (8080)
-    function goToReact(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'http://localhost:8080';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation React vers:', fullUrl);
-        window.location.href = fullUrl;
->>>>>>> origin/main
     }
 
     /* Header */
@@ -297,7 +161,6 @@
         gap: 2rem;
     }
 
-<<<<<<< HEAD
     .header-content h1 {
         font-size: 2rem;
         font-weight: 700;
@@ -330,9 +193,9 @@
     }
 
     .btn-new-lease:hover {
-        background: #65a30d;
+        background: #5a8f3a;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+        box-shadow: 0 4px 12px rgba(112, 174, 72, 0.3);
     }
 
     /* Filtres */
@@ -390,8 +253,8 @@
 
     .filter-select:focus {
         outline: none;
-        border-color: #84cc16 !important;
-        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        border-color: #70AE48 !important;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .select-icon {
@@ -437,8 +300,8 @@
 
     .search-input:focus {
         outline: none;
-        border-color: #84cc16;
-        box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.1);
+        border-color: #70AE48;
+        box-shadow: 0 0 0 3px rgba(112, 174, 72, 0.1);
     }
 
     .search-input::placeholder {
@@ -488,6 +351,7 @@
     .contract-card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
+        border-color: #70AE48;
     }
 
     .contract-type {
@@ -591,6 +455,7 @@
         color: #64748b;
         cursor: pointer;
         transition: all 0.2s;
+        text-decoration: none;
     }
 
     .action-btn:hover {
@@ -599,15 +464,7 @@
     }
 
     .btn-download:hover {
-        color: #3b82f6;
-    }
-
-    .btn-edit:hover {
-        color: #f59e0b;
-    }
-
-    .btn-more:hover {
-        color: #374151;
+        color: #70AE48;
     }
 
     .contract-date {
@@ -648,16 +505,6 @@
         .contracts-grid {
             grid-template-columns: 1fr;
         }
-=======
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-        let fullUrl = baseUrl + path;
->>>>>>> origin/main
 
         .search-row {
             flex-direction: column;
@@ -670,48 +517,7 @@
     }
 </style>
 
-<<<<<<< HEAD
 <script>
-=======
-    // Gestion de la sidebar mobile
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-    }
-
-    // Logout
-    function logout() {
-        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
-        }
-    }
-
-    // Au chargement
-    function checkMobile() {
-        const mobileBtn = document.querySelector('.mobile-menu-btn');
-        if (window.innerWidth <= 768) {
-            mobileBtn.style.display = 'block';
-        } else {
-            mobileBtn.style.display = 'none';
-        }
-    }
-
-    window.addEventListener('resize', checkMobile);
-    checkMobile();
-
-    // Ajouter le token à la page actuelle si présent dans l'URL
-    const urlToken = getUrlParam('api_token');
-    if (urlToken) {
-        localStorage.setItem('token', urlToken);
-    }
-
-    // Marquer le menu actif en fonction de la page courante
->>>>>>> origin/main
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les icônes Lucide
         if (typeof lucide !== 'undefined') {

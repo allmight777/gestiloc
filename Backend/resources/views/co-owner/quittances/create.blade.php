@@ -175,8 +175,6 @@
     @endif
 </div>
 
-
-
 <style>
     /* Styles spécifiques à la page de création de quittance */
     :root {
@@ -199,7 +197,6 @@
         padding: 2rem;
         max-width: 1200px;
         margin: 0 auto;
-
     }
 
     .top-actions {
@@ -440,7 +437,7 @@
         margin-top: 0.5rem;
         padding-top: 0;
         border-top: none;
-           margin-bottom: 0% !important;
+        margin-bottom: 0% !important;
         padding-bottom: 0% !important;
     }
 
@@ -472,6 +469,34 @@
         margin-bottom: 1.5rem;
     }
 
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 850;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .badge-paid {
+        background: rgba(34,197,94,.15);
+        color: #166534;
+        border: 1px solid rgba(34,197,94,.25);
+    }
+
+    .badge-pending {
+        background: rgba(245,158,11,.15);
+        color: #92400e;
+        border: 1px solid rgba(245,158,11,.25);
+    }
+
+    .badge-overdue {
+        background: rgba(239,68,68,.15);
+        color: #991b1b;
+        border: 1px solid rgba(239,68,68,.25);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .content-body {
@@ -499,7 +524,6 @@
 </style>
 
 <script>
-    // Scripts spécifiques à cette page
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les icônes Lucide
         if (typeof lucide !== 'undefined') {
@@ -513,33 +537,34 @@
         const rentAmount = document.getElementById('rent-amount');
         const amountPaid = document.getElementById('amount_paid');
 
-        // Mettre à jour les informations du bail
-        leaseSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+        if (leaseSelect) {
+            // Mettre à jour les informations du bail
+            leaseSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
 
-            if (selectedOption.value) {
-                propertyName.textContent = selectedOption.getAttribute('data-property');
-                tenantName.textContent = selectedOption.getAttribute('data-tenant');
-                rentAmount.textContent = selectedOption.getAttribute('data-rent');
+                if (selectedOption.value) {
+                    propertyName.textContent = selectedOption.getAttribute('data-property');
+                    tenantName.textContent = selectedOption.getAttribute('data-tenant');
+                    rentAmount.textContent = selectedOption.getAttribute('data-rent');
 
-                // Pré-remplir le montant payé avec le loyer
-                const rentValue = selectedOption.getAttribute('data-rent').replace(/\s/g, '').replace(',', '.');
-                amountPaid.value = parseFloat(rentValue) || '';
-            } else {
-                propertyName.textContent = '-';
-                tenantName.textContent = '-';
-                rentAmount.textContent = '-';
-                amountPaid.value = '';
+                    // Pré-remplir le montant payé avec le loyer
+                    const rentValue = selectedOption.getAttribute('data-rent').replace(/\s/g, '').replace(',', '.');
+                    amountPaid.value = parseFloat(rentValue) || '';
+                } else {
+                    propertyName.textContent = '-';
+                    tenantName.textContent = '-';
+                    rentAmount.textContent = '-';
+                    amountPaid.value = '';
+                }
+            });
+
+            // Déclencher l'événement au chargement si une valeur est déjà sélectionnée
+            if (leaseSelect.value) {
+                leaseSelect.dispatchEvent(new Event('change'));
             }
-        });
-
-<<<<<<< HEAD
-        // Déclencher l'événement au chargement si une valeur est déjà sélectionnée
-        if (leaseSelect.value) {
-            leaseSelect.dispatchEvent(new Event('change'));
         }
-=======
-        // Ajouter l'animation de spin pour le loader
+
+        // Animation de spin pour le loader (si besoin)
         const style = document.createElement('style');
         style.textContent = `
             @keyframes spin {
@@ -548,154 +573,6 @@
             }
         `;
         document.head.appendChild(style);
-    </script>
-
-    <script>
-    // Initialiser les icônes
-    lucide.createIcons();
-
-    // Navigation vers React (8080)
-    function goToReact(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'http://localhost:8080';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation React vers:', fullUrl);
-        window.location.href = fullUrl;
-    }
-
-    // Navigation vers Laravel (8000)
-    function navigateTo(path) {
-        const token = localStorage.getItem('token') || getUrlParam('api_token');
-
-        if (!token) {
-            alert('Session expirée, veuillez vous reconnecter');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
-            return;
-        }
-
-        const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
-        let fullUrl = baseUrl + path;
-
-        const separator = fullUrl.includes('?') ? '&' : '?';
-        fullUrl += `${separator}api_token=${encodeURIComponent(token)}`;
-
-        console.log('Navigation Laravel vers:', fullUrl);
-        window.location.href = fullUrl;
-    }
-
-    // Helper pour récupérer un paramètre d'URL
-    function getUrlParam(name) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(name);
-    }
-
-    // Gestion des sous-menus
-    function toggleSubmenu(menuId) {
-        const submenu = document.getElementById(menuId);
-        const parent = document.querySelector(`[onclick="toggleSubmenu('${menuId}')"]`);
-
-        if (submenu.style.display === 'none' || !submenu.style.display) {
-            submenu.style.display = 'block';
-            parent.classList.add('active');
-        } else {
-            submenu.style.display = 'none';
-            parent.classList.remove('active');
-        }
-    }
-
-    // Gestion de la sidebar mobile
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-    }
-
-    // Logout
-    function logout() {
-        if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = 'https://wheat-skunk-120710.hostingersite.com/logout';
-        }
-    }
-
-    // Au chargement
-    function checkMobile() {
-        const mobileBtn = document.querySelector('.mobile-menu-btn');
-        if (window.innerWidth <= 768) {
-            mobileBtn.style.display = 'block';
-        } else {
-            mobileBtn.style.display = 'none';
-        }
-    }
-
-    window.addEventListener('resize', checkMobile);
-    checkMobile();
-
-    // Ajouter le token à la page actuelle si présent dans l'URL
-    const urlToken = getUrlParam('api_token');
-    if (urlToken) {
-        localStorage.setItem('token', urlToken);
-    }
-
-    // Marquer le menu actif en fonction de la page courante
-    document.addEventListener('DOMContentLoaded', function() {
-        const currentPath = window.location.pathname;
-
-        // Définir quel sous-menu doit être ouvert par défaut
-        const menuConfig = {
-            '/coproprietaire/tenants': 'locative-menu',
-            '/coproprietaire/tenants/create': 'locative-menu',
-            '/coproprietaire/assign-property/create': 'locative-menu',
-            '/coproprietaire/leases': 'locative-menu',
-            '/coproprietaire/quittances': 'locative-menu',
-            '/coproprietaire/notices': 'locative-menu',
-            '/coproprietaire/maintenance': 'locative-menu',
-            '/coproprietaire/biens': 'biens-menu',
-            '/coproprietaire/delegations': 'biens-menu',
-            '/coproprietaire/documents': 'documents-menu',
-            '/coproprietaire/finances': 'documents-menu',
-            '/coproprietaire/profile': 'profile-menu',
-            '/coproprietaire/parametres': 'profile-menu',
-            '/coproprietaire/audit': 'profile-menu',
-            '/coproprietaire/mes-delegations': 'delegations-menu',
-            '/coproprietaire/demandes-delegation': 'delegations-menu',
-            '/coproprietaire/inviter-proprietaire': 'delegations-menu',
-            '/coproprietaire/emettre-paiement': 'finances-menu',
-            '/coproprietaire/retrait-methode': 'finances-menu',
-            '/admin/statistiques': 'admin-menu',
-            '/admin/logs': 'admin-menu'
-        };
-
-        // Ouvrir le sous-menu approprié
-        for (const [path, menuId] of Object.entries(menuConfig)) {
-            if (currentPath.includes(path)) {
-                setTimeout(() => toggleSubmenu(menuId), 100);
-                break;
-            }
-        }
-
-        // Marquer l'élément actif
-        document.querySelectorAll('.submenu-item').forEach(item => {
-            const itemPath = item.getAttribute('onclick');
-            if (itemPath && itemPath.includes(currentPath)) {
-                item.classList.add('active');
-            }
-        });
->>>>>>> origin/main
     });
 </script>
 @endsection
