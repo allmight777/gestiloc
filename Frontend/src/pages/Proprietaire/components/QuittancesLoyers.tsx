@@ -1,5 +1,6 @@
 // src/pages/Locataire/Quittances.tsx    ← ou où tu veux la placer
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Download,
@@ -18,7 +19,7 @@ import monIcone from "@/assets/downloadIcon.svg";
 import sucette from "@/assets/SuccetteIcon.svg";
 import sablier from "@/assets/sablier.png";
 import Eye from "@/assets/oeil.png";
-import Mail from "@/assets/e-mail.png"
+import Mail from "@/assets/e-mail.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/pages/Proprietaire/components/ui/Badge.tsx";
@@ -31,9 +32,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { rentReceiptService, propertyService, Property, RentReceipt } from "@/services/api";
 
 // ────────────────────────────────────────────────
-//  Types mock (à remplacer par tes vrais types plus tard)
+//  Types (alignés avec l'API backend)
 // ────────────────────────────────────────────────
 type Quittance = {
   id: number;
@@ -41,104 +43,85 @@ type Quittance = {
   locataire: string;
   ville: string;
   bien: string;
+  bienId: number;
   loyer: number;
   charges: number;
   total: number;
   statut: "envoyé" | "en attente d'envoi";
   date_envoi?: string;
   date_paiement?: string;
+  leaseId: number;
+  propertyId: number;
+};
+
+// Type pour les statistiques
+type QuittanceStats = {
+  envoyees: number;
+  ceMois: number;
+  enAttente: number;
+  totalEncaisse: number;
+};
+
+// Fonction pour transformer une réponse API en type Quittance
+const transformApiToQuittance = (apiReceipt: RentReceipt): Quittance => {
+  const tenantName = apiReceipt.tenant 
+    ? `${apiReceipt.tenant.first_name || ''} ${apiReceipt.tenant.last_name || ''}`.trim()
+    : 'Locataire inconnu';
+  
+  const propertyAddress = apiReceipt.property 
+    ? apiReceipt.property.address 
+    : '';
+  
+  const propertyCity = apiReceipt.property 
+    ? apiReceipt.property.city || '' 
+    : '';
+
+  // Parser le mois (format YYYY-MM)
+  const paidMonth = apiReceipt.paid_month || '';
+  const [year, month] = paidMonth.split('-');
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const monthName = month ? monthNames[parseInt(month, 10) - 1] || paidMonth : paidMonth;
+  
+  return {
+    id: apiReceipt.id,
+    mois: `${monthName} ${year || ''}`,
+    locataire: tenantName,
+    ville: propertyCity,
+    bien: apiReceipt.property?.name || propertyAddress || 'Bien inconnu',
+    bienId: apiReceipt.property_id,
+    loyer: apiReceipt.amount_paid || 0, // Le montant total payé inclut potentiellement les charges
+    charges: 0, // Le backend ne semble pas séparé, à ajuster si nécessaire
+    total: apiReceipt.amount_paid || 0,
+    statut: apiReceipt.status === 'issued' ? 'envoyé' : 'en attente d\'envoi',
+    date_envoi: apiReceipt.issued_date ? new Date(apiReceipt.issued_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined,
+    date_paiement: apiReceipt.created_at ? new Date(apiReceipt.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined,
+    leaseId: apiReceipt.lease_id,
+    propertyId: apiReceipt.property_id,
+  };
+};
+
+// Fonction pour calculer les statistiques
+const calculateStats = (quittances: Quittance[]): QuittanceStats => {
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  
+  const envoyees = quittances.filter(q => q.statut === 'envoyé').length;
+  const ceMois = quittances.filter(q => q.mois.includes(currentMonth.split('-')[0])).length;
+  const enAttente = quittances.filter(q => q.statut === 'en attente d\'envoi').length;
+  const totalEncaisse = quittances.reduce((sum, q) => sum + q.total, 0);
+  
+  return {
+    envoyees,
+    ceMois,
+    enAttente,
+    totalEncaisse,
+  };
 };
 
 // ────────────────────────────────────────────────
-//  Données mock – à remplacer par appel API
+//  Données - Provenance des données API
 // ────────────────────────────────────────────────
-const mockStats = {
-  envoyees: 142,
-  ceMois: 18,
-  enAttente: 5,
-  totalEncaisse: 45780,
-};
 
-const mockQuittances: Quittance[] = [
-  {
-    id: 1,
-    mois: "Février 2025",
-    locataire: "Jean-Pierre Nouailhat",
-    ville: "La Rochelle",
-    loyer: 950,
-    charges: 110,
-    total: 1060,
-    statut: "envoyé",
-    date_envoi: "31 janv. 2025",
-    bien: "Résidence du Parc",
-    date_paiement: "29 Janv 2025",
-  },
-  {
-    id: 2,
-    mois: "Février 2025",
-    locataire: "Marie-Claire Dubois",
-    ville: "Bordeaux",
-    loyer: 1200,
-    charges: 150,
-    total: 1350,
-    statut: "en attente d'envoi",
-    date_envoi: "30 janv. 2025",
-    bien: "Villa bleue",
-    date_paiement: "28 Janv 2025",
-  },
-  {
-    id: 3,
-    mois: "Février 2025",
-    locataire: "Philippe Martin",
-    ville: "Paris",
-    loyer: 1500,
-    charges: 200,
-    total: 1700,
-    statut: "envoyé",
-    date_envoi: "05 févr. 2025",
-    bien: "Appartement Marais",
-    date_paiement: "02 Févr 2025",
-  },
-  {
-    id: 4,
-    mois: "Février 2025",
-    locataire: "Sophie Laurent",
-    ville: "Lyon",
-    loyer: 875,
-    charges: 95,
-    total: 970,
-    statut: "en attente d'envoi",
-    date_envoi: "02 févr. 2025",
-    bien: "Studio Centre-ville",
-    date_paiement: "01 Févr 2025",
-  },
-  {
-    id: 5,
-    mois: "Février 2025",
-    locataire: "Luc Petit",
-    ville: "Toulouse",
-    loyer: 1100,
-    charges: 130,
-    total: 1230,
-    statut: "envoyé",
-    date_envoi: "29 janv. 2025",
-    bien: "Maison Montagne",
-    date_paiement: "26 Janv 2025",
-  },
-  {
-    id: 6,
-    mois: "Février 2025",
-    locataire: "Isabelle Moreau",
-    ville: "Marseille",
-    loyer: 950,
-    charges: 120,
-    total: 1070,
-    statut: "envoyé",
-    date_envoi: "30 janv. 2025",
-    bien: "Appartement Vieux-Port",
-    date_paiement: "27 Janv 2025",
-  },
-];
+// Supprimé: mockStats et mockQuittances - теперь используются состояния
 
 // ────────────────────────────────────────────────
 export default function QuittancesLoyers() {
@@ -146,15 +129,67 @@ export default function QuittancesLoyers() {
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [quittances, setQuittances] = useState<Quittance[]>([]);
+  const [stats, setStats] = useState<QuittanceStats>({ envoyees: 0, ceMois: 0, enAttente: 0, totalEncaisse: 0 });
+  const [properties, setProperties] = useState<Property[]>([]);
   const error = null;
+  const navigate = useNavigate();
 
-  // Simuler le chargement avec animation
+  // Charger les données depuis l'API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Récupérer les quittances depuis l'API
+        const apiReceipts = await rentReceiptService.listIndependent();
+        const transformedQuittances = apiReceipts.map(transformApiToQuittance);
+        setQuittances(transformedQuittances);
+        
+        // Calculer les statistiques
+        const calculatedStats = calculateStats(transformedQuittances);
+        setStats(calculatedStats);
+        
+        // Récupérer la liste des biens pour le filtre
+        try {
+          const propsResponse = await propertyService.listProperties();
+          if (propsResponse.data && Array.isArray(propsResponse.data)) {
+            setProperties(propsResponse.data);
+          } else if (Array.isArray(propsResponse)) {
+            setProperties(propsResponse);
+          }
+        } catch (propError) {
+          console.error('Erreur lors du chargement des biens:', propError);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des quittances:', err);
+        // En cas d'erreur, garder un tableau vide
+        setQuittances([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  // Fonction pour télécharger le PDF d'une quittance
+  const handleDownloadPdf = async (quittance: Quittance) => {
+    try {
+      const blob = await rentReceiptService.downloadPdf(quittance.id);
+      // Utiliser URL.createObjectURL sans manipulation du DOM
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quittance_${quittance.mois.replace(' ', '_')}_${quittance.locataire.replace(' ', '_')}.pdf`;
+      link.click();
+      // Révoquer l'URL après utilisation
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erreur lors du téléchargement du PDF:', err);
+      alert('Erreur lors du téléchargement de la quittance');
+    }
+  };
 
   // Style pour l'animation des cartes
   const cardAnimationStyle = (index: number) => ({
@@ -163,7 +198,7 @@ export default function QuittancesLoyers() {
       : `slideInUp 0.6s ease-out ${index * 0.1}s both`,
   });
 
-  const filtered = mockQuittances.filter((q) => {
+  const filtered = quittances.filter((q) => {
     const matchStatut = filterStatut === "Tous" || q.statut === filterStatut;
     const matchBien =
       filterBien === "Tous les biens" || q.bien.includes(filterBien);
@@ -176,31 +211,7 @@ export default function QuittancesLoyers() {
   });
 
   return (
-    <>
-      <style>{`
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes pulse-gentle {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-        .animate-pulse-gentle {
-          animation: pulse-gentle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
-      <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-4 md:p-6">
         {/* Header */}
         <div
           className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${loading ? "opacity-50" : "opacity-100"
@@ -217,10 +228,15 @@ export default function QuittancesLoyers() {
             </p>
           </div>
 
-          <Button className="bg-primary-light hover:bg-primary-deep" size="default">
+          <Button 
+            className="bg-primary-light hover:bg-primary-deep" 
+            size="default"
+            onClick={() => navigate('/proprietaire/quittances/nouveau')}
+          >
             <Plus className="h-9 w-9 text-purple-600" />
             Créer une quittance de loyer
           </Button>
+          {/* TODO: Ajouter onClick handler pour navigation ou ouverture modal */}
         </div>
 
         {/* Stats cards */}
@@ -248,7 +264,7 @@ export default function QuittancesLoyers() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="py-0">
-                  <div className="text-2xl font-bold">{mockStats.envoyees}</div>
+                  <div className="text-2xl font-bold">{stats.envoyees}</div>
                 </CardContent>
               </Card>
 
@@ -260,7 +276,7 @@ export default function QuittancesLoyers() {
                 </CardHeader>
                 <CardContent className="py-0">
                   <div className="text-2xl font-bold text-primary">
-                    {mockStats.ceMois}
+                    {stats.ceMois}
                   </div>
                 </CardContent>
               </Card>
@@ -273,7 +289,7 @@ export default function QuittancesLoyers() {
                 </CardHeader>
                 <CardContent className="py-0">
                   <div className="text-2xl text-orange-500 font-bold">
-                    {mockStats.enAttente}
+                    {stats.enAttente}
                   </div>
                 </CardContent>
               </Card>
@@ -286,7 +302,7 @@ export default function QuittancesLoyers() {
                 </CardHeader>
                 <CardContent className="py-0">
                   <div className="text-2xl font-bold text-primary">
-                    {mockStats.totalEncaisse.toLocaleString("fr-FR")} €
+                    {stats.totalEncaisse.toLocaleString("fr-FR")} €
                   </div>
                 </CardContent>
               </Card>
@@ -328,11 +344,11 @@ export default function QuittancesLoyers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Tous les biens">Tous les biens</SelectItem>
-                  {/* À remplacer par vraie liste */}
-                  <SelectItem value="Résidence du Parc">
-                    Résidence du Parc
-                  </SelectItem>
-                  <SelectItem value="Villa bleue">Villa bleue</SelectItem>
+                  {properties.map((prop) => (
+                    <SelectItem key={prop.id} value={prop.name || prop.address}>
+                      {prop.name || prop.address}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -484,6 +500,7 @@ export default function QuittancesLoyers() {
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5 "
+                          onClick={() => handleDownloadPdf(q)}
                         >
                           <img
                             src={monIcone}
@@ -510,6 +527,5 @@ export default function QuittancesLoyers() {
             })}
         </div>
       </div>
-    </>
-  );
+    );
 }

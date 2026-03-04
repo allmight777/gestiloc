@@ -273,6 +273,14 @@ export default function Register() {
   };
 
   const onSubmit = async (data: RegisterFormData) => {
+    // Empêcher la création de compte pour les locataires
+    if (data.userType === "locataire") {
+      toast.info(
+        "Les locataires doivent être invités par leur bailleur. Merci de contacter votre propriétaire pour recevoir une invitation."
+      );
+      return;
+    }
+
     try {
       setIsLoading(true);
 

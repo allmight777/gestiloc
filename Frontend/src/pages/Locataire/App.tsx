@@ -180,7 +180,7 @@ const AppContent = () => {
   <Route path="interventions" element={<Interventions notify={notify} />} />
   <Route path="documents" element={<Documents notify={notify} />} />
   {/* CORRECTION ICI - Utiliser RentReceiptsPage au lieu de Dashboard */}
-  <Route path="receipts" element={<RentReceiptsPage notify={notify} />} />
+  <Route path="receipts" element={<RentReceiptsPage />} />
   <Route path="landlord" element={<Landlord notify={notify} />} />
   <Route path="property" element={<Property notify={notify} />} />
   <Route path="notice" element={<TenantPreavisPage notify={notify} />} />

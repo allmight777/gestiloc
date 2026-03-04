@@ -1,0 +1,273 @@
+/* CoOwnersList Page Styles - Same as AjouterLocataire */
+
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+/* Page container */
+.col-page {
+  padding: 1.5rem 2.5rem 3rem;
+  font-family: 'Manrope', sans-serif;
+  color: #1a1a1a;
+}
+
+/* Title */
+.col-title {
+  font-family: 'Merriweather', serif;
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #1a1a1a;
+  margin: 0 0 6px 0;
+}
+.col-subtitle {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0 0 1.25rem 0;
+}
+
+/* Header section */
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Filters */
+.col-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.col-filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.col-search {
+  flex: 1;
+  position: relative;
+  min-width: 200px;
+}
+.col-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+}
+.col-search-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem 0.65rem 2.5rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+.col-search-input:focus { border-color: #83C757; box-shadow: 0 0 0 3px rgba(131,199,87,0.12); }
+.col-search-input::placeholder { color: #9ca3af; font-weight: 400; }
+
+.col-select {
+  padding: 0.65rem 2.2rem 0.65rem 0.85rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  outline: none;
+  box-sizing: border-box;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-color: #fff;
+}
+.col-select:focus { border-color: #83C757; box-shadow: 0 0 0 3px rgba(131,199,87,0.12); }
+
+/* Stats Grid */
+.col-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.col-stat-card {
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.col-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.col-stat-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+.col-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+.col-stat-value-blue { color: #2563eb; }
+.col-stat-value-purple { color: #9333ea; }
+.col-stat-value-green { color: #16a34a; }
+.col-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-stat-icon-blue { background: #dbeafe; }
+.col-stat-icon-purple { background: #f3e8ff; }
+.col-stat-icon-green { background: #dcfce7; }
+
+/* Buttons */
+.col-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.col-btn-outline {
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+.col-btn-outline:hover { background: #f9fafb; border-color: #9ca3af; }
+.col-btn-primary {
+  border: none;
+  background: #83C757;
+  color: #fff;
+}
+.col-btn-primary:hover { background: #72b44a; }
+.col-btn-secondary {
+  border: 1.5px solid #e68a00;
+  background: #fff;
+  color: #1a1a1a;
+}
+.col-btn-secondary:hover { background: #fff8ef; }
+
+/* Card */
+.col-card {
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* List items */
+.col-list-item {
+  border-bottom: 1px solid #e5e7eb;
+}
+.col-list-item:last-child { border-bottom: none; }
+
+/* Invitations section */
+.col-invitations {
+  margin-top: 2rem;
+}
+.col-invitations-title {
+  font-family: 'Merriweather', serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 1rem 0;
+}
+.col-invitation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+.col-invitation-card {
+  background: #fff;
+  border: 1.5px solid #fde68a;
+  border-radius: 14px;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+/* Empty state */
+.col-empty {
+  text-align: center;
+  padding: 3rem;
+  background: #fff;
+  border: 1.5px solid #d6e4d6;
+  border-radius: 18px;
+}
+
+/* Type badges */
+.col-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+.col-badge-agency {
+  background: #f3e8ff;
+  color: #7c3aed;
+  border-color: #e9d5ff;
+}
+.col-badge-coowner {
+  background: #dbeafe;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.col-badge-active {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+.col-badge-inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+.col-badge-pending {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .col-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .col-page { padding: 1rem; }
+  .col-stats-grid { grid-template-columns: 1fr; }
+  .col-header { flex-direction: column; align-items: stretch; }
+  .col-filters-row { flex-direction: column; }
+  .col-invitation-grid { grid-template-columns: 1fr; }
+}

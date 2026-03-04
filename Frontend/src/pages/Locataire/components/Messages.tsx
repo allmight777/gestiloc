@@ -131,7 +131,7 @@ export const Messages: React.FC<MessagesProps> = ({ notify }) => {
          </div>
 
          {/* Messages */}
-         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+         <div className="flex-1 overflow-y-auto p-4 space-y-4 disabled:bg-white">
              {messages.map((msg) => (
                  <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'} animate-slide-up group`}>
                      {msg.sender === 'me' && (
@@ -180,7 +180,7 @@ export const Messages: React.FC<MessagesProps> = ({ notify }) => {
                                </button>
                                <button 
                                  onClick={() => setEditingId(null)}
-                                 className="text-xs bg-gray-400 hover:bg-gray-500 text-white px-2 py-1 rounded"
+                                 className="text-xs bg-gray-400 hover:bg-white text-white px-2 py-1 rounded"
                                >
                                  Annuler
                                </button>

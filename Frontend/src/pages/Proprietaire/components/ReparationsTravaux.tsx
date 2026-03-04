@@ -1,115 +1,118 @@
-import React, { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { maintenanceService, MaintenanceRequest } from '@/services/api';
 
 interface RTProps {
     notify: (msg: string, type: 'success' | 'info' | 'error') => void;
 }
 
-interface Intervention {
-    status: string;
-    statusColor: string;
-    statusBg: string;
-    title: string;
-    locataire: string;
-    bien: string;
-    details: { label: string; value: string }[];
-    devisLabel: string;
-    devisValue: string;
-    devisColor: string;
-    footerDate: string;
-    footerIcons: string[];
-}
-
-const interventions: Intervention[] = [
-    {
-        status: 'URGENT', statusColor: '#dc2626', statusBg: '#fef2f2',
-        title: 'Fuite d\'eau salle de bain',
-        locataire: 'Sophie Bernard', bien: 'Paris 15ème',
-        details: [
-            { label: 'TYPE', value: 'Plomberie' },
-            { label: 'PRIORITÉ', value: 'Urgente' },
-            { label: 'DEMANDÉ LE', value: '05 Fev 2025' },
-            { label: 'PRESTATAIRE', value: 'À affecter' },
-        ],
-        devisLabel: 'DEVIS ESTIMÉ', devisValue: '350 €', devisColor: '#1a1a1a',
-        footerDate: 'Créé le 03 Fev 2025',
-        footerIcons: ['🟢', '📞', '✏️'],
-    },
-    {
-        status: 'EN COURS', statusColor: '#f59e0b', statusBg: '#fffbeb',
-        title: 'Remplacement chaudière',
-        locataire: 'Montée Alba', bien: 'Villeurbanne',
-        details: [
-            { label: 'TYPE', value: 'Chauffage' },
-            { label: 'PRIORITÉ', value: 'Moyenne' },
-            { label: 'DÉBUT TRAVAUX', value: '03 Fev 2025' },
-            { label: 'PRESTATAIRE', value: 'Chauffage Pro' },
-        ],
-        devisLabel: 'DEVIS ACCEPTÉ', devisValue: '2 800 €', devisColor: '#83C757',
-        footerDate: 'En progrès · 10 Fev 2025',
-        footerIcons: ['🟢', '📊', '📂'],
-    },
-    {
-        status: 'PLANIFIÉE', statusColor: '#3b82f6', statusBg: '#eff6ff',
-        title: 'Révision annuelle chaudière',
-        locataire: 'Jean-Pierre Roussel', bien: 'La Rochelle',
-        details: [
-            { label: 'TYPE', value: 'Chauffage' },
-            { label: 'PRIORITÉ', value: 'Faible' },
-            { label: 'DATE PRÉVUE', value: '15 Fev 2025' },
-            { label: 'PRESTATAIRE', value: 'Gaz Service Plus' },
-        ],
-        devisLabel: 'DEVIS', devisValue: '125 €', devisColor: '#1a1a1a',
-        footerDate: 'Planifié le 28 Jan 2025',
-        footerIcons: ['🟢', '📊', '❌'],
-    },
-    {
-        status: 'URGENT', statusColor: '#dc2626', statusBg: '#fef2f2',
-        title: 'Panne électrique cuisine',
-        locataire: 'Martin Dupont', bien: 'Boulogne-Billancourt',
-        details: [
-            { label: 'TYPE', value: 'Electricité' },
-            { label: 'PRIORITÉ', value: 'Urgente' },
-            { label: 'DEMANDÉ LE', value: '06 Fev 2025' },
-            { label: 'PRESTATAIRE', value: 'Electro Express' },
-        ],
-        devisLabel: 'DEVIS EN ATTENTE', devisValue: '—', devisColor: '#9ca3af',
-        footerDate: 'Intervention prévue aujourd\'hui',
-        footerIcons: ['🟢', '📞', '✏️'],
-    },
-    {
-        status: 'EN COURS', statusColor: '#f59e0b', statusBg: '#fffbeb',
-        title: 'Réparation volets roulants',
-        locataire: 'Thomas Moreau', bien: 'Marseille',
-        details: [
-            { label: 'TYPE', value: 'Menuiserie' },
-            { label: 'PRIORITÉ', value: 'Moyenne' },
-            { label: 'DÉBUT TRAVAUX', value: '01 Fev 2025' },
-            { label: 'PRESTATAIRE', value: 'Fermetures Plus' },
-        ],
-        devisLabel: 'DEVIS ACCEPTÉ', devisValue: '580 €', devisColor: '#83C757',
-        footerDate: 'Fin prévue · 08 Fev 2025',
-        footerIcons: ['🟢', '📊', '📂'],
-    },
-    {
-        status: 'TERMINÉE', statusColor: '#16a34a', statusBg: '#f0fdf4',
-        title: 'Changement serrure porte d\'entrée',
-        locataire: 'Marie Lefevre', bien: 'Lyon 6ème',
-        details: [
-            { label: 'TYPE', value: 'Serrurerie' },
-            { label: 'DATE RÉALISATION', value: '30 Jan 2025' },
-            { label: 'PRESTATAIRE', value: 'Serrure Service' },
-            { label: 'FACTURE', value: 'Payée' },
-        ],
-        devisLabel: 'COÛT FINAL', devisValue: '195 €', devisColor: '#1a1a1a',
-        footerDate: 'Terminé le 30 Jan 2025',
-        footerIcons: ['🟢', '📊', '🟠'],
-    },
-];
-
 const ReparationsTravaux: React.FC<RTProps> = ({ notify }) => {
     const [activeFilter, setActiveFilter] = useState('Tous');
     const filters = ['Tous', 'Urgentes', 'En cours', 'Planifiées', 'Terminées'];
+    const navigate = useNavigate();
+    
+    // Données depuis l'API
+    const [incidents, setIncidents] = useState<MaintenanceRequest[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Statistiques
+    const [stats, setStats] = useState({
+        urgent: 0,
+        inProgress: 0,
+        planned: 0,
+        totalCost: 0
+    });
+
+    // Charger les interventions depuis l'API
+    const fetchIncidents = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await maintenanceService.listIncidents();
+            setIncidents(data || []);
+            
+            // Calculer les statistiques
+            const urgent = data.filter(i => i.priority === 'emergency' && i.status === 'open').length;
+            const inProgress = data.filter(i => i.status === 'in_progress').length;
+            const planned = data.filter(i => i.status === 'open' && i.priority !== 'emergency').length;
+            
+            setStats({
+                urgent,
+                inProgress,
+                planned,
+                totalCost: 0 // À implémenter si le backend renvoie le coût
+            });
+        } catch (err) {
+            console.error("Erreur lors de la récupération des interventions:", err);
+            setError("Erreur lors du chargement des interventions");
+            notify?.("Erreur lors du chargement des interventions", "error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchIncidents();
+    }, []);
+
+    // Filtrer les interventions
+    const filteredIncidents = incidents.filter(incident => {
+        if (activeFilter === 'Tous') return true;
+        if (activeFilter === 'Urgentes') return incident.priority === 'emergency' && incident.status === 'open';
+        if (activeFilter === 'En cours') return incident.status === 'in_progress';
+        if (activeFilter === 'Planifiées') return incident.status === 'open' && incident.priority !== 'emergency';
+        if (activeFilter === 'Terminées') return incident.status === 'resolved';
+        return true;
+    });
+
+    // Mapper le statut backend vers le format affiché
+    const getStatusInfo = (status: string, priority: string) => {
+        switch (status) {
+            case 'open':
+                return priority === 'emergency' 
+                    ? { label: 'URGENT', color: '#dc2626', bg: '#fef2f2' }
+                    : { label: 'PLANIFIÉE', color: '#3b82f6', bg: '#eff6ff' };
+            case 'in_progress':
+                return { label: 'EN COURS', color: '#f59e0b', bg: '#fffbeb' };
+            case 'resolved':
+                return { label: 'TERMINÉE', color: '#16a34a', bg: '#f0fdf4' };
+            case 'cancelled':
+                return { label: 'ANNULÉE', color: '#6b7280', bg: '#f3f4f6' };
+            default:
+                return { label: status.toUpperCase(), color: '#6b7280', bg: '#f3f4f6' };
+        }
+    };
+
+    // Mapper la catégorie
+    const getCategoryLabel = (category: string) => {
+        switch (category) {
+            case 'plumbing': return 'Plomberie';
+            case 'electricity': return 'Électricité';
+            case 'heating': return 'Chauffage';
+            case 'other': return 'Autre';
+            default: return category;
+        }
+    };
+
+    // Mapper la priorité
+    const getPriorityLabel = (priority: string) => {
+        switch (priority) {
+            case 'low': return 'Faible';
+            case 'medium': return 'Moyenne';
+            case 'high': return 'Haute';
+            case 'emergency': return 'Urgente';
+            default: return priority;
+        }
+    };
+
+    // Formater la date
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '—';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
 
     return (
         <>
@@ -182,6 +185,16 @@ const ReparationsTravaux: React.FC<RTProps> = ({ notify }) => {
         .rt-footer-actions { display: flex; gap: 8px; }
         .rt-action-dot { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; cursor: pointer; border: none; }
 
+        /* Loading & Error states */
+        .rt-loading { display: flex; align-items: center; justify-content: center; padding: 3rem; color: #6b7280; }
+        .rt-error { display: flex; align-items: center; justify-content: center; padding: 3rem; color: #ef4444; gap: 8px; }
+        .rt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; color: #6b7280; grid-column: 1 / -1; }
+        .rt-empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* Refresh button */
+        .rt-refresh-btn { display: flex; align-items: center; gap: 6px; background: white; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 8px 16px; font-size: 0.8rem; color: #6b7280; cursor: pointer; font-weight: 500; }
+        .rt-refresh-btn:hover { background: #f9fafb; }
+
         /* Responsive */
         @media (max-width: 1400px) { .rt-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 1100px) { .rt-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -206,32 +219,37 @@ const ReparationsTravaux: React.FC<RTProps> = ({ notify }) => {
                     <div>
                         <h1 className="rt-title">Répartitions et travaux</h1>
                         <p className="rt-subtitle">
-                            Gérez vos interventions, suivez les demandes de vos locataires et planifiez les travaux.
+                            Gérez vos interventions, suivez les demandes et planifiez les travaux.
                             Centralisez tous les devis, factures et suivis de chantier au même endroit.
                         </p>
                     </div>
-                    <button className="rt-btn-create" onClick={() => notify('Création intervention à venir', 'info')}>
-                        <Plus size={16} strokeWidth={3} /> Créer une intervention
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button className="rt-refresh-btn" onClick={fetchIncidents}>
+                            <RefreshCw size={14} /> Actualiser
+                        </button>
+                        <button className="rt-btn-create" onClick={() => navigate('/proprietaire/incidents/nouveau')}>
+                            <Plus size={16} strokeWidth={3} /> Créer une intervention
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats */}
                 <div className="rt-stats">
                     <div className="rt-stat">
                         <p className="rt-stat-label">INTERVENTIONS URGENTES</p>
-                        <p className="rt-stat-value">3</p>
+                        <p className="rt-stat-value">{stats.urgent}</p>
                     </div>
                     <div className="rt-stat">
                         <p className="rt-stat-label">EN COURS</p>
-                        <p className="rt-stat-value">5</p>
+                        <p className="rt-stat-value">{stats.inProgress}</p>
                     </div>
                     <div className="rt-stat">
                         <p className="rt-stat-label">PLANIFIÉES</p>
-                        <p className="rt-stat-value">8</p>
+                        <p className="rt-stat-value">{stats.planned}</p>
                     </div>
                     <div className="rt-stat">
-                        <p className="rt-stat-label">COÛT TOTAL 2025</p>
-                        <p className="rt-stat-value">12 450 €</p>
+                        <p className="rt-stat-label">TOTAL INTERVENTIONS</p>
+                        <p className="rt-stat-value">{incidents.length}</p>
                     </div>
                 </div>
 
@@ -261,68 +279,124 @@ const ReparationsTravaux: React.FC<RTProps> = ({ notify }) => {
                     </div>
                 </div>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="rt-loading">
+                        <RefreshCw size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                        Chargement des interventions...
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && !isLoading && (
+                    <div className="rt-error">
+                        {error}
+                    </div>
+                )}
+
                 {/* Cards Grid */}
-                <div className="rt-grid">
-                    {interventions.map((item, idx) => (
-                        <div className="rt-card" key={idx}>
-                            <div className="rt-card-body">
-                                {/* Badge */}
-                                <span className="rt-badge" style={{ background: item.statusBg, color: item.statusColor }}>
-                                    <span className="rt-badge-dot" style={{ background: item.statusColor }}></span>
-                                    {item.status}
-                                </span>
+                {!isLoading && !error && (
+                    <div className="rt-grid">
+                        {filteredIncidents.length === 0 ? (
+                            <div className="rt-empty">
+                                <div className="rt-empty-icon">🔧</div>
+                                <p>Aucune intervention trouvée</p>
+                                <button 
+                                    className="rt-btn-create" 
+                                    style={{ marginTop: '1rem' }}
+                                    onClick={() => navigate('/proprietaire/incidents/nouveau')}
+                                >
+                                    <Plus size={16} strokeWidth={3} /> Créer une intervention
+                                </button>
+                            </div>
+                        ) : (
+                            filteredIncidents.map((incident) => {
+                                const statusInfo = getStatusInfo(incident.status, incident.priority);
+                                return (
+                                    <div className="rt-card" key={incident.id}>
+                                        <div className="rt-card-body">
+                                            {/* Badge */}
+                                            <span className="rt-badge" style={{ background: statusInfo.bg, color: statusInfo.color }}>
+                                                <span className="rt-badge-dot" style={{ background: statusInfo.color }}></span>
+                                                {statusInfo.label}
+                                            </span>
 
-                                {/* Title & Location */}
-                                <p className="rt-card-title">{item.title}</p>
-                                <p className="rt-card-location">
-                                    📍 {item.locataire} · {item.bien}
-                                </p>
+                                            {/* Title & Location */}
+                                            <p className="rt-card-title">{incident.title}</p>
+                                            <p className="rt-card-location">
+                                                📍 {incident.property?.address || 'Adresse non spécifiée'} · {incident.property?.city || ''}
+                                            </p>
 
-                                {/* Details 2x2 */}
-                                <div className="rt-details">
-                                    {item.details.map((d, i) => (
-                                        <div className="rt-detail" key={i}>
-                                            <p className="rt-detail-label">{d.label}</p>
-                                            <p className="rt-detail-value">{d.value}</p>
+                                            {/* Details 2x2 */}
+                                            <div className="rt-details">
+                                                <div className="rt-detail">
+                                                    <p className="rt-detail-label">TYPE</p>
+                                                    <p className="rt-detail-value">{getCategoryLabel(incident.category)}</p>
+                                                </div>
+                                                <div className="rt-detail">
+                                                    <p className="rt-detail-label">PRIORITÉ</p>
+                                                    <p className="rt-detail-value">{getPriorityLabel(incident.priority)}</p>
+                                                </div>
+                                                <div className="rt-detail">
+                                                    <p className="rt-detail-label">DEMANDÉ LE</p>
+                                                    <p className="rt-detail-value">{formatDate(incident.created_at)}</p>
+                                                </div>
+                                                <div className="rt-detail">
+                                                    <p className="rt-detail-label">PRESTATAIRE</p>
+                                                    <p className="rt-detail-value">{incident.assigned_provider || 'À affecter'}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Status for resolved */}
+                                            {incident.status === 'resolved' && (
+                                                <div className="rt-devis">
+                                                    <p className="rt-devis-label">STATUT</p>
+                                                    <p className="rt-devis-value" style={{ color: '#16a34a' }}>Terminé le {formatDate(incident.resolved_at || '')}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Progress bar for IN_PROGRESS */}
+                                            {incident.status === 'in_progress' && (
+                                                <div className="rt-progress-row">
+                                                    <p className="rt-progress-label">AVANCEMENT</p>
+                                                    <div className="rt-progress-bar">
+                                                        <div className="rt-progress-fill" style={{ width: '60%' }}></div>
+                                                    </div>
+                                                    <p className="rt-progress-pct">60%</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
 
-                                {/* Devis */}
-                                <div className="rt-devis">
-                                    <p className="rt-devis-label">{item.devisLabel}</p>
-                                    <p className="rt-devis-value" style={{ color: item.devisColor }}>{item.devisValue}</p>
-                                </div>
-
-                                {/* Progress bar for EN COURS */}
-                                {item.status === 'EN COURS' && (
-                                    <div className="rt-progress-row">
-                                        <p className="rt-progress-label">AVANCEMENT</p>
-                                        <div className="rt-progress-bar">
-                                            <div className="rt-progress-fill" style={{ width: idx === 1 ? '60%' : '85%' }}></div>
+                                        {/* Footer */}
+                                        <div className="rt-card-footer">
+                                            <span className="rt-footer-date">
+                                                {incident.status === 'resolved' 
+                                                    ? `Terminé le ${formatDate(incident.resolved_at || '')}`
+                                                    : `Créé le ${formatDate(incident.created_at)}`
+                                                }
+                                            </span>
+                                            <div className="rt-footer-actions">
+                                                <span className="rt-action-dot" style={{ background: '#dcfce7' }}>🟢</span>
+                                                <span className="rt-action-dot" style={{ background: '#eff6ff' }}>📊</span>
+                                                <span className="rt-action-dot" style={{ background: incident.status === 'resolved' ? '#fef3c7' : '#f3f4f6' }}>
+                                                    {incident.status === 'resolved' ? '🟠' : '✏️'}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <p className="rt-progress-pct">{idx === 1 ? '60%' : '85%'}</p>
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Footer */}
-                            <div className="rt-card-footer">
-                                <span className="rt-footer-date">{item.footerDate}</span>
-                                <div className="rt-footer-actions">
-                                    {item.footerIcons.map((icon, i) => (
-                                        <span key={i} className="rt-action-dot" style={{
-                                            background: i === 0 ? '#dcfce7' : i === 1 ? '#eff6ff' : i === 2 ? '#fef3c7' : '#f3f4f6',
-                                        }}>
-                                            {icon}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                                );
+                            })
+                        )}
+                    </div>
+                )}
             </div>
+            
+            <style>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Home,
   MapPin,
@@ -26,50 +26,9 @@ import {
   Check
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../../../services/api";
-import { uploadService, propertyService } from "../../../services/api";
+import api, { uploadService, propertyService, Property } from "../../../services/api";
 
 // Types
-interface Property {
-  id: number;
-  type: string;
-  name: string;
-  title?: string;
-  description?: string;
-  address: string;
-  city?: string;
-  district?: string;
-  zip_code?: string;
-  surface?: string;
-  room_count?: number;
-  bedroom_count?: number;
-  bathroom_count?: number;
-  rent_amount?: string;
-  status?: string;
-  reference_code?: string;
-  photos?: string[];
-  meta?: {
-    terrace?: boolean;
-    balcony?: boolean;
-    garden?: boolean;
-    parking?: boolean;
-    floor?: number;
-    elevator?: boolean;
-    furnished?: boolean;
-    heating_type?: string;
-    energy_class?: string;
-    [key: string]: any;
-  };
-  delegation_type?: string;
-  delegation_info?: {
-    co_owner_name?: string;
-    co_owner_company?: string;
-    delegated_at?: string;
-    [key: string]: any;
-  };
-  can_edit?: boolean;
-}
-
 interface PaginatedResponse<T> {
   data: T[];
   total?: number;
@@ -85,6 +44,47 @@ interface MesBiensProps {
     role: "landlord" | "co_owner" | "admin";
   };
 }
+
+// Données mockées
+const biens = [
+  {
+    id: 1,
+    statut: "Loué",
+    type: "APPARTEMENT",
+    titre: "Appartement 12 - Agla",
+    adresse: "Boulevard de la marina, Cotonou",
+    loyer: "60.000",
+    surface: "65",
+    photos: 1,
+    ref: "PR-WZ6WHU",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+  },
+  {
+    id: 2,
+    statut: "Disponible",
+    // Mock data removed - TODO: Connect to API
+    // type: "MAISON",
+    // titre: "Villa moderne - Fidjrossè",
+    // adresse: "Rue des Cocotiers, Cotonou",
+    loyer: "150.000",
+    surface: "120",
+    photos: 5,
+    ref: "PR-ABC123",
+    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&q=80",
+  },
+  {
+    id: 3,
+    statut: "Loué",
+    type: "STUDIO",
+    titre: "Studio cosy - Centre-ville",
+    adresse: "Avenue Steinmetz, Cotonou",
+    loyer: "35.000",
+    surface: "28",
+    photos: 3,
+    ref: "PR-XYZ78",
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+  },
+];
 
 const filters = ["Tous", "Loué", "Disponible", "En travaux", "Préavis", "Meublé"];
 
@@ -139,12 +139,12 @@ const heatingTypeLabel: Record<string, string> = {
 };
 
 const delegationLabel: Record<string, { label: string; icon: React.ReactNode }> = {
-  agency: { 
-    label: "Géré par agence", 
+  agency: {
+    label: "Géré par agence",
     icon: <Lock size={11} />
   },
-  co_owner: { 
-    label: "Partagé avec co-propriétaire", 
+  co_owner: {
+    label: "Partagé avec co-propriétaire",
     icon: <Users size={11} />
   }
 };
@@ -210,7 +210,7 @@ const styles = `
   .view-badge {
     padding: 0.5rem 1rem;
     border-radius: 999px;
-    background: rgba(131, 199, 87, 0.3);
+    background: rgba(255, 255, 255, 0.2);
     font-size: 0.85rem;
     font-weight: 600;
     display: flex;
@@ -380,7 +380,7 @@ const styles = `
   }
 
   .edit-header {
-    background: linear-gradient(135deg, #83C757, #6dae45);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     padding: 2rem;
     color: white;
     border-radius: 24px 24px 0 0;
@@ -424,7 +424,7 @@ const styles = `
   .edit-badge {
     padding: 0.5rem 1rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
     font-size: 0.85rem;
     font-weight: 600;
     display: flex;
@@ -459,7 +459,7 @@ const styles = `
     margin: 0 0 1rem 0;
     color: #111827;
     padding-bottom: 0.75rem;
-    border-bottom: 2px solid rgba(131, 199, 87, 0.28);
+    border-bottom: 2px solid rgba(102, 126, 234, 0.28);
   }
 
   .form-fields {
@@ -500,8 +500,8 @@ const styles = `
   }
 
   .form-control:focus {
-    border-color: #83C757;
-    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   }
 
   .form-select {
@@ -517,8 +517,8 @@ const styles = `
   }
 
   .form-select:focus {
-    border-color: #83C757;
-    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   }
 
   .form-checkbox-group {
@@ -556,8 +556,8 @@ const styles = `
   }
 
   .form-textarea:focus {
-    border-color: #83C757;
-    box-shadow: 0 0 0 3px rgba(131, 199, 87, 0.15);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
   }
 
   .form-error {
@@ -644,8 +644,8 @@ const styles = `
   }
 
   .photo-upload-btn:hover {
-    border-color: #83C757;
-    color: #83C757;
+    border-color: #6366f1;
+    color: #6366f1;
   }
 
   .modal-overlay {
@@ -658,8 +658,7 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    padding: 20px;
+    z-index: 1000;
   }
 
   .modal-close {
@@ -685,15 +684,14 @@ const styles = `
   .view-modal-content {
     background: white;
     border-radius: 24px;
-    width: 100%;
+    width: 90%;
     max-width: 800px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 
   .view-header {
-    background: linear-gradient(135deg, #83C757, #6dae45);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     padding: 2rem;
     color: white;
     border-radius: 24px 24px 0 0;
@@ -722,11 +720,6 @@ const styles = `
     opacity: 0.9;
     margin: 0;
     color: white;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 
   @media (max-width: 768px) {
@@ -777,303 +770,367 @@ const btnBase = {
   gap: "6px",
 };
 
-// Composant pour afficher les détails d'un bien
-const PropertyDetailsModal: React.FC<{
-  property: Property;
+// Composant "FICHE BIEN" — modale détail/édition d'un bien (à partir des données mockées)
+function FicheBienModal({
+  bien,
+  onClose,
+}: {
+  bien: typeof biens[0];
   onClose: () => void;
-  onEdit: () => void;
-  canEdit: boolean;
-}> = ({ property, onClose, onEdit, canEdit }) => {
-  const firstPhoto = resolvePhotoUrl(property.photos?.[0] ?? null);
-  const statusKey = property.status ?? "available";
-  const typeText = typeLabel[property.type] ?? property.type;
-  const meta = property.meta || {};
-  
-  // Caractéristiques
-  const features = [
-    { key: 'terrace', label: 'Terrasse', icon: <Home size={16} />, active: meta.terrace },
-    { key: 'balcony', label: 'Balcon', icon: <Home size={16} />, active: meta.balcony },
-    { key: 'garden', label: 'Jardin', icon: <Home size={16} />, active: meta.garden },
-    { key: 'parking', label: 'Parking', icon: <Home size={16} />, active: meta.parking },
-    { key: 'elevator', label: 'Ascenseur', icon: <Layers size={16} />, active: meta.elevator },
-    { key: 'furnished', label: 'Meublé', icon: <Home size={16} />, active: meta.furnished },
-  ];
+}) {
+  // Split adresse / ville from mock data
+  const parts = bien.adresse.split(", ");
+  const adresseInit = parts[0] || "";
+  const villeInit = parts[1] || "";
+
+  const [nom, setNom] = useState(bien.titre);
+  const [statut, setStatut] = useState(bien.statut);
+  const [type, setType] = useState(bien.type);
+  const [adresse, setAdresse] = useState(adresseInit);
+  const [ville, setVille] = useState(villeInit);
+  const [codePostal, setCodePostal] = useState("00229");
+  const [quartier, setQuartier] = useState("");
+  const [surface, setSurface] = useState(bien.surface);
+  const [loyer, setLoyer] = useState(bien.loyer.replace(/\./g, ""));
+  const [photoUrl, setPhotoUrl] = useState(bien.image);
+
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSave = () => {
+    // Pour l'instant, on ferme simplement la modale
+    onClose();
+  };
 
   return (
-    <div className="view-modal-content">
-      <div className="view-header">
-        <button className="modal-close" onClick={onClose}>
-          <X size={20} />
-        </button>
-        <div className="view-header-content">
-          <div className="view-title-section">
-            <h2 className="view-title">{property.name || "Bien sans titre"}</h2>
-            <p className="view-subtitle">
-              {property.address}
-              {property.district ? `, ${property.district}` : ""}
-              {property.city ? `, ${property.city}` : ""}
-              {property.zip_code ? ` ${property.zip_code}` : ""}
-            </p>
-            <div className="view-badges">
-              <span className="view-badge">
-                {typeText}
-              </span>
-              <span className="view-badge">
-                {statusLabel[statusKey] ?? property.status}
-              </span>
-              {property.reference_code && (
-                <span className="view-badge">
-                  Réf. {property.reference_code}
-                </span>
-              )}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.38)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 24,
+          width: "95%",
+          maxWidth: 860,
+          maxHeight: "92vh",
+          overflowY: "auto",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.18)",
+          fontFamily: "'Manrope', sans-serif",
+        }}
+      >
+        {/* ── Header ── */}
+        <div style={{ padding: "1.5rem 1.75rem 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#7c3aed", letterSpacing: "0.08em", textTransform: "uppercase", margin: 0 }}>
+                FICHE BIEN
+              </p>
+              <h2 style={{ fontFamily: "'Merriweather', serif", fontSize: "1.35rem", fontWeight: 800, margin: "6px 0 0 0", color: "#111" }}>
+                {nom || "Sans titre"}
+              </h2>
             </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#9ca3af",
+                padding: 4,
+                borderRadius: 8,
+                transition: "0.15s",
+              }}
+            >
+              <X size={22} />
+            </button>
           </div>
-        </div>
-      </div>
 
-      <div className="view-body">
-        {/* Informations générales */}
-        <div className="view-section">
-          <h3 className="view-section-title">
-            <Home size={20} />
-            Informations générales
-          </h3>
-          <div className="view-grid">
-            <div className="view-field">
-              <span className="view-label">Type</span>
-              <span className="view-value">{typeText}</span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Statut</span>
-              <span className="view-value">{statusLabel[statusKey] ?? property.status}</span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Surface</span>
-              <span className="view-value">
-                <Ruler size={16} />
-                {formatSurface(property.surface)}
-              </span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Loyer mensuel</span>
-              <span className="view-value">
-                <Euro size={16} />
-                {formatPrice(property.rent_amount)}
-              </span>
-            </div>
-            {property.room_count && (
-              <div className="view-field">
-                <span className="view-label">Nombre de pièces</span>
-                <span className="view-value">{property.room_count}</span>
-              </div>
-            )}
-            {property.bedroom_count && (
-              <div className="view-field">
-                <span className="view-label">Nombre de chambres</span>
-                <span className="view-value">
-                  <Bed size={16} />
-                  {property.bedroom_count}
-                </span>
-              </div>
-            )}
-            {property.bathroom_count && (
-              <div className="view-field">
-                <span className="view-label">Nombre de salles de bain</span>
-                <span className="view-value">
-                  <Bath size={16} />
-                  {property.bathroom_count}
-                </span>
-              </div>
-            )}
-            {property.meta?.floor && (
-              <div className="view-field">
-                <span className="view-label">Étage</span>
-                <span className="view-value">
-                  <Layers size={16} />
-                  {property.meta.floor}
-                </span>
-              </div>
-            )}
-          </div>
+          <div style={{ borderBottom: "1.5px solid #e5e7eb", margin: "1rem 0 0" }} />
         </div>
 
-        {/* Adresse complète */}
-        <div className="view-section">
-          <h3 className="view-section-title">
-            <MapPin size={20} />
-            Adresse
-          </h3>
-          <div className="view-grid">
-            <div className="view-field">
-              <span className="view-label">Adresse</span>
-              <span className="view-value">{property.address || "-"}</span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Ville</span>
-              <span className="view-value">{property.city || "-"}</span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Code postal</span>
-              <span className="view-value">{property.zip_code || "-"}</span>
-            </div>
-            <div className="view-field">
-              <span className="view-label">Quartier/Arrondissement</span>
-              <span className="view-value">{property.district || "-"}</span>
-            </div>
-          </div>
-        </div>
+        {/* ── Body ── */}
+        <div style={{ padding: "1.25rem 1.75rem 1.5rem" }}>
 
-        {/* Caractéristiques */}
-        <div className="view-section">
-          <h3 className="view-section-title">Caractéristiques</h3>
-          <div className="features-grid">
-            {features.map((feature) => (
-              <div 
-                key={feature.key} 
-                className={`feature-item ${feature.active ? 'active' : 'inactive'}`}
-              >
-                {feature.icon}
-                <span>{feature.label}</span>
-                {feature.active && <Check size={14} />}
-              </div>
-            ))}
-          </div>
-          
-          {(meta.heating_type || meta.energy_class) && (
-            <div className="view-grid" style={{ marginTop: "1.5rem" }}>
-              {meta.heating_type && (
-                <div className="view-field">
-                  <span className="view-label">Type de chauffage</span>
-                  <span className="view-value">
-                    <Thermometer size={16} />
-                    {heatingTypeLabel[meta.heating_type] || meta.heating_type}
-                  </span>
-                </div>
-              )}
-              {meta.energy_class && (
-                <div className="view-field">
-                  <span className="view-label">Classe énergétique</span>
-                  <span className="view-value">
-                    <Zap size={16} />
-                    {meta.energy_class}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Description */}
-        {property.description && (
-          <div className="view-section">
-            <h3 className="view-section-title">Description</h3>
-            <p style={{ 
-              color: "#4b5563", 
-              lineHeight: "1.6",
-              whiteSpace: "pre-wrap",
-              backgroundColor: "#f9fafb",
-              padding: "1rem",
-              borderRadius: "8px"
-            }}>
-              {property.description}
-            </p>
-          </div>
-        )}
-
-        {/* Photos */}
-        {property.photos && property.photos.length > 0 && (
-          <div className="view-section">
-            <h3 className="view-section-title">
-              <ImageIcon size={20} />
-              Photos ({property.photos.length})
-            </h3>
-            <div className="view-photos">
-              {property.photos.map((photo, index) => {
-                const photoUrl = resolvePhotoUrl(photo);
-                return photoUrl ? (
-                  <div className="view-photo" key={index}>
-                    <img 
-                      src={photoUrl} 
-                      alt={`Photo ${index + 1}`}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  </div>
-                ) : null;
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Informations de délégation */}
-        {property.delegation_type && (
-          <div className="view-section">
-            <h3 className="view-section-title">Délégation</h3>
-            <div className="view-grid">
-              <div className="view-field">
-                <span className="view-label">Type de délégation</span>
-                <span className="view-value">
-                  {property.delegation_type === 'agency' ? (
-                    <>
-                      <Lock size={16} />
-                      Géré par agence
-                    </>
-                  ) : (
-                    <>
-                      <Users size={16} />
-                      Partagé avec co-propriétaire
-                    </>
-                  )}
-                </span>
-              </div>
-              {property.delegation_info?.co_owner_name && (
-                <div className="view-field">
-                  <span className="view-label">Nom</span>
-                  <span className="view-value">{property.delegation_info.co_owner_name}</span>
-                </div>
-              )}
-              {property.delegation_info?.co_owner_company && (
-                <div className="view-field">
-                  <span className="view-label">Société</span>
-                  <span className="view-value">{property.delegation_info.co_owner_company}</span>
-                </div>
-              )}
-              {property.delegation_info?.delegated_at && (
-                <div className="view-field">
-                  <span className="view-label">Délégué depuis</span>
-                  <span className="view-value">
-                    {new Date(property.delegation_info.delegated_at).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="view-actions">
-        <button
-          className="btn-secondary"
-          type="button"
-          onClick={onClose}
-        >
-          <X size={16} />
-          Fermer
-        </button>
-        {canEdit && (
-          <button
-            className="btn-success"
-            type="button"
-            onClick={onEdit}
+          {/* Photo principale */}
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              height: 180,
+              borderRadius: 16,
+              overflow: "hidden",
+              background: "linear-gradient(135deg, #e8eaf0 0%, #d5d8e0 100%)",
+              marginBottom: "1.5rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <Edit size={16} />
-            Modifier
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt="Photo principale"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={() => setPhotoUrl("")}
+              />
+            ) : (
+              <ImageIcon size={48} color="#b0b5c0" />
+            )}
+
+            {/* Labels overlaid */}
+            <span
+              style={{
+                position: "absolute",
+                bottom: 12,
+                left: 14,
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                color: "#fff",
+                background: "rgba(0,0,0,0.38)",
+                borderRadius: 6,
+                padding: "3px 10px",
+              }}
+            >
+              Photo principale
+            </span>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "#374151",
+                background: "#fff",
+                border: "1px solid #d1d5db",
+                borderRadius: 8,
+                padding: "5px 12px",
+                cursor: "pointer",
+              }}
+            >
+              <ImageIcon size={14} />
+              Changer la photo
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          {/* ── INFORMATIONS PRINCIPALES ── */}
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#7c3aed", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
+            INFORMATIONS PRINCIPALES
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Nom / Titre du bien</label>
+              <input
+                type="text"
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.65rem 0.85rem",
+                  border: "1.5px solid #d1d5db",
+                  borderRadius: 10,
+                  fontSize: "0.85rem",
+                  fontFamily: "'Manrope', sans-serif",
+                  fontWeight: 500,
+                  color: "#111",
+                  outline: "none",
+                  boxSizing: "border-box" as const,
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Statut</label>
+              <select
+                value={statut}
+                onChange={(e) => setStatut(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "0.65rem 0.85rem",
+                  border: "1.5px solid #d1d5db",
+                  borderRadius: 10,
+                  fontSize: "0.85rem",
+                  fontFamily: "'Manrope', sans-serif",
+                  fontWeight: 500,
+                  color: "#111",
+                  outline: "none",
+                  background: "#fff",
+                  cursor: "pointer",
+                  boxSizing: "border-box" as const,
+                }}
+              >
+                <option value="Loué">Loué</option>
+                <option value="Disponible">Disponible</option>
+                <option value="En travaux">En travaux</option>
+                <option value="Préavis">Préavis</option>
+                <option value="Meublé">Meublé</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Type (select matching images 2 & 3) */}
+          <div style={{ marginBottom: 18 }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "0.65rem 0.85rem",
+                border: "1.5px solid #d1d5db",
+                borderRadius: 10,
+                fontSize: "0.85rem",
+                fontFamily: "'Manrope', sans-serif",
+                fontWeight: 500,
+                color: "#111",
+                outline: "none",
+                background: "#fff",
+                cursor: "pointer",
+                boxSizing: "border-box" as const,
+              }}
+            >
+              <option value="APPARTEMENT">Appartement</option>
+              <option value="MAISON">Maison</option>
+              <option value="BUREAU">Bureau</option>
+              <option value="LOCAL COMMERCIAL">Local commercial</option>
+              <option value="PARKING">Parking</option>
+              <option value="AUTRE">Autre</option>
+            </select>
+          </div>
+
+          {/* ── ADRESSE ── */}
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#7c3aed", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
+            ADRESSE
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Adresse</label>
+              <input type="text" value={adresse} onChange={(e) => setAdresse(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Ville</label>
+              <input type="text" value={ville} onChange={(e) => setVille(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Code postal</label>
+              <input type="text" value={codePostal} onChange={(e) => setCodePostal(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Quartier</label>
+              <input type="text" value={quartier} onChange={(e) => setQuartier(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+
+          {/* ── CARACTÉRISTIQUES ── */}
+          <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#7c3aed", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
+            CARACTÉRISTIQUES
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 8 }}>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Surface (m²)</label>
+              <input type="text" value={surface} onChange={(e) => setSurface(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#374151", display: "block", marginBottom: 4 }}>Loyer mensuel (FCFA)</label>
+              <input type="text" value={loyer} onChange={(e) => setLoyer(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div
+          style={{
+            padding: "1rem 1.75rem 1.25rem",
+            borderTop: "1.5px solid #e5e7eb",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 10,
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 22px",
+              borderRadius: 10,
+              border: "1.5px solid #d1d5db",
+              background: "#fff",
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              color: "#374151",
+              cursor: "pointer",
+            }}
+          >
+            Annuler
           </button>
-        )}
+          <button
+            onClick={handleSave}
+            style={{
+              padding: "10px 22px",
+              borderRadius: 10,
+              border: "none",
+              background: "linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)",
+              fontFamily: "'Manrope', sans-serif",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              color: "#fff",
+              cursor: "pointer",
+              boxShadow: "0 4px 14px rgba(124,58,237,0.25)",
+            }}
+          >
+            Enregistrer les modifications
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+// Shared input style for FicheBienModal
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.65rem 0.85rem",
+  border: "1.5px solid #d1d5db",
+  borderRadius: 10,
+  fontSize: "0.85rem",
+  fontFamily: "'Manrope', sans-serif",
+  fontWeight: 500,
+  color: "#111",
+  outline: "none",
+  boxSizing: "border-box",
+  background: "#fff",
 };
 
 // Composant pour éditer un bien
@@ -1117,14 +1174,14 @@ const EditPropertyModal: React.FC<{
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-    
+
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -1140,7 +1197,7 @@ const EditPropertyModal: React.FC<{
 
     const fileArray = Array.from(files);
     const maxPhotos = 8 - photos.length - newPhotos.length;
-    
+
     if (fileArray.length > maxPhotos) {
       notify?.(`Maximum ${maxPhotos} photos supplémentaires autorisées`, "error");
       return;
@@ -1148,7 +1205,7 @@ const EditPropertyModal: React.FC<{
 
     const newFiles = fileArray.slice(0, maxPhotos);
     setNewPhotos(prev => [...prev, ...newFiles]);
-    
+
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     setPhotoPreviews(prev => [...prev, ...newPreviews]);
   };
@@ -1230,22 +1287,22 @@ const EditPropertyModal: React.FC<{
       };
 
       await propertyService.updateProperty(property.id, payload);
-      
+
       notify?.("✅ Le bien a été mis à jour avec succès !", "success");
       onSuccess();
     } catch (error: any) {
       console.error("Erreur lors de la mise à jour:", error);
       const errorMsg = error.response?.data?.message || "Une erreur est survenue";
       notify?.(errorMsg, "error");
-      
+
       if (error.response?.status === 422 && error.response?.data?.errors) {
         const validationErrors = error.response.data.errors;
         const formattedErrors: Record<string, string> = {};
-        
+
         Object.keys(validationErrors).forEach(key => {
           formattedErrors[key] = validationErrors[key][0];
         });
-        
+
         setErrors(formattedErrors);
       }
     } finally {
@@ -1649,7 +1706,7 @@ const EditPropertyModal: React.FC<{
             <ImageIcon size={18} />
             Photos ({photos.length + newPhotos.length}/8)
           </h3>
-          
+
           {(photos.length > 0 || photoPreviews.length > 0) && (
             <div className="photos-grid">
               {photos.map((photo, index) => {
@@ -1667,7 +1724,7 @@ const EditPropertyModal: React.FC<{
                   </div>
                 ) : null;
               })}
-              
+
               {photoPreviews.map((preview, index) => (
                 <div className="photo-item" key={`new-${index}`}>
                   <img src={preview} alt={`Nouvelle photo ${index + 1}`} />
@@ -1736,80 +1793,81 @@ const EditPropertyModal: React.FC<{
   );
 };
 
-function BienCard({ bien, onClick }: { bien: typeof biens[0]; onClick?: () => void }) {
+function BienCard({ bien, onClick }: { bien: typeof biens[0]; onClick: () => void }) {
   return (
-    <div 
+    <div
       onClick={onClick}
-      style={{
-      background: "#fff",
-      border: "1px solid rgba(131,199,87,0.4)",
-      borderRadius: "16px",
-      overflow: "hidden",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
-      transition: "box-shadow 0.2s",
-      cursor: "pointer",
-    }}>
-      {/* Image */}
-      <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
+      className="bg-white border border-green-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col group"
+    >
+      {/* Image Container */}
+      <div className="relative h-56 sm:h-64 md:h-[280px] w-full overflow-hidden bg-gray-100">
         <img
           src={bien.image}
           alt={bien.titre}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          onError={(e) => { 
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => {
             const img = e.currentTarget;
-            img.style.display = "none"; 
+            img.style.display = "none";
           }}
         />
-        <span style={{
-          position: "absolute",
-          top: "14px",
-          left: "14px",
-          background: statutColor[bien.statut] || "#6b7280",
-          color: "#fff",
-          fontSize: "12px",
-          fontWeight: 700,
-          fontFamily: "Manrope, sans-serif",
-          padding: "4px 12px",
-          borderRadius: "6px",
-        }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-green-100 flex flex-col items-center justify-center -z-10">
+          <Building2 size={48} className="text-green-300/50" />
+        </div>
+
+        {/* Status badge */}
+        <span
+          className={`absolute top-4 left-4 px-3 py-1.5 rounded-lg text-sm text-white shadow-sm font-medium ${bien.statut === 'Disponible' ? 'bg-[#4ade80]' :
+            bien.statut === 'Loué' ? 'bg-[#3b82f6]' :
+              bien.statut === 'En travaux' ? 'bg-[#f59e0b]' :
+                bien.statut === 'Préavis' ? 'bg-[#ef4444]' : 'bg-gray-500'
+            }`}
+        >
           {bien.statut}
         </span>
       </div>
 
       {/* Content */}
-      <div style={{ padding: "18px 20px" }}>
-        <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "1.2px", marginBottom: "4px", fontFamily: "Manrope, sans-serif" }}>
-          {bien.type}
-        </p>
-        <h2 style={{ fontFamily: "Merriweather, serif", fontSize: "16px", fontWeight: 700, color: "#111", marginBottom: "8px", letterSpacing: "0.2px" }}>
-          {bien.titre}
-        </h2>
-        <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px", display: "flex", alignItems: "center", gap: "5px" }}>
-          <span style={{ color: "#ef4444" }}>📍</span> {bien.adresse}
-        </p>
-
-        {/* Loyer + Surface */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <div>
-            <span style={{ fontFamily: "Merriweather, serif", fontSize: "22px", fontWeight: 700, color: "rgba(131,199,87,1)" }}>
-              {bien.loyer}
-            </span>
-            <span style={{ fontSize: "11px", color: "#9ca3af", fontFamily: "Manrope, sans-serif", marginLeft: "4px" }}>
-              FCFA/mois
-            </span>
-          </div>
-          <span style={{ fontSize: "13px", color: "#6b7280", fontFamily: "Manrope, sans-serif" }}>
-            {bien.surface} m²
-          </span>
+      <div className="flex flex-col flex-1">
+        {/* Header Section */}
+        <div className="p-5 flex flex-col gap-1.5">
+          <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">
+            {bien.type}
+          </p>
+          <h2 className="text-lg font-bold text-gray-900 leading-tight tracking-wide">
+            {bien.titre}
+          </h2>
+          <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
+            <span className="text-red-500 text-base leading-none">📍</span>
+            <span className="line-clamp-1">{bien.adresse}</span>
+          </p>
         </div>
 
-        {/* Divider */}
-        <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "12px", color: "#9ca3af", display: "flex", alignItems: "center", gap: "5px" }}>
-            📷 {bien.photos} Photo{bien.photos > 1 ? "s" : ""}
+        {/* Pricing & Surface Section */}
+        <div className="px-5 py-4 border-t border-b border-gray-100 flex justify-between items-center bg-white/50">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold text-[#4db038] tracking-tight">
+              {bien.loyer}
+            </span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+              FCFA / mois
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-xs font-bold text-gray-800">
+            <span>{bien.surface}</span>
+            <span>m²</span>
+          </div>
+        </div>
+
+        {/* Footer Section */}
+        <div className="px-5 py-4 flex justify-between items-center bg-white mt-auto">
+          <span className="text-sm text-gray-500 flex items-center gap-2 font-medium">
+            <div className="w-7 h-7 bg-[#f0f4ff] rounded-full flex items-center justify-center">
+              <ImageIcon size={14} className="text-[#a5b4fc]" />
+            </div>
+            {bien.photos} Photo{bien.photos > 1 ? "s" : ""}
           </span>
-          <span style={{ fontSize: "12px", color: "#9ca3af", fontFamily: "Manrope, sans-serif" }}>
-            Réf. {bien.ref}
+          <span className="text-xs text-gray-500 tracking-wide font-medium">
+            {bien.ref}
           </span>
         </div>
       </div>
@@ -1821,49 +1879,53 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [selectedBien, setSelectedBien] = useState<typeof biens[0] | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
-  // Fetch properties from API
+  // Récupérer les biens depuis le backend
   useEffect(() => {
     const fetchProperties = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        setIsLoading(true);
-        setError(null);
         const response = await propertyService.listProperties();
-        // Handle paginated response
+        //适配后端返回的数据结构
         const propertiesData = response.data || response;
         setProperties(propertiesData);
       } catch (err: any) {
-        console.error('Error fetching properties:', err);
-        setError(err.message || 'Erreur lors du chargement des biens');
-        // Fall back to mock data on error
-        setProperties([]);
+        console.error("Erreur lors de la récupération des biens:", err);
+        setError("Impossible de charger les biens. Veuillez réessayer plus tard.");
+        if (notify) {
+          notify("Erreur lors du chargement des biens", "error");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProperties();
-  }, []);
+  }, [notify]);
 
-  // Transform API data to match component format
-  const biens = properties.map((p) => ({
+  // Transformer les données API en format pour l'affichage
+  const transformedProperties = properties.map((p: Property) => ({
     id: p.id,
-    statut: p.status === 'available' ? 'Disponible' : p.status === 'rented' ? 'Loué' : 'Disponible',
-    type: p.type?.toUpperCase() || 'APPARTEMENT',
-    titre: p.name || p.title || 'Bien sans titre',
-    adresse: p.address || '',
-    loyer: p.rent_amount || '0',
-    surface: p.surface || '0',
+    statut: statusLabel[p.status] || p.status || "Inconnu",
+    type: typeLabel[p.type] || p.type || "Autre",
+    titre: p.name || p.title || "Sans titre",
+    adresse: p.address ? `${p.address}${p.district ? ", " + p.district : ""}${p.city ? ", " + p.city : ""}` : "Adresse non définie",
+    loyer: p.rent_amount ? parseFloat(p.rent_amount).toLocaleString("fr-FR") : "0",
+    surface: p.surface || "0",
     photos: p.photos?.length || 0,
-    ref: p.reference_code || `PR-${p.id}`,
-    image: p.photos && p.photos.length > 0 ? p.photos[0] : 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80',
+    ref: p.reference_code || "-",
+    image: p.photos && p.photos.length > 0 ? resolvePhotoUrl(p.photos[0]) : "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80",
+    // Garder les données originales pour l'édition
+    _original: p
   }));
 
-  const filtered = biens.filter((b) => {
+  // Filtrer les biens selon le filtre et la recherche
+  const filtered = transformedProperties.filter((b: any) => {
     const matchFilter = activeFilter === "Tous" || b.statut === activeFilter;
     const matchSearch =
       b.titre.toLowerCase().includes(search.toLowerCase()) ||
@@ -1871,150 +1933,147 @@ export default function MesBiens({ notify, currentUser }: MesBiensProps) {
     return matchFilter && matchSearch;
   });
 
+  // Gérer l'ouverture de la page de modification
+  const handleOpenEdit = (property: any) => {
+    // Naviguer vers la page de modification du bien
+    navigate(`/proprietaire/biens/${property._original.id}/modifier`);
+  };
+
+  // État pour la modale d'édition
+  const [selectedPropertyForEdit, setSelectedPropertyForEdit] = useState<Property | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleEditSuccess = () => {
+    setShowEditModal(false);
+    setSelectedPropertyForEdit(null);
+    // Recharger les biens
+    const fetchProperties = async () => {
+      try {
+        const response = await propertyService.listProperties();
+        const propertiesData = response.data || response;
+        setProperties(propertiesData);
+      } catch (err) {
+        console.error("Erreur lors du rechargement:", err);
+      }
+    };
+    fetchProperties();
+  };
+
   return (
-    <div style={{ background: "#f7f8fa", minHeight: "100vh", padding: "28px", fontFamily: "Manrope, sans-serif" }}>
+    <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
       <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
       <style>{styles}</style>
 
-      {/* Top bar */}
-      <div className="animate-slideInLeft" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", gap: "16px" }}>
-        <div style={{ background: 'rgba(255, 255, 255, 1)', border: '1px solid rgba(131, 199, 87, 1)', borderRadius: '15px', padding: '16px', marginBottom: '24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* Top bar - Mobile First */}
+      <div className="animate-slideInLeft flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        {/* Back button - Mobile First */}
+        <div className="inline-flex items-center justify-center w-full sm:w-auto">
           <button
             onClick={() => navigate("/proprietaire/dashboard")}
-            style={{ display: "flex", alignItems: "center", gap: "8px", color: "#374151", background: "none", border: "none", cursor: "pointer" }}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <ArrowLeft size={20} />
-            <span style={{ fontWeight: 500 }}>Retour au tableau de bord</span>
+            <ArrowLeft size={18} className="flex-shrink-0" />
+            <span className="font-medium text-sm">Retour</span>
           </button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "flex-end", flex: 1 }}>
-          {/* Search */}
-          <div style={{ position: "relative", width: "280px" }}>
-            <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#83C757", fontSize: "15px" }}>🔍</span>
+
+        {/* Search and Add button - Mobile First */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {/* Search - Full width on mobile */}
+          <div className="relative w-full sm:w-80">
+            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500 opacity-60" />
             <input
               type="text"
               placeholder="Rechercher par nom, adresse..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 14px 10px 36px",
-                borderRadius: "10px",
-                border: "1.5px solid rgba(131,199,87,0.5)",
-                background: "rgba(255,255,255,0.9)",
-                fontSize: "13px",
-                fontFamily: "Manrope, sans-serif",
-                outline: "none",
-                color: "#374151",
-              }}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-transparent bg-transparent text-sm font-sans outline-none text-gray-700 placeholder-gray-500 focus:border-green-400 focus:bg-white focus:ring-2 focus:ring-green-400/20 transition-all"
             />
           </div>
-          {/* Ajouter */}
-          <button 
-            className="animate-scaleIn animate-delay-200"
+
+          {/* Add button - Full width on mobile */}
+          <button
+            className="animate-scaleIn animate-delay-200 bg-[#58a531] text-white rounded-lg px-6 py-2 font-semibold hover:bg-[#498828] transition-all transform active:scale-95 shadow-md w-full sm:w-auto flex items-center justify-center gap-2"
             onClick={() => navigate("/proprietaire/ajouter-bien")}
-            style={{ 
-              ...btnBase, 
-              background: "rgba(131,199,87,1)", 
-              color: "#fff", 
-              borderRadius: "10px", 
-              padding: "10px 22px",
-              width: "280px"
-            }}
           >
-            + Ajouter un bien
+            <Plus size={18} className="flex-shrink-0" />
+            <span className="text-sm">Ajouter un bien</span>
           </button>
         </div>
       </div>
 
-      {/* Page title */}
-      <div className="animate-fadeInUp animate-delay-100" style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontFamily: "Merriweather, serif", fontSize: "26px", fontWeight: 700, color: "#111", marginBottom: "6px", display: "flex", alignItems: "center", gap: "10px" }}>
-          🏘️ Mes biens
+      {/* Page title - Mobile First */}
+      <div className="animate-fadeInUp animate-delay-100 mb-6 font-serif">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+          <span className="text-2xl">�</span>
+          <span className="break-words font-serif tracking-tight">Mes biens</span>
         </h1>
-        <p style={{ fontSize: "16px", color: "#6b7280" }}>
+        <p className="text-sm sm:text-sm text-gray-500 leading-relaxed max-w-3xl font-sans mt-2">
           Gérez l'ensemble de vos biens : appartements, maisons, locaux professionnels...
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="animate-fadeInUp animate-delay-200" style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-        {["Tous", "Disponible", "Loué", "En travaux", "Préavis"].map((f) => (
+      {/* Filters - Mobile First */}
+      <div className="animate-fadeInUp animate-delay-200 flex flex-wrap gap-2 sm:gap-3 mb-8">
+        {["Tous", "Loué", "Disponible", "En travaux", "Préavis", "Meublé"].map((f) => (
           <button
             key={f}
             onClick={() => setActiveFilter(f)}
-            style={{
-              padding: "9px 20px",
-              borderRadius: "10px",
-              fontSize: "13px",
-              fontWeight: 600,
-              fontFamily: "Manrope, sans-serif",
-              cursor: "pointer",
-              border: activeFilter === f ? "none" : "1.5px solid #e5e7eb",
-              background: activeFilter === f ? "rgba(131,199,87,1)" : "#fff",
-              color: activeFilter === f ? "#fff" : "#374151",
-              transition: "all 0.15s",
-            }}
+            className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium font-sans cursor-pointer transition-all ${activeFilter === f
+              ? "bg-[#80ca57] text-white shadow-md shadow-green-500/20 border border-[#80ca57]"
+              : "bg-white border border-gray-200 text-gray-700 hover:border-green-300 hover:bg-green-50"
+              }`}
           >
             {f}
           </button>
         ))}
       </div>
 
-      {/* Grid - Affichage avec gestion du chargement et des erreurs */}
+      {/* Grid - Mobile First */}
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <Loader2 size={40} className="animate-spin" style={{ color: '#83C757', animation: 'spin 1s linear infinite' }} />
-            <p style={{ marginTop: '16px', color: '#6b7280' }}>Chargement des biens...</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Loader2 size={40} className="animate-spin text-green-500 mx-auto mb-4" />
+            <p className="text-gray-500">Chargement des biens...</p>
           </div>
         </div>
       ) : error ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div style={{ textAlign: 'center', background: '#fee2e2', padding: '24px', borderRadius: '12px' }}>
-            <AlertCircle size={40} style={{ color: '#ef4444' }} />
-            <p style={{ marginTop: '16px', color: '#ef4444', fontWeight: 600 }}>Erreur</p>
-            <p style={{ color: '#6b7280', marginTop: '8px' }}>{error}</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <AlertCircle size={40} className="text-red-500 mx-auto mb-4" />
+            <p className="text-red-500">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg"
+            >
+              Réessayer
+            </button>
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <Building2 size={60} style={{ color: '#9ca3af' }} />
-            <p style={{ marginTop: '16px', color: '#6b7280', fontSize: '18px' }}>Aucun bien trouvé</p>
-            <p style={{ color: '#9ca3af', marginTop: '8px' }}>Ajoutez votre premier bien en cliquant sur "Ajouter un bien"</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Home size={40} className="text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">Aucun bien trouvé</p>
+            {search && (
+              <button 
+                onClick={() => setSearch("")}
+                className="mt-2 text-green-500 hover:underline"
+              >
+                Effacer la recherche
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '22px' }}>
-          {filtered.map((bien) => (
-            <BienCard 
-              key={bien.id} 
-              bien={bien} 
-              onClick={() => {
-                const prop = properties.find(p => p.id === bien.id);
-                if (prop) setSelectedProperty(prop);
-              }} 
-            />
+        <div className="animate-fadeInUp animate-delay-300 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 xl:gap-12 max-w-[1400px]">
+          {filtered.map((bien: any) => (
+            <BienCard key={bien.id} bien={bien} onClick={() => handleOpenEdit(bien)} />
           ))}
         </div>
       )}
 
-      {/* Modal de détails du bien */}
-      {selectedProperty && (
-        <div className="modal-overlay" onClick={() => setSelectedProperty(null)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <PropertyDetailsModal 
-              property={selectedProperty} 
-              onClose={() => setSelectedProperty(null)} 
-              onEdit={() => {
-                navigate(`/proprietaire/modifier-bien/${selectedProperty.id}`);
-              }}
-              canEdit={selectedProperty.can_edit !== false}
-            />
-          </div>
-        </div>
-      )}
+      {/* Modal d'édition supprimé - on utilise maintenant la page ModifierBien */}
     </div>
   );
 }

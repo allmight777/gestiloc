@@ -18,6 +18,7 @@ function unwrapArray<T>(payload: any): T[] {
 
 export interface Property {
   id: number;
+  name: string;
   address: string;
   city: string;
   postal_code?: string;
@@ -60,6 +61,8 @@ export interface TenantLease {
   deposit: number | null;
 
   status: 'draft' | 'active' | 'terminated' | 'cancelled' | string;
+  type: string;
+  lease_number: string;
   created_at: string;
   updated_at: string;
 
@@ -197,23 +200,23 @@ const tenantApi = {
     return unwrapData<TenantLease>(response.data);
   },
 
-downloadLeaseContract: async (uuid: string): Promise<Blob> => {
-  try {
-    const res = await api.get(`/tenant/my-leases/${uuid}/contract`, {
-      responseType: 'blob',
-      headers: { Accept: 'application/pdf' },
-    });
-    return res.data;
-  } catch (err: any) {
-    if (err?.response?.status !== 404) throw err;
+  downloadLeaseContract: async (uuid: string): Promise<Blob> => {
+    try {
+      const res = await api.get(`/tenant/my-leases/${uuid}/contract`, {
+        responseType: 'blob',
+        headers: { Accept: 'application/pdf' },
+      });
+      return res.data;
+    } catch (err: any) {
+      if (err?.response?.status !== 404) throw err;
 
-    const res2 = await api.get(`/pdf/contrat-bail/${uuid}`, {
-      responseType: 'blob',
-      headers: { Accept: 'application/pdf' },
-    });
-    return res2.data;
-  }
-},
+      const res2 = await api.get(`/pdf/contrat-bail/${uuid}`, {
+        responseType: 'blob',
+        headers: { Accept: 'application/pdf' },
+      });
+      return res2.data;
+    }
+  },
 
 
   // paginate => { data: Invoice[] ...}
@@ -332,7 +335,7 @@ downloadLeaseContract: async (uuid: string): Promise<Blob> => {
     await api.post('/tenant/change-password', data);
   },
 
-    // ===== INCIDENTS (Maintenance) =====
+  // ===== INCIDENTS (Maintenance) =====
   getIncidents: async (params?: { status?: string; property_id?: number }): Promise<TenantIncident[]> => {
     const res = await api.get('/tenant/incidents', { params });
     const data = res.data?.data || res.data;
@@ -370,35 +373,35 @@ downloadLeaseContract: async (uuid: string): Promise<Blob> => {
     await api.delete(`/tenant/incidents/${id}`);
   },
 
-uploadIncidentPhotos: async (files: File[]): Promise<string[]> => {
-  const form = new FormData();
+  uploadIncidentPhotos: async (files: File[]): Promise<string[]> => {
+    const form = new FormData();
 
-  // Laravel valide: files + files.*
-  files.forEach((f) => form.append('files[]', f, f.name));
+    // Laravel valide: files + files.*
+    files.forEach((f) => form.append('files[]', f, f.name));
 
-  try {
-    const res = await api.post('/tenant/incidents/upload', form, {
-      headers: {
-        // Ne pas fixer le boundary à la main, axios le fera
-        'Content-Type': 'multipart/form-data',
-        Accept: 'application/json',
-      },
-    });
+    try {
+      const res = await api.post('/tenant/incidents/upload', form, {
+        headers: {
+          // Ne pas fixer le boundary à la main, axios le fera
+          'Content-Type': 'multipart/form-data',
+          Accept: 'application/json',
+        },
+      });
 
-    return res.data?.paths || [];
-  } catch (err: any) {
-    // ✅ Affiche l’erreur de validation
-    console.error('UPLOAD 422 payload:', err?.response?.data);
+      return res.data?.paths || [];
+    } catch (err: any) {
+      // ✅ Affiche l’erreur de validation
+      console.error('UPLOAD 422 payload:', err?.response?.data);
 
-    // Si Laravel renvoie errors.files.* etc.
-    const errors = err?.response?.data?.errors;
-    const message =
-      err?.response?.data?.message ||
-      (errors ? JSON.stringify(errors) : 'Upload échoué');
+      // Si Laravel renvoie errors.files.* etc.
+      const errors = err?.response?.data?.errors;
+      const message =
+        err?.response?.data?.message ||
+        (errors ? JSON.stringify(errors) : 'Upload échoué');
 
-    throw new Error(message);
-  }
-},
+      throw new Error(message);
+    }
+  },
 
 
 };

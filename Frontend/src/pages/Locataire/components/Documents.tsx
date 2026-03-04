@@ -65,7 +65,9 @@ interface Document {
   created_at: string;
   icon: string;
   property?: { id: number; name: string; };
+  property_id?: number;
   lease?: { id: number; };
+  shared_with?: number[];
 }
 
 interface Template {
@@ -955,14 +957,14 @@ export const Documents: React.FC<DocumentsProps> = ({ notify }) => {
               <button
                 onClick={handleCancelDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-white"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:bg-white flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -1181,7 +1183,7 @@ export const Documents: React.FC<DocumentsProps> = ({ notify }) => {
                 <button
                   onClick={handleCreateDocument}
                   disabled={submitting || !selectedFile || !newDocument.type}
-                  className="px-4 py-2 text-white rounded-lg transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 text-white rounded-lg transition-all hover:opacity-90 disabled:bg-white disabled:cursor-not-allowed flex items-center gap-2"
                   style={{ backgroundColor: PRIMARY_COLOR }}
                 >
                   {submitting ? (
@@ -1626,7 +1628,7 @@ export const Documents: React.FC<DocumentsProps> = ({ notify }) => {
               <button
                 onClick={handleSaveDossier}
                 disabled={submitting}
-                className="px-6 py-2.5 bg-[#70AE48] text-white font-medium rounded-lg hover:bg-[#5a8f3a] transition-colors disabled:opacity-50 min-w-[120px] flex items-center justify-center"
+                className="px-6 py-2.5 bg-[#70AE48] text-white font-medium rounded-lg hover:bg-[#5a8f3a] transition-colors disabled:bg-white min-w-[120px] flex items-center justify-center"
               >
                 {submitting ? (
                   <>

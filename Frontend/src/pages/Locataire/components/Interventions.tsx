@@ -42,7 +42,7 @@ const PRIMARY_COLOR = '#70AE48';
 
 const apiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ||
-  'http://localhost:8000';
+  'https://wheat-skunk-120710.hostingersite.com';
 
 const categoryMeta: Record<IncidentCategory, { label: string; icon: any; hint: string }> = {
   plumbing: { label: 'Plomberie', icon: Droplet, hint: 'Fuite, évier, WC, robinet...' },
@@ -333,6 +333,11 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
     setShowDeleteConfirm(true);
   };
 
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setIncidentToDelete(null);
+  };
+
   const handleConfirmDelete = async () => {
     if (!incidentToDelete) return;
     
@@ -352,19 +357,45 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
     }
   };
 
-  const handleCancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setIncidentToDelete(null);
-  };
-
-  const filteredIncidents = incidents.filter(incident => 
-    incident.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (incident.property?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (incident.property?.address || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (incident.property?.city || '').toLowerCase().includes(searchQuery.toLowerCase())
+  // Empty state illustration component
+  const EmptyStateIllustration = () => (
+    <div className="flex flex-col items-center justify-center py-12">
+      {/* ... */}
+    </div>
   );
 
-  const paginatedIncidents = filteredIncidents.slice(0, parseInt(itemsPerPage));
+  const filteredIncidents = useMemo(() => {
+    if (!searchQuery.trim()) return incidents;
+    const query = searchQuery.toLowerCase();
+    return incidents.filter(incident => 
+      incident.title.toLowerCase().includes(query) ||
+      incident.description?.toLowerCase().includes(query) ||
+      (incident.property as any)?.name?.toLowerCase().includes(query) ||
+      leases.find(l => l.property?.id === incident.property_id)?.property?.name?.toLowerCase().includes(query)
+    );
+  }, [incidents, searchQuery, leases]);
+
+  const paginatedIncidents = useMemo(() => {
+    const limit = parseInt(itemsPerPage) || 10;
+    return filteredIncidents.slice(0, limit);
+  }, [filteredIncidents, itemsPerPage]);
+
+  // List view component
+  const ListView = () => (
+    <div className="space-y-4">
+      {/* Top button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors hover:opacity-90"
+          style={{ background: 'rgba(82, 157, 33, 1)' }}
+        >
+          <Plus size={18} />
+          Une nouvelle intervention
+        </button>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -408,14 +439,14 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
               <button
                 onClick={handleCancelDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:bg-white"
               >
                 Annuler
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:bg-white flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -768,7 +799,7 @@ export const Interventions: React.FC<InterventionsProps> = ({ notify }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="px-6 py-3 text-white rounded-xl font-medium flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 text-white rounded-xl font-medium flex items-center gap-2 transition-all hover:opacity-90 disabled:bg-white disabled:cursor-not-allowed"
                     style={{ backgroundColor: PRIMARY_COLOR }}
                   >
                     {submitting ? (

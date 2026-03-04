@@ -1,500 +1,24 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
-  Save,
   Home,
-  Building2,
   MapPin,
-  Ruler,
   Euro,
-  X,
   Image as ImageIcon,
   Loader2,
-  AlertTriangle,
+  ArrowLeft,
+  Save,
+  Building2,
+  X,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { propertyService, uploadService } from "@/services/api";
+import { uploadService, propertyService, Property } from "../../../services/api";
 
-/**
- * ✅ Formulaire de modification de bien
- * Même style que "AjouterBien"
- */
+interface ModifierBienProps {
+  notify?: (msg: string, type: "success" | "info" | "error") => void;
+}
 
-const styles = `
-  :root{
-    --gradA:#529D21;
-    --gradB:#83C757;
-    --indigo:#529D21;
-    --violet:#83C757;
-    --emerald:#10b981;
-
-    --bg:#ffffff;
-    --ink:#0f172a;
-    --muted:#64748b;
-    --muted2:#94a3b8;
-
-    --line: rgba(15,23,42,.10);
-    --line2: rgba(15,23,42,.08);
-
-    --shadow: 0 22px 70px rgba(0,0,0,.18);
-    --shadow2: 0 12px 35px rgba(15,23,42,.10);
-    --shadow3: 0 8px 18px rgba(15,23,42,.08);
-
-    --ring: 0 0 0 4px rgba(82,157,33,.14);
-  }
-
-  *{ box-sizing:border-box; }
-
-  .page{
-    min-height: 100vh;
-    padding: 26px;
-    color: var(--ink);
-    background:#ffffff;
-    position: relative;
-  }
-
-  .page::before{
-    content:"";
-    position: fixed;
-    inset:0;
-    background:
-      radial-gradient(900px 520px at 12% -8%, rgba(82,157,33,.16) 0%, rgba(82,157,33,0) 62%),
-      radial-gradient(900px 520px at 92% 8%, rgba(131,199,87,.14) 0%, rgba(131,199,87,0) 64%),
-      radial-gradient(700px 420px at 40% 110%, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 60%);
-    pointer-events:none;
-    z-index:-2;
-  }
-
-  .shell{ max-width: 1200px; margin: 0 auto; }
-
-  .card{
-    background: rgba(255,255,255,.92);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    border: 1px solid rgba(82,157,33,.18);
-    position: relative;
-    backdrop-filter: blur(10px);
-  }
-
-  .card::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    background:
-      radial-gradient(circle at 14% 18%, rgba(82,157,33,.10), rgba(82,157,33,0) 58%),
-      radial-gradient(circle at 88% 30%, rgba(131,199,87,.10), rgba(131,199,87,0) 58%),
-      radial-gradient(circle at 50% 95%, rgba(16,185,129,.08), rgba(16,185,129,0) 55%);
-    z-index: 0;
-  }
-
-  .header{
-    background: linear-gradient(135deg, var(--gradA) 0%, var(--gradB) 100%);
-    padding: 2.25rem;
-    color: #fff;
-    position: relative;
-    overflow:hidden;
-    z-index: 1;
-  }
-
-  .header-art{
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:0;
-  }
-  .header-art .blob{
-    position:absolute;
-    right:-180px;
-    top:-210px;
-    width: 640px;
-    height: 640px;
-    opacity: .95;
-    filter: drop-shadow(0 18px 44px rgba(0,0,0,.18));
-  }
-  .header-art .ring{
-    position:absolute;
-    left:-140px;
-    bottom:-180px;
-    width: 520px;
-    height: 520px;
-    opacity: .55;
-  }
-
-  .headerRow{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 1;
-  }
-
-  .titleWrap{ display:flex; flex-direction:column; gap: 8px; }
-
-  .title{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    font-weight: 1000;
-    letter-spacing: -0.03em;
-    font-size: 28px;
-    margin: 0;
-    line-height: 1.05;
-     color: white;
-  }
-
-  .subtitle{
-    margin: 0;
-    opacity: .94;
-    font-weight: 650;
-    font-size: 14px;
-    max-width: 72ch;
-     color: white;
-  }
-
-  .badgeRow{
-    display:flex;
-    gap: .6rem;
-    align-items:center;
-    flex-wrap: wrap;
-  }
-
-  .pillHead{
-    display:inline-flex;
-    align-items:center;
-    gap: .5rem;
-    padding: .5rem .75rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.18);
-    backdrop-filter: blur(10px);
-    font-weight: 850;
-    font-size: .82rem;
-    white-space: nowrap;
-  }
-
-  .body{
-    padding: 2.25rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  .actionsTop{
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
-  }
-  .actionsRight{ display:flex; gap: 10px; flex-wrap: wrap; }
-
-  .btn{
-    border: 2px solid rgba(82,157,33,.20);
-    background: rgba(255,255,255,.92);
-    color: #529D21;
-    border-radius: 14px;
-    padding: 10px 12px;
-    font-weight: 950;
-    font-size: 14px;
-    display:inline-flex;
-    align-items:center;
-    gap: 8px;
-    cursor: pointer;
-    transition: 180ms ease;
-    box-shadow: 0 2px 10px rgba(15,23,42,.04);
-    white-space: nowrap;
-  }
-  .btn:hover:not(:disabled){
-    transform: translateY(-1px);
-    background: rgba(82,157,33,.06);
-  }
-  .btn:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
-
-  .btn-danger{
-    color: #e11d48;
-    border-color: rgba(225,29,72,.18);
-  }
-  .btn-danger:hover:not(:disabled){ background: rgba(225,29,72,.06); }
-
-  .btn-primary{
-    border: none;
-    color:#fff;
-    background: linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%);
-    box-shadow: 0 14px 30px rgba(82,157,33,.22);
-  }
-  .btn-primary:hover:not(:disabled){
-    box-shadow: 0 18px 34px rgba(82,157,33,.28);
-  }
-
-  .banner{
-    display:flex;
-    gap: 10px;
-    align-items:flex-start;
-    padding: 14px 16px;
-    background:
-      radial-gradient(700px 220px at 20% 0%, rgba(82,157,33,.10), transparent 60%),
-      linear-gradient(180deg, rgba(255,255,255,0.74), rgba(255,255,255,0.50));
-    border: 1px solid rgba(15,23,42,.10);
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(17,24,39,.06);
-    margin-bottom: 16px;
-  }
-  .banner strong{
-    display:block;
-    font-weight: 950;
-    font-size: 13px;
-    letter-spacing: -0.01em;
-  }
-  .banner p{
-    margin: 2px 0 0 0;
-    font-weight: 750;
-    font-size: 13px;
-    color: var(--muted);
-    white-space: pre-line;
-  }
-
-  .grid{
-    display:grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 14px;
-  }
-
-  .section{
-    background: rgba(255,255,255,.72);
-    padding: 1.25rem;
-    border-radius: 16px;
-    border: 1px solid rgba(17,24,39,.08);
-    box-shadow: 0 10px 30px rgba(17,24,39,.06);
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow:hidden;
-  }
-  .section::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:
-      radial-gradient(900px 260px at 90% 0%, rgba(131,199,87,.06), transparent 62%),
-      radial-gradient(900px 260px at 10% 0%, rgba(82,157,33,.07), transparent 62%);
-    pointer-events:none;
-  }
-  .section > *{ position: relative; }
-
-  .sectionHead{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid rgba(82,157,33,.28);
-  }
-
-  .sectionTitle{
-    display:flex;
-    align-items:center;
-    gap: 8px;
-    font-weight: 950;
-    font-size: 14px;
-    margin: 0;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-  }
-
-  .pill{
-    display:inline-flex;
-    align-items:center;
-    gap: .45rem;
-    padding: .25rem .6rem;
-    border-radius: 999px;
-    background: rgba(82,157,33,.10);
-    border: 1px solid rgba(82,157,33,.18);
-    color: #529D21;
-    font-weight: 950;
-    font-size: .78rem;
-    white-space: nowrap;
-  }
-
-  .fields{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .fields.one{ grid-template-columns: 1fr; }
-
-  .field{ display:flex; flex-direction:column; gap: 6px; }
-
-  .label{
-    font-size: 12px;
-    font-weight: 950;
-    color: #334155;
-    display:flex;
-    align-items:center;
-    gap: 6px;
-    letter-spacing: -0.005em;
-  }
-  .req{ color:#e11d48; }
-
-  .control{
-    width: 100%;
-    padding: 0.85rem 1rem;
-    border: 2px solid rgba(148,163,184,.35);
-    border-radius: 12px;
-    font-size: 14px;
-    color: var(--ink);
-    background: rgba(255,255,255,.92);
-    transition: all .2s ease;
-    font-weight: 750;
-    box-shadow: 0 2px 10px rgba(15,23,42,.04);
-    outline:none;
-    font-family: inherit;
-  }
-  .control:hover{
-    border-color: rgba(82,157,33,.30);
-    background: rgba(255,255,255,.96);
-  }
-  .control:focus{
-    border-color: rgba(82,157,33,.75);
-    box-shadow: var(--ring);
-    background: rgba(255,255,255,1);
-  }
-
-  .help{
-    font-size: 12px;
-    color: var(--muted);
-    font-weight: 650;
-  }
-
-  .error{
-    display:flex;
-    gap: 8px;
-    align-items:flex-start;
-    font-size: 12px;
-    font-weight: 900;
-    color: #be123c;
-    background: rgba(255,241,242,.92);
-    border: 1px solid rgba(244,63,94,.30);
-    border-radius: 12px;
-    padding: 8px 10px;
-  }
-
-  .iconInput{ position: relative; }
-  .iconInput input{ padding-left: 2.85rem; }
-  .iconLeft{
-    position:absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #64748b;
-    pointer-events:none;
-  }
-
-  .photosRow{
-    margin-top: 14px;
-    padding: 16px;
-    border-top: 1px solid rgba(148,163,184,.35);
-    background:
-      radial-gradient(900px 220px at 12% 0%, rgba(82,157,33,.10), transparent 58%),
-      linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.54));
-    border-radius: 18px;
-  }
-
-  .uploadRow{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-
-  .uploadLabel{
-    display:inline-flex;
-    align-items:center;
-    gap: 8px;
-    border: 1px dashed rgba(79,70,229,.35);
-    border-radius: 999px;
-    padding: 9px 12px;
-    font-weight: 950;
-    font-size: 13px;
-    cursor:pointer;
-    background: rgba(255,255,255,0.92);
-    transition: 180ms ease;
-    box-shadow: 0 14px 34px rgba(79,70,229,.14);
-  }
-  .uploadLabel:hover{
-    transform: translateY(-1px);
-    border-color: rgba(79,70,229,.55);
-    box-shadow: 0 18px 40px rgba(79,70,229,.18);
-  }
-
-  .previews{ display:flex; flex-wrap: wrap; gap: 10px; }
-
-  .thumb{
-    width: 128px;
-    height: 92px;
-    border-radius: 16px;
-    overflow:hidden;
-    border: 1px solid rgba(15,23,42,.12);
-    background: rgba(255,255,255,0.90);
-    position: relative;
-    box-shadow: 0 14px 30px rgba(15,23,42,.10);
-    transition: 180ms ease;
-  }
-  .thumb:hover{ transform: translateY(-1px); box-shadow: 0 18px 40px rgba(15,23,42,.14); }
-  .thumb img{ width:100%; height:100%; object-fit: cover; }
-
-  .remove{
-    position:absolute;
-    right: 8px;
-    top: 8px;
-    border: 1px solid rgba(15,23,42,.12);
-    background: rgba(255,255,255,0.94);
-    border-radius: 999px;
-    width: 30px;
-    height: 30px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    transition: 180ms ease;
-    box-shadow: 0 10px 22px rgba(15,23,42,.12);
-  }
-  .remove:hover{ transform: scale(1.03); }
-
-  .footer{
-    display:flex;
-    justify-content:flex-end;
-    gap: 10px;
-    padding-top: 16px;
-    flex-wrap: wrap;
-  }
-
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px;
-  }
-
-  @media (max-width: 980px){
-    .grid{ grid-template-columns: 1fr; }
-    .page{ padding: 16px; }
-    .btn{ width: 100%; justify-content:center; }
-    .actionsRight{ width:100%; }
-    .footer .btn{ width: 100%; }
-    .header{ padding: 1.5rem; }
-    .body{ padding: 1.25rem; }
-    .header-art .blob{ right:-240px; top:-260px; width: 740px; height: 740px; opacity:.85; }
-    .header-art .ring{ left:-220px; bottom:-240px; width: 620px; height: 620px; opacity:.40; }
-  }
-`;
-
-interface FormData {
+// Interface pour le formulaire d'édition
+interface EditFormData {
   type: string;
   name: string;
   description: string;
@@ -507,8 +31,6 @@ interface FormData {
   bedroom_count: string;
   bathroom_count: string;
   rent_amount: string;
-  charges_amount: string;
-  caution: string;
   status: string;
   reference_code: string;
   terrace: boolean;
@@ -522,57 +44,51 @@ interface FormData {
   energy_class: string;
 }
 
-type FormErrors = Partial<Record<keyof FormData | "photos", string>>;
-
-type ApiErr = {
-  response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } };
-  request?: unknown;
-  message?: string;
+const typeLabel: Record<string, string> = {
+  apartment: "Appartement",
+  house: "Maison",
+  office: "Bureau",
+  commercial: "Local commercial",
+  parking: "Parking",
+  land: "Terrain",
+  other: "Autre",
 };
 
-function looksTechnical(msg?: string) {
-  if (!msg) return false;
-  const m = msg.toLowerCase();
-  return (
-    m.includes("sql") ||
-    m.includes("exception") ||
-    m.includes("stack") ||
-    m.includes("trace") ||
-    m.includes("undefined") ||
-    m.includes("vendor/") ||
-    m.includes("laravel") ||
-    m.includes("symfony")
-  );
-}
+const statusLabel: Record<string, string> = {
+  available: "Disponible",
+  rented: "Loué",
+  maintenance: "En maintenance",
+  off_market: "Retiré du marché",
+};
 
-function normalizeApiError(err: ApiErr, fallback: string) {
-  if (err?.request && !err?.response) return "Le serveur ne répond pas. Vérifie ta connexion puis réessaie.";
-  const status = err?.response?.status;
+const getBackendOrigin = () => {
+  const baseURL = "http://localhost:8000";
+  try {
+    return new URL(baseURL).origin;
+  } catch {
+    return window.location.origin;
+  }
+};
 
-  if (status === 401) return "Session expirée. Reconnecte-toi.";
-  if (status === 403) return "Accès refusé.";
-  if (status === 413) return "Fichiers trop volumineux. Réduis la taille des photos.";
-  if (status === 422) return "Certains champs sont invalides. Vérifie le formulaire.";
-  if (status && status >= 500) return "Problème serveur. Réessaie dans quelques instants.";
+const resolvePhotoUrl = (p?: string | null) => {
+  if (!p) return null;
+  if (p.startsWith("http://") || p.startsWith("https://")) return p;
+  const origin = getBackendOrigin();
+  if (p.startsWith("/storage/")) return `${origin}${p}`;
+  const normalized = p.replace(/\\/g, "/").replace(/^\/+/, "");
+  return `${origin}/storage/${normalized}`;
+};
 
-  const backendMsg = err?.response?.data?.message?.trim();
-  if (backendMsg && !looksTechnical(backendMsg)) return backendMsg;
-
-  return fallback;
-}
-
-export const ModifierBien = ({
-  notify,
-}: {
-  notify?: (msg: string, type: "success" | "info" | "error") => void;
-}) => {
-  const { id } = useParams<{ id: string }>();
+const ModifierBien: React.FC<ModifierBienProps> = ({ notify }) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [propertyData, setPropertyData] = useState<any>(null);
-
-  const [formData, setFormData] = useState<FormData>({
+  const { id } = useParams<{ id: string }>();
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [formData, setFormData] = useState<EditFormData>({
     type: "apartment",
     name: "",
     description: "",
@@ -585,8 +101,6 @@ export const ModifierBien = ({
     bedroom_count: "",
     bathroom_count: "",
     rent_amount: "",
-    charges_amount: "",
-    caution: "",
     status: "available",
     reference_code: "",
     terrace: false,
@@ -600,191 +114,155 @@ export const ModifierBien = ({
     energy_class: "",
   });
 
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [banner, setBanner] = useState<{ title: string; text?: string } | null>(null);
-
-  const nameRef = useRef<HTMLInputElement | null>(null);
-  const surfaceRef = useRef<HTMLInputElement | null>(null);
-  const addressRef = useRef<HTMLInputElement | null>(null);
-  const zipRef = useRef<HTMLInputElement | null>(null);
-  const cityRef = useRef<HTMLInputElement | null>(null);
-
-  const pushNotify = (msg: string, type: "success" | "info" | "error") => {
-    if (notify) notify(msg, type);
-    else alert(msg);
-  };
-
-  const clearError = (key: keyof FormErrors) => {
-    setFormErrors((p) => {
-      if (!p[key]) return p;
-      const next = { ...p };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    clearError(name as keyof FormErrors);
-  };
-
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const arr = Array.from(files);
-    const maxPhotos = 8;
-    const maxSize = 5 * 1024 * 1024;
-    const ok = arr.filter((f) => f.size <= maxSize);
-
-    if (ok.length !== arr.length) pushNotify("Certaines photos dépassent 5MB et ont été ignorées.", "info");
-
-    const merged = [...photos, ...ok].slice(0, maxPhotos);
-    if (photos.length + ok.length > maxPhotos) pushNotify("Maximum 8 photos.", "info");
-
-    photoPreviews.forEach((u) => URL.revokeObjectURL(u));
-
-    setPhotos(merged);
-    setPhotoPreviews(merged.map((f) => URL.createObjectURL(f)));
-    clearError("photos");
-  };
-
-  const handleRemovePhoto = (index: number, isExisting: boolean = false) => {
-    if (isExisting) {
-      setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      setPhotos((prev) => prev.filter((_, i) => i !== index));
-      setPhotoPreviews((prev) => {
-        const toRemove = prev[index];
-        if (toRemove) URL.revokeObjectURL(toRemove);
-        return prev.filter((_, i) => i !== index);
-      });
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      photoPreviews.forEach((u) => URL.revokeObjectURL(u));
-    };
-  }, [photoPreviews]);
-
-  // Fetch property data
+  // Charger les données du bien
   useEffect(() => {
     const fetchProperty = async () => {
-      if (!id) return;
-      
+      if (!id) {
+        notify?.("ID du bien manquant", "error");
+        navigate("/proprietaire/mes-biens");
+        return;
+      }
+
+      setIsLoading(true);
       try {
-        setIsFetching(true);
-        const property = await propertyService.getProperty(Number(id));
-        setPropertyData(property);
-        
-        const p = property;
+        const response = await propertyService.getProperty(parseInt(id));
+        const propertyData = response.data || response;
+        setProperty(propertyData);
+
+        // Pré-remplir le formulaire avec les données existantes
         setFormData({
-          type: p.type || "apartment",
-          name: p.name || p.title || "",
-          description: p.description || "",
-          address: p.address || "",
-          city: p.city || "",
-          district: p.district || "",
-          zip_code: p.zip_code || "",
-          surface: p.surface?.toString() || "",
-          room_count: p.room_count?.toString() || "",
-          bedroom_count: p.bedroom_count?.toString() || "",
-          bathroom_count: p.bathroom_count?.toString() || "",
-          rent_amount: p.rent_amount?.toString() || "",
-          charges_amount: p.charges_amount?.toString() || "",
-          caution: p.caution?.toString() || "",
-          status: p.status || "available",
-          reference_code: p.reference_code || "",
-          terrace: p.meta?.terrace || false,
-          balcony: p.meta?.balcony || false,
-          garden: p.meta?.garden || false,
-          parking: p.meta?.parking || false,
-          floor: p.meta?.floor?.toString() || "",
-          elevator: p.meta?.elevator || false,
-          furnished: p.meta?.furnished || false,
-          heating_type: p.meta?.heating_type || "",
-          energy_class: p.meta?.energy_class || "",
+          type: propertyData.type || "apartment",
+          name: propertyData.name || "",
+          description: propertyData.description || "",
+          address: propertyData.address || "",
+          city: propertyData.city || "",
+          district: propertyData.district || "",
+          zip_code: propertyData.zip_code || "",
+          surface: propertyData.surface?.toString() || "",
+          room_count: propertyData.room_count?.toString() || "",
+          bedroom_count: propertyData.bedroom_count?.toString() || "",
+          bathroom_count: propertyData.bathroom_count?.toString() || "",
+          rent_amount: propertyData.rent_amount?.toString() || "",
+          status: propertyData.status || "available",
+          reference_code: propertyData.reference_code || "",
+          terrace: propertyData.meta?.terrace || false,
+          balcony: propertyData.meta?.balcony || false,
+          garden: propertyData.meta?.garden || false,
+          parking: propertyData.meta?.parking || false,
+          floor: propertyData.meta?.floor?.toString() || "",
+          elevator: propertyData.meta?.elevator || false,
+          furnished: propertyData.meta?.furnished || false,
+          heating_type: propertyData.meta?.heating_type || "",
+          energy_class: propertyData.meta?.energy_class || "",
         });
-        
-        if (p.photos && p.photos.length > 0) {
-          setExistingPhotos(p.photos);
-        }
+
+        setPhotos(propertyData.photos || []);
       } catch (error) {
         console.error("Erreur lors du chargement du bien:", error);
-        pushNotify("Erreur lors du chargement du bien", "error");
+        notify?.("Erreur lors du chargement du bien", "error");
         navigate("/proprietaire/mes-biens");
       } finally {
-        setIsFetching(false);
+        setIsLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id]);
+  }, [id, navigate, notify]);
 
-  const validate = (): FormErrors => {
-    const errs: FormErrors = {};
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
 
-    if (!formData.name.trim()) errs.name = "Le titre du bien est obligatoire.";
-    if (!formData.surface || Number(formData.surface) <= 0) errs.surface = "La surface doit être > 0.";
-    if (!formData.address.trim()) errs.address = "L'adresse est obligatoire.";
-    if (!formData.zip_code.trim()) errs.zip_code = "Le code postal est obligatoire.";
-    if (!formData.city.trim()) errs.city = "La ville est obligatoire.";
-
-    if (formData.rent_amount && Number(formData.rent_amount) < 0) errs.rent_amount = "Le loyer doit être positif.";
-    if (formData.charges_amount && Number(formData.charges_amount) < 0) errs.charges_amount = "Les charges doivent être positives.";
-    if (formData.caution && Number(formData.caution) < 0) errs.caution = "La caution doit être positive.";
-
-    if (formData.reference_code && !/^[A-Z0-9-]+$/.test(formData.reference_code)) {
-      errs.reference_code = "Uniquement lettres MAJ, chiffres et tirets.";
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
 
-    return errs;
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  const focusFirstError = (errs: FormErrors) => {
-    if (errs.name) nameRef.current?.focus();
-    else if (errs.surface) surfaceRef.current?.focus();
-    else if (errs.address) addressRef.current?.focus();
-    else if (errs.zip_code) zipRef.current?.focus();
-    else if (errs.city) cityRef.current?.focus();
-  };
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
 
-  const handleSubmit = async () => {
-    setBanner(null);
+    const fileArray = Array.from(files);
+    const maxPhotos = 8 - photos.length - newPhotos.length;
 
-    const errs = validate();
-    setFormErrors(errs);
-
-    if (Object.keys(errs).length > 0) {
-      const msg = Object.values(errs)[0] || "Vérifie le formulaire.";
-      setBanner({ title: "Formulaire incomplet", text: msg });
-      pushNotify(msg, "error");
-      focusFirstError(errs);
+    if (fileArray.length > maxPhotos) {
+      notify?.(`Maximum ${maxPhotos} photos supplémentaires autorisées`, "error");
       return;
     }
 
-    setIsLoading(true);
+    const newFiles = fileArray.slice(0, maxPhotos);
+    setNewPhotos(prev => [...prev, ...newFiles]);
+
+    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleRemovePhoto = (index: number, isNew: boolean) => {
+    if (isNew) {
+      setNewPhotos(prev => prev.filter((_, i) => i !== index));
+      setPhotoPreviews(prev => {
+        const url = prev[index];
+        URL.revokeObjectURL(url);
+        return prev.filter((_, i) => i !== index);
+      });
+    } else {
+      setPhotos(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) newErrors.name = "Le nom du bien est requis";
+    if (!formData.address.trim()) newErrors.address = "L'adresse est requise";
+    if (!formData.city.trim()) newErrors.city = "La ville est requise";
+    if (!formData.zip_code.trim()) newErrors.zip_code = "Le code postal est requis";
+    if (!formData.surface.trim()) newErrors.surface = "La surface est requise";
+    else if (isNaN(Number(formData.surface)) || Number(formData.surface) <= 0) {
+      newErrors.surface = "Surface invalide";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      notify?.("Veuillez corriger les erreurs du formulaire", "error");
+      return;
+    }
+
+    if (!id) {
+      notify?.("ID du bien manquant", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // Upload new photos if present
       let uploadedPhotoUrls: string[] = [];
-      if (photos.length > 0) {
-        for (const file of photos) {
+      if (newPhotos.length > 0) {
+        for (const file of newPhotos) {
           const res = await uploadService.uploadPhoto(file);
           uploadedPhotoUrls.push(res.path);
         }
       }
 
-      // Combine existing and new photos
-      const allPhotos = [...existingPhotos, ...uploadedPhotoUrls];
-
-      const payload = {
+      const payload: any = {
         type: formData.type,
         title: formData.name.trim(),
         name: formData.name.trim(),
@@ -792,21 +270,15 @@ export const ModifierBien = ({
         address: formData.address,
         district: formData.district || null,
         city: formData.city,
-        state: null,
         zip_code: formData.zip_code || null,
-        latitude: null,
-        longitude: null,
         surface: formData.surface ? parseFloat(formData.surface) : null,
         room_count: formData.room_count ? parseInt(formData.room_count) : null,
         bedroom_count: formData.bedroom_count ? parseInt(formData.bedroom_count) : null,
         bathroom_count: formData.bathroom_count ? parseInt(formData.bathroom_count) : null,
         rent_amount: formData.rent_amount ? parseFloat(formData.rent_amount) : null,
-        charges_amount: formData.charges_amount ? parseFloat(formData.charges_amount) : null,
-        caution: formData.caution ? parseFloat(formData.caution) : null,
         status: formData.status,
         reference_code: formData.reference_code || null,
-        amenities: [],
-        photos: allPhotos.length ? allPhotos : null,
+        photos: [...photos, ...uploadedPhotoUrls],
         meta: {
           terrace: formData.terrace,
           balcony: formData.balcony,
@@ -820,79 +292,298 @@ export const ModifierBien = ({
         },
       };
 
-      await propertyService.updateProperty(Number(id), payload);
-      console.log("Property updated:", propertyData);
+      await propertyService.updateProperty(parseInt(id), payload);
 
-      pushNotify("✅ Le bien a été modifié avec succès !", "success");
+      notify?.("✅ Le bien a été mis à jour avec succès !", "success");
       navigate("/proprietaire/mes-biens");
-    } catch (e: any) {
-      const err = e as ApiErr;
-      console.error("Erreur lors de la modification du bien:", err);
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour:", error);
+      const errorMsg = error.response?.data?.message || "Une erreur est survenue";
+      notify?.(errorMsg, "error");
 
-      if (err?.response?.status === 422 && err?.response?.data?.errors) {
-        const be = err.response.data.errors;
-        const mapped: FormErrors = {};
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const formattedErrors: Record<string, string> = {};
 
-        if (be.title || be.name) mapped.name = (be.title?.[0] || be.name?.[0]) ?? "Titre invalide.";
-        if (be.surface) mapped.surface = be.surface?.[0] || "Surface invalide.";
-        if (be.address) mapped.address = be.address?.[0] || "Adresse invalide.";
-        if (be.zip_code) mapped.zip_code = be.zip_code?.[0] || "Code postal invalide.";
-        if (be.city) mapped.city = be.city?.[0] || "Ville invalide.";
-        if (be.reference_code) mapped.reference_code = be.reference_code?.[0] || "Référence invalide.";
-        if (be.rent_amount) mapped.rent_amount = be.rent_amount?.[0] || "Loyer invalide.";
-        if (be.charges_amount) mapped.charges_amount = be.charges_amount?.[0] || "Charges invalides.";
-        if (be.caution) mapped.caution = be.caution?.[0] || "Caution invalide.";
-        if (be.photos) mapped.photos = be.photos?.[0] || "Photos invalides.";
+        Object.keys(validationErrors).forEach(key => {
+          formattedErrors[key] = validationErrors[key][0];
+        });
 
-        setFormErrors((p) => ({ ...p, ...mapped }));
-
-        const msg = "Certains champs sont invalides. Vérifie le formulaire.";
-        setBanner({ title: "Erreur de validation", text: msg });
-        pushNotify(msg, "error");
-        focusFirstError(mapped);
-        return;
+        setErrors(formattedErrors);
       }
-
-      const msg = normalizeApiError(err, "Une erreur est survenue lors de la modification du bien.");
-      setBanner({ title: "Impossible d'enregistrer", text: msg });
-      pushNotify(msg, "error");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    if (confirm("Êtes-vous sûr de vouloir annuler ? Les modifications seront perdues.")) {
-      navigate("/proprietaire/mes-biens");
-    }
+  useEffect(() => {
+    return () => {
+      photoPreviews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [photoPreviews]);
+
+  const BOLD_FONT = "'Merriweather', Georgia, serif";
+  const SMALL_FONT = "'Manrope', sans-serif";
+
+  const styles: Record<string, React.CSSProperties> = {
+    page: {
+      fontFamily: SMALL_FONT,
+      background: "#f8faf8",
+      minHeight: "100vh",
+      padding: "0",
+    },
+    topBar: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "18px 32px",
+      marginBottom: "8px",
+    },
+    backBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      background: "white",
+      border: "1.5px solid #d1d5db",
+      borderRadius: "8px",
+      padding: "9px 18px",
+      fontSize: "13px",
+      color: "#374151",
+      cursor: "pointer",
+      fontWeight: 500,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+    },
+    topActions: {
+      display: "flex",
+      gap: "12px",
+    },
+    cancelBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      background: "white",
+      border: "1.5px solid #ef4444",
+      borderRadius: "8px",
+      padding: "9px 20px",
+      fontSize: "13px",
+      color: "#ef4444",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+    },
+    saveBtn: {
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      background: "#16a34a",
+      border: "none",
+      borderRadius: "8px",
+      padding: "9px 22px",
+      fontSize: "13px",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 600,
+      fontFamily: SMALL_FONT,
+      transition: "all 0.15s",
+      boxShadow: "0 2px 8px rgba(22,163,74,0.25)",
+    },
+    headerSection: {
+      padding: "0 32px 20px",
+    },
+    title: {
+      fontSize: "26px",
+      fontWeight: 800,
+      color: "#111827",
+      margin: "0 0 4px 0",
+      fontFamily: BOLD_FONT,
+      letterSpacing: "-0.3px",
+    },
+    subtitle: {
+      fontSize: "16px",
+      color: "#6b7280",
+      margin: 0,
+      fontFamily: SMALL_FONT,
+    },
+    card: {
+      background: "white",
+      borderRadius: "16px",
+      border: "1px solid #e5e7eb",
+      padding: "32px",
+      margin: "0 32px 32px",
+      boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
+    },
+    cardTitle: {
+      fontSize: "17px",
+      fontWeight: 700,
+      color: "#111827",
+      marginBottom: "28px",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      fontFamily: BOLD_FONT,
+    },
+    grid2: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "28px 40px",
+    },
+    fieldGroup: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    },
+    label: {
+      fontSize: "13px",
+      fontWeight: 600,
+      color: "#374151",
+      fontFamily: SMALL_FONT,
+    },
+    required: {
+      color: "#dc2626",
+    },
+    select: {
+      width: "100%",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#6b7280",
+      background: "white",
+      appearance: "none",
+      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 12px center",
+      cursor: "pointer",
+      boxSizing: "border-box",
+      outline: "none",
+      fontFamily: SMALL_FONT,
+    },
+    input: {
+      width: "100%",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#111827",
+      background: "white",
+      boxSizing: "border-box",
+      outline: "none",
+      transition: "border-color 0.15s",
+      fontFamily: SMALL_FONT,
+    },
+    inputError: {
+      borderColor: "#dc2626",
+    },
+    errorText: {
+      fontSize: "12px",
+      color: "#dc2626",
+      fontFamily: SMALL_FONT,
+    },
+    textarea: {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: "8px",
+      border: "1.5px solid #d1d5db",
+      fontSize: "13px",
+      color: "#111827",
+      background: "white",
+      boxSizing: "border-box",
+      outline: "none",
+      resize: "vertical",
+      minHeight: "110px",
+      fontFamily: SMALL_FONT,
+      transition: "border-color 0.15s",
+    },
+    checkboxRow: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginTop: "6px",
+    },
+    checkboxLabel: {
+      fontSize: "12px",
+      color: "#6b7280",
+      cursor: "pointer",
+      fontFamily: SMALL_FONT,
+    },
+    photosSection: {
+      marginTop: "24px",
+      padding: "24px",
+      borderRadius: "12px",
+      border: "1px solid #e5e7eb",
+      background: "#f9fafb",
+    },
+    photosGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+      gap: "12px",
+      marginTop: "12px",
+    },
+    photoItem: {
+      position: "relative" as const,
+      width: "100%",
+      height: "100px",
+      borderRadius: "8px",
+      overflow: "hidden",
+      border: "1px solid #e5e7eb",
+    },
+    photoRemove: {
+      position: "absolute" as const,
+      top: "4px",
+      right: "4px",
+      background: "rgba(239, 68, 68, 0.9)",
+      color: "white",
+      border: "none",
+      borderRadius: "50%",
+      width: "24px",
+      height: "24px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+    },
+    photoUpload: {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      marginTop: "12px",
+    },
+    photoUploadBtn: {
+      padding: "8px 16px",
+      borderRadius: "8px",
+      border: "2px dashed #d1d5db",
+      background: "white",
+      color: "#6b7280",
+      fontSize: "13px",
+      fontWeight: 600,
+      cursor: "pointer",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "6px",
+      fontFamily: SMALL_FONT,
+    },
+    bottomActions: {
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: "12px",
+      marginTop: "24px",
+      paddingTop: "20px",
+      borderTop: "1px solid #f3f4f6",
+    },
+    fullWidth: {
+      gridColumn: "1 / -1",
+    },
   };
 
-  const photosRemaining = useMemo(() => Math.max(0, 8 - photos.length - existingPhotos.length), [photos.length, existingPhotos.length]);
-
-  const getBackendOrigin = () => {
-    const baseURL = "http://localhost:8000";
-    try {
-      return new URL(baseURL).origin;
-    } catch {
-      return window.location.origin;
-    }
-  };
-
-  const resolvePhotoUrl = (p?: string | null) => {
-    if (!p) return null;
-    if (p.startsWith("http://") || p.startsWith("https://")) return p;
-    const origin = getBackendOrigin();
-    if (p.startsWith("/storage/")) return `${origin}${p}`;
-    const normalized = p.replace(/\\/g, "/").replace(/^\/+/, "");
-    return `${origin}/storage/${normalized}`;
-  };
-
-  if (isFetching) {
+  if (isLoading) {
     return (
-      <div className="page">
-        <div className="shell">
-          <div className="loading-container">
-            <Loader2 size={40} className="animate-spin" style={{ color: "#529D21" }} />
+      <div style={styles.page}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 size={40} className="animate-spin text-green-500 mx-auto mb-4" />
+            <p className="text-gray-500">Chargement du bien...</p>
           </div>
         </div>
       </div>
@@ -901,603 +592,517 @@ export const ModifierBien = ({
 
   return (
     <>
-      <style>{styles}</style>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;800;900&family=Manrope:wght@400;500;600&display=swap');
+      `}</style>
+      <div style={styles.page} className="animate-fadeInUp">
+        {/* Top Action Bar */}
+        <div style={styles.topBar} className="animate-slideInLeft">
+          <button 
+            style={styles.backBtn}
+            onClick={() => navigate("/proprietaire/mes-biens")}
+          >
+            <ArrowLeft size={16} />
+            Retour à mes biens
+          </button>
+          <div style={styles.topActions}>
+            <button 
+              style={styles.cancelBtn}
+              onClick={() => navigate("/proprietaire/mes-biens")}
+            >
+              ✕ Annuler
+            </button>
+            <button 
+              style={styles.saveBtn}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  Enregistrer
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
-      <div className="page">
-        <div className="shell">
-          <div className="card">
-            <div className="header">
-              <div className="header-art" aria-hidden="true">
-                <svg className="blob" viewBox="0 0 600 600" fill="none">
-                  <defs>
-                    <linearGradient id="hb1" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stopColor="rgba(255,255,255,.65)" />
-                      <stop offset="1" stopColor="rgba(255,255,255,.08)" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M420 70C500 110 560 190 560 290C560 420 460 520 320 540C190 560 70 490 50 360C30 240 110 140 240 90C310 62 360 44 420 70Z"
-                    fill="url(#hb1)"
-                    opacity="0.65"
-                  />
-                  <path
-                    d="M455 140C505 175 530 235 520 295C505 390 410 450 320 460C230 470 150 420 130 340C110 260 155 190 235 150C315 110 395 105 455 140Z"
-                    fill="rgba(255,255,255,.10)"
-                  />
-                </svg>
+        {/* Header */}
+        <div style={styles.headerSection} className="animate-fadeInUp animate-delay-100">
+          <h1 style={styles.title}>
+            <Building2 size={28} className="inline-block mr-2" />
+            Modifier le bien
+          </h1>
+          <p style={styles.subtitle}>
+            Modifiez les informations de votre bien immobilier
+            {property?.reference_code && (
+              <span className="ml-2 px-2 py-0.5 bg-gray-100 rounded text-xs">
+                Réf: {property.reference_code}
+              </span>
+            )}
+          </p>
+        </div>
 
-                <svg className="ring" viewBox="0 0 500 500" fill="none">
-                  <defs>
-                    <radialGradient
-                      id="hb2"
-                      cx="0"
-                      cy="0"
-                      r="1"
-                      gradientUnits="userSpaceOnUse"
-                      gradientTransform="translate(220 210) rotate(45) scale(240)"
+        {/* Main Card */}
+        <div style={styles.card} className="animate-scaleIn animate-delay-200">
+          
+          {/* Section: Informations générales */}
+          <div style={styles.cardTitle}>
+            <span>🏠</span> Informations générales
+          </div>
+          <div style={styles.grid2}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Type de bien <span style={styles.required}>*</span>
+              </label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                style={styles.select}
+              >
+                <option value="apartment">Appartement</option>
+                <option value="house">Maison</option>
+                <option value="office">Bureau</option>
+                <option value="commercial">Local commercial</option>
+                <option value="parking">Parking</option>
+                <option value="land">Terrain</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Statut <span style={styles.required}>*</span>
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                style={styles.select}
+              >
+                <option value="available">Disponible</option>
+                <option value="rented">Loué</option>
+                <option value="maintenance">En maintenance</option>
+                <option value="off_market">Retiré du marché</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Nom du bien <span style={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Ex: Appartement T3 centre-ville"
+                style={{
+                  ...styles.input,
+                  ...(errors.name ? styles.inputError : {}),
+                }}
+              />
+              {errors.name && <div style={styles.errorText}>{errors.name}</div>}
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Surface (m²) <span style={styles.required}>*</span>
+              </label>
+              <input
+                type="number"
+                name="surface"
+                value={formData.surface}
+                onChange={handleChange}
+                placeholder="Ex: 65"
+                style={{
+                  ...styles.input,
+                  ...(errors.surface ? styles.inputError : {}),
+                }}
+                min="0"
+                step="0.01"
+              />
+              {errors.surface && <div style={styles.errorText}>{errors.surface}</div>}
+            </div>
+          </div>
+
+          {/* Section: Adresse */}
+          <div style={{ ...styles.cardTitle, marginTop: "32px" }}>
+            <span>📍</span> Adresse
+          </div>
+          <div style={styles.grid2}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Adresse <span style={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                placeholder="Numéro et rue"
+                style={{
+                  ...styles.input,
+                  ...(errors.address ? styles.inputError : {}),
+                }}
+              />
+              {errors.address && <div style={styles.errorText}>{errors.address}</div>}
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Ville <span style={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="Ex: Paris"
+                style={{
+                  ...styles.input,
+                  ...(errors.city ? styles.inputError : {}),
+                }}
+              />
+              {errors.city && <div style={styles.errorText}>{errors.city}</div>}
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>
+                Code postal <span style={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                name="zip_code"
+                value={formData.zip_code}
+                onChange={handleChange}
+                placeholder="Ex: 75000"
+                style={{
+                  ...styles.input,
+                  ...(errors.zip_code ? styles.inputError : {}),
+                }}
+              />
+              {errors.zip_code && <div style={styles.errorText}>{errors.zip_code}</div>}
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Quartier / Arrondissement</label>
+              <input
+                type="text"
+                name="district"
+                value={formData.district}
+                onChange={handleChange}
+                placeholder="Ex: Le Marais, 4ème"
+                style={styles.input}
+              />
+            </div>
+          </div>
+
+          {/* Section: Caractéristiques */}
+          <div style={{ ...styles.cardTitle, marginTop: "32px" }}>
+            <span>🏗️</span> Caractéristiques
+          </div>
+          <div style={styles.grid2}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Nombre de pièces</label>
+              <input
+                type="number"
+                name="room_count"
+                value={formData.room_count}
+                onChange={handleChange}
+                placeholder="Ex: 4"
+                style={styles.input}
+                min="0"
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Nombre de chambres</label>
+              <input
+                type="number"
+                name="bedroom_count"
+                value={formData.bedroom_count}
+                onChange={handleChange}
+                placeholder="Ex: 3"
+                style={styles.input}
+                min="0"
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Nombre de salles de bain</label>
+              <input
+                type="number"
+                name="bathroom_count"
+                value={formData.bathroom_count}
+                onChange={handleChange}
+                placeholder="Ex: 2"
+                style={styles.input}
+                min="0"
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Étage</label>
+              <input
+                type="number"
+                name="floor"
+                value={formData.floor}
+                onChange={handleChange}
+                placeholder="Ex: 3"
+                style={styles.input}
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Checkboxes */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "16px" }}>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="terrace"
+                checked={formData.terrace}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Terrasse</span>
+            </label>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="balcony"
+                checked={formData.balcony}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Balcon</span>
+            </label>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="garden"
+                checked={formData.garden}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Jardin</span>
+            </label>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="parking"
+                checked={formData.parking}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Parking</span>
+            </label>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="elevator"
+                checked={formData.elevator}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Ascenseur</span>
+            </label>
+            <label style={{ ...styles.checkboxRow, marginTop: 0 }}>
+              <input
+                type="checkbox"
+                name="furnished"
+                checked={formData.furnished}
+                onChange={handleChange}
+                style={{ accentColor: "#16a34a", width: "16px", height: "16px" }}
+              />
+              <span style={styles.checkboxLabel}>Meublé</span>
+            </label>
+          </div>
+
+          {/* Chauffage et énergie */}
+          <div style={{ ...styles.grid2, marginTop: "20px" }}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Type de chauffage</label>
+              <select
+                name="heating_type"
+                value={formData.heating_type}
+                onChange={handleChange}
+                style={styles.select}
+              >
+                <option value="">Sélectionner...</option>
+                <option value="electric">Électrique</option>
+                <option value="gas">Gaz</option>
+                <option value="oil">Fioul</option>
+                <option value="heat_pump">Pompe à chaleur</option>
+                <option value="solar">Solaire</option>
+                <option value="collective">Collectif</option>
+                <option value="none">Aucun</option>
+              </select>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Classe énergétique</label>
+              <select
+                name="energy_class"
+                value={formData.energy_class}
+                onChange={handleChange}
+                style={styles.select}
+              >
+                <option value="">Sélectionner...</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Section: Financier */}
+          <div style={{ ...styles.cardTitle, marginTop: "32px" }}>
+            <span>💰</span> Financier
+          </div>
+          <div style={styles.grid2}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Loyer mensuel (FCFA)</label>
+              <input
+                type="number"
+                name="rent_amount"
+                value={formData.rent_amount}
+                onChange={handleChange}
+                placeholder="0,00"
+                style={styles.input}
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Référence du bien</label>
+              <input
+                type="text"
+                name="reference_code"
+                value={formData.reference_code}
+                onChange={(e) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    reference_code: e.target.value.toUpperCase()
+                  }));
+                }}
+                placeholder="Ex: APP-123"
+                style={styles.input}
+              />
+            </div>
+          </div>
+
+          {/* Section: Description */}
+          <div style={{ ...styles.cardTitle, marginTop: "32px" }}>
+            <span>📝</span> Description
+          </div>
+          <div style={styles.fieldGroup}>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              style={styles.textarea}
+              placeholder="Décrivez le bien, ses points forts, son emplacement..."
+              rows={4}
+            />
+          </div>
+
+          {/* Section: Photos */}
+          <div style={styles.photosSection}>
+            <div style={styles.cardTitle}>
+              <ImageIcon size={18} />
+              Photos ({photos.length + newPhotos.length}/8)
+            </div>
+
+            {(photos.length > 0 || photoPreviews.length > 0) && (
+              <div style={styles.photosGrid}>
+                {photos.map((photo, index) => {
+                  const photoUrl = resolvePhotoUrl(photo);
+                  return photoUrl ? (
+                    <div key={`existing-${index}`} style={styles.photoItem}>
+                      <img src={photoUrl} alt={`Photo ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button
+                        type="button"
+                        style={styles.photoRemove}
+                        onClick={() => handleRemovePhoto(index, false)}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : null;
+                })}
+
+                {photoPreviews.map((preview, index) => (
+                  <div key={`new-${index}`} style={styles.photoItem}>
+                    <img src={preview} alt={`Nouvelle photo ${index + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      type="button"
+                      style={styles.photoRemove}
+                      onClick={() => handleRemovePhoto(index, true)}
                     >
-                      <stop stopColor="rgba(255,255,255,.34)" />
-                      <stop offset="1" stopColor="rgba(255,255,255,0)" />
-                    </radialGradient>
-                  </defs>
-                  <circle cx="240" cy="240" r="210" fill="url(#hb2)" />
-                </svg>
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
+            )}
 
-              <div className="headerRow">
-                <div className="titleWrap">
-                  <h1 className="title">
-                    <Building2 size={22} />
-                    Modifier le bien
-                  </h1>
-                  <p className="subtitle">Modifiez les informations de votre bien immobilier.</p>
-                </div>
-
-                <div className="badgeRow">
-                  <span className="pillHead">
-                    <Home size={16} />
-                    Infos
-                  </span>
-                  <span className="pillHead">
-                    <MapPin size={16} />
-                    Adresse
-                  </span>
-                  <span className="pillHead">
-                    <ImageIcon size={16} />
-                    Photos
-                  </span>
-                </div>
-              </div>
+            <div style={styles.photoUpload}>
+              <label style={styles.photoUploadBtn}>
+                <ImageIcon size={14} />
+                Ajouter des photos
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  style={{ display: "none" }}
+                  disabled={photos.length + newPhotos.length >= 8}
+                />
+              </label>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                {8 - photos.length - newPhotos.length} photos restantes
+              </span>
             </div>
+          </div>
 
-            <div className="body">
-              <div className="actionsTop">
-                <button className="btn" onClick={handleCancel} disabled={isLoading}>
-                  <ArrowLeft size={16} />
-                  Retour
-                </button>
-
-                <div className="actionsRight">
-                  <button className="btn btn-danger" onClick={handleCancel} disabled={isLoading}>
-                    <X size={16} />
-                    Annuler
-                  </button>
-                  <button className="btn btn-primary" onClick={handleSubmit} disabled={isLoading}>
-                    {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    {isLoading ? "Enregistrement..." : "Enregistrer"}
-                  </button>
-                </div>
-              </div>
-
-              {banner ? (
-                <div className="banner">
-                  <AlertTriangle size={18} />
-                  <div>
-                    <strong>{banner.title}</strong>
-                    {banner.text ? <p>{banner.text}</p> : null}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="grid">
-                {/* LEFT */}
-                <div className="section">
-                  <div className="sectionHead">
-                    <h2 className="sectionTitle">
-                      <Home size={16} />
-                      Informations générales
-                    </h2>
-                    <span className="pill">Essentiel</span>
-                  </div>
-
-                  <div className="fields">
-                    <div className="field">
-                      <label className="label">
-                        Type <span className="req">*</span>
-                      </label>
-                      <select name="type" value={formData.type} onChange={handleChange} className="control">
-                        <option value="apartment">Appartement</option>
-                        <option value="house">Maison</option>
-                        <option value="office">Bureau</option>
-                        <option value="commercial">Local commercial</option>
-                        <option value="parking">Parking</option>
-                        <option value="other">Autre</option>
-                      </select>
-                    </div>
-
-                    <div className="field">
-                      <label className="label">
-                        Statut <span className="req">*</span>
-                      </label>
-                      <select name="status" value={formData.status} onChange={handleChange} className="control">
-                        <option value="available">Disponible</option>
-                        <option value="rented">Loué</option>
-                        <option value="maintenance">En rénovation</option>
-                        <option value="sold">Vendu</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="fields one" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">
-                        Titre du bien <span className="req">*</span>
-                      </label>
-                      <input
-                        ref={nameRef}
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Ex: Appartement T3 centre-ville"
-                        className="control"
-                      />
-                      {formErrors.name ? <div className="error">{formErrors.name}</div> : null}
-                    </div>
-                  </div>
-
-                  <div className="fields" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">
-                        Surface (m²) <span className="req">*</span>
-                      </label>
-                      <div className="iconInput">
-                        <span className="iconLeft">
-                          <Ruler size={16} />
-                        </span>
-                        <input
-                          ref={surfaceRef}
-                          type="number"
-                          name="surface"
-                          value={formData.surface}
-                          onChange={handleChange}
-                          placeholder="Ex: 65"
-                          className="control"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                      {formErrors.surface ? <div className="error">{formErrors.surface}</div> : null}
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Nombre de pièces</label>
-                      <input
-                        type="number"
-                        name="room_count"
-                        value={formData.room_count}
-                        onChange={handleChange}
-                        placeholder="Ex: 4"
-                        className="control"
-                        min="0"
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Nombre de chambres</label>
-                      <input
-                        type="number"
-                        name="bedroom_count"
-                        value={formData.bedroom_count}
-                        onChange={handleChange}
-                        placeholder="Ex: 3"
-                        className="control"
-                        min="0"
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Nombre de salles de bain</label>
-                      <input
-                        type="number"
-                        name="bathroom_count"
-                        value={formData.bathroom_count}
-                        onChange={handleChange}
-                        placeholder="Ex: 2"
-                        className="control"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Section Caractéristiques */}
-                  <div className="sectionHead" style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid rgba(102,126,234,.28)' }}>
-                    <h2 className="sectionTitle">
-                      <Home size={16} />
-                      Caractéristiques
-                    </h2>
-                    <span className="pill">Options</span>
-                  </div>
-
-                  <div className="fields" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Étage</label>
-                      <input
-                        type="number"
-                        name="floor"
-                        value={formData.floor}
-                        onChange={handleChange}
-                        placeholder="Ex: 3"
-                        className="control"
-                        min="0"
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label className="label">Type de chauffage</label>
-                      <select
-                        name="heating_type"
-                        value={formData.heating_type}
-                        onChange={handleChange}
-                        className="control"
-                      >
-                        <option value="">Sélectionner...</option>
-                        <option value="electric">Électrique</option>
-                        <option value="gas">Gaz</option>
-                        <option value="oil">Fioul</option>
-                        <option value="heat_pump">Pompe à chaleur</option>
-                        <option value="solar">Solaire</option>
-                        <option value="collective">Collectif</option>
-                        <option value="none">Aucun</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="fields one" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Options et équipements</label>
-                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="terrace"
-                            checked={formData.terrace}
-                            onChange={handleChange}
-                          />
-                          <span>Terrasse</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="balcony"
-                            checked={formData.balcony}
-                            onChange={handleChange}
-                          />
-                          <span>Balcon</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="garden"
-                            checked={formData.garden}
-                            onChange={handleChange}
-                          />
-                          <span>Jardin</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="parking"
-                            checked={formData.parking}
-                            onChange={handleChange}
-                          />
-                          <span>Parking</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="elevator"
-                            checked={formData.elevator}
-                            onChange={handleChange}
-                          />
-                          <span>Ascenseur</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            name="furnished"
-                            checked={formData.furnished}
-                            onChange={handleChange}
-                          />
-                          <span>Meublé</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="fields" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Classe énergétique</label>
-                      <select
-                        name="energy_class"
-                        value={formData.energy_class}
-                        onChange={handleChange}
-                        className="control"
-                      >
-                        <option value="">Sélectionner...</option>
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                        <option value="E">E</option>
-                        <option value="F">F</option>
-                        <option value="G">G</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="fields one" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Référence</label>
-                      <input
-                        type="text"
-                        name="reference_code"
-                        value={formData.reference_code}
-                        onChange={(e) => {
-                          const v = e.target.value.toUpperCase();
-                          setFormData((p) => ({ ...p, reference_code: v }));
-                          clearError("reference_code");
-                        }}
-                        placeholder="Ex: APP-123"
-                        className="control"
-                      />
-                      {formErrors.reference_code ? <div className="error">{formErrors.reference_code}</div> : null}
-                      <div className="help">Optionnel • Lettres MAJ, chiffres et tirets</div>
-                    </div>
-                  </div>
-
-                  <div className="fields one" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Description</label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="Décrivez le bien (optionnel)…"
-                        className="control"
-                        style={{ minHeight: 110, resize: "vertical" }}
-                      />
-                      <div className="help">Points forts, emplacement, spécificités…</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RIGHT */}
-                <div className="section">
-                  <div className="sectionHead">
-                    <h2 className="sectionTitle">
-                      <MapPin size={16} />
-                      Adresse
-                    </h2>
-                    <span className="pill">Obligatoire</span>
-                  </div>
-
-                  <div className="fields one">
-                    <div className="field">
-                      <label className="label">
-                        Adresse <span className="req">*</span>
-                      </label>
-                      <input
-                        ref={addressRef}
-                        type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        placeholder="N° et nom de la rue"
-                        className="control"
-                      />
-                      {formErrors.address ? <div className="error">{formErrors.address}</div> : null}
-                    </div>
-                  </div>
-
-                  <div className="fields" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">
-                        Code postal <span className="req">*</span>
-                      </label>
-                      <input
-                        ref={zipRef}
-                        type="text"
-                        name="zip_code"
-                        value={formData.zip_code}
-                        onChange={handleChange}
-                        placeholder="Ex: 75000"
-                        className="control"
-                      />
-                      {formErrors.zip_code ? <div className="error">{formErrors.zip_code}</div> : null}
-                    </div>
-
-                    <div className="field">
-                      <label className="label">
-                        Ville <span className="req">*</span>
-                      </label>
-                      <input
-                        ref={cityRef}
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        placeholder="Ex: Paris"
-                        className="control"
-                      />
-                      {formErrors.city ? <div className="error">{formErrors.city}</div> : null}
-                    </div>
-                  </div>
-
-                  <div className="fields one" style={{ marginTop: 12 }}>
-                    <div className="field">
-                      <label className="label">Quartier / Arrondissement</label>
-                      <input
-                        type="text"
-                        name="district"
-                        value={formData.district}
-                        onChange={handleChange}
-                        placeholder="Ex: Le Marais, 4ème"
-                        className="control"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="section" style={{ marginTop: 14 }}>
-                    <div className="sectionHead">
-                      <h2 className="sectionTitle">
-                        <Euro size={16} />
-                        Financier
-                      </h2>
-                      <span className="pill">Optionnel</span>
-                    </div>
-
-                    <div className="fields one">
-                      <div className="field">
-                        <label className="label">Loyer mensuel (FCFA)</label>
-                        <div className="iconInput">
-                          <span className="iconLeft">
-                            <Euro size={16} />
-                          </span>
-                          <input
-                            type="number"
-                            name="rent_amount"
-                            value={formData.rent_amount}
-                            onChange={handleChange}
-                            placeholder="0,00"
-                            className="control"
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                        {formErrors.rent_amount ? <div className="error">{formErrors.rent_amount}</div> : null}
-                      </div>
-                    </div>
-
-                    <div className="fields one" style={{ marginTop: 12 }}>
-                      <div className="field">
-                        <label className="label">Charges mensuelles (FCFA)</label>
-                        <div className="iconInput">
-                          <span className="iconLeft">
-                            <Euro size={16} />
-                          </span>
-                          <input
-                            type="number"
-                            name="charges_amount"
-                            value={formData.charges_amount}
-                            onChange={handleChange}
-                            placeholder="0,00"
-                            className="control"
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                        {formErrors.charges_amount ? <div className="error">{formErrors.charges_amount}</div> : null}
-                      </div>
-
-                      <div className="field" style={{ marginTop: 12 }}>
-                        <label className="label">Caution/Garantie (FCFA)</label>
-                        <div className="iconInput">
-                          <span className="iconLeft">
-                            <Euro size={16} />
-                          </span>
-                          <input
-                            type="number"
-                            name="caution"
-                            value={formData.caution}
-                            onChange={handleChange}
-                            placeholder="0,00"
-                            className="control"
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                        {formErrors.caution ? <div className="error">{formErrors.caution}</div> : null}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Photos */}
-              <div className="photosRow">
-                <div className="uploadRow">
-                  <div>
-                    <div style={{ fontWeight: 950, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                      <ImageIcon size={16} />
-                      Photos du bien
-                    </div>
-                    <div className="help">Optionnel • Max 8 photos • 5MB max • Reste: {photosRemaining}</div>
-                  </div>
-
-                  <label className="uploadLabel">
-                    <ImageIcon size={16} />
-                    Ajouter des photos
-                    <input type="file" accept="image/*" multiple onChange={handleFilesChange} style={{ display: "none" }} />
-                  </label>
-                </div>
-
-                {formErrors.photos ? <div className="error" style={{ marginBottom: 10 }}>{formErrors.photos}</div> : null}
-
-                {/* Existing photos */}
-                {existingPhotos.length > 0 && (
-                  <div className="previews">
-                    {existingPhotos.map((src, index) => (
-                      <div className="thumb" key={`existing-${index}`}>
-                        <img src={resolvePhotoUrl(src) || ""} alt={`Photo ${index + 1}`} />
-                        <button type="button" className="remove" onClick={() => handleRemovePhoto(index, true)} aria-label="Supprimer">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* New photo previews */}
-                {photoPreviews.length > 0 && (
-                  <div className="previews">
-                    {photoPreviews.map((src, index) => (
-                      <div className="thumb" key={`new-${index}`}>
-                        <img src={src} alt={`Nouvelle photo ${index + 1}`} />
-                        <button type="button" className="remove" onClick={() => handleRemovePhoto(index, false)} aria-label="Supprimer">
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {existingPhotos.length === 0 && photoPreviews.length === 0 && (
-                  <div className="help">Aucune photo ajoutée.</div>
-                )}
-              </div>
-
-              <div className="footer">
-                <button className="btn btn-danger" onClick={handleCancel} disabled={isLoading}>
-                  <X size={16} />
-                  Annuler
-                </button>
-                <button className="btn btn-primary" onClick={handleSubmit} disabled={isLoading}>
-                  {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  {isLoading ? "Enregistrement..." : "Enregistrer"}
-                </button>
-              </div>
-            </div>
+          {/* Bottom actions */}
+          <div style={styles.bottomActions}>
+            <button 
+              style={styles.cancelBtn}
+              onClick={() => navigate("/proprietaire/mes-biens")}
+            >
+              ✕ Annuler
+            </button>
+            <button 
+              style={styles.saveBtn}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  Enregistrer les modifications
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

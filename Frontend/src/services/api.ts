@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuration mode standalone/backend
-const IS_STANDALONE = true; // Mettre 'false' pour utiliser le backend Laravel
+const IS_STANDALONE = false; // Mettre 'false' pour utiliser le backend Laravel
 
 export interface User {
   id: number;
@@ -316,18 +316,37 @@ export const authService = {
     try {
       await initializeCsrfToken();
 
-      const requestData = {
-        first_name: userData.first_name || userData.first_name,
-        last_name: userData.last_name || userData.last_name,
-        email: userData.email,
-        phone: userData.phone,
-        password: userData.password,
-        password_confirmation: userData.password_confirmation,
-        role: userData.role || 'proprietaire',
-      };
+      // Déterminer le bon endpoint selon le rôle
+      const role = userData.role || 'proprietaire';
+      const endpoint = role === 'agence' 
+        ? '/auth/register/co-owner' 
+        : '/auth/register/landlord';
+
+      // Prepare request data based on role
+      const requestData = role === 'agence' 
+        ? {
+            email: userData.email || '',
+            phone: userData.phone || '',
+            password: userData.password || '',
+            password_confirmation: userData.password_confirmation || '',
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            is_professional: true,
+          }
+        : {
+            first_name: userData.first_name || '',
+            last_name: userData.last_name || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            password: userData.password || '',
+            password_confirmation: userData.password_confirmation || '',
+          };
+
+      console.log('📤 Register request data:', requestData);
+      console.log('📤 Register endpoint:', endpoint);
 
       const response = await api.post<RegisterResponse>(
-        '/auth/register/landlord',
+        endpoint,
         requestData
       );
 
@@ -447,9 +466,15 @@ export const propertyService = {
     }
   },
 
-  listProperties: async (): Promise<PaginatedResponse<Property>> => {
-    const response = await api.get<PaginatedResponse<Property>>('/properties');
+  listProperties: async (status?: string): Promise<PaginatedResponse<Property>> => {
+    const params = status ? { status } : {};
+    const response = await api.get<PaginatedResponse<Property>>('/properties', { params });
     return response.data;
+  },
+
+  // Nouvelle méthode pour récupérer les biens disponibles pour les baux
+  listAvailableProperties: async (): Promise<PaginatedResponse<Property>> => {
+    return propertyService.listProperties('available');
   },
 
   getProperty: async (id: number | string): Promise<Property> => {
@@ -621,17 +646,20 @@ export interface TenantApi {
   status?: string | null;       // Statut du tenant (candidate, active, inactive)
   tenant_status?: string | null; // Statut brut du tenant
   solvency_score?: number | null;
+  property?: TenantApiProperty | null;
+  lease?: TenantApiLease | null;
+  // Nouveaux champs du backend
   properties?: TenantApiProperty[];
   active_property?: TenantApiProperty | null;
-  is_invited?: boolean;
-  invitation?: TenantApiInvitation; // ✅ Nouvelles données d'invitation structurées
 }
 
 export interface TenantInvitationApi {
   id: number;
   email: string;
-  first_name: string | null;
-  last_name: string | null;
+  name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  tenant_id?: number | null; // ID du locataire associé à l'invitation
   expires_at: string;
   created_at: string;
 }
@@ -687,6 +715,42 @@ export const tenantService = {
     }
   },
 
+  /**
+   * Upload documents for a tenant
+   */
+  uploadTenantDocuments: async (
+    tenantId: number,
+    documents: File[],
+    documentTypes: string[]
+  ): Promise<{ message: string; documents: any[]; total_documents: number }> => {
+    try {
+      await initializeCsrfToken();
+
+      const formData = new FormData();
+      documents.forEach((file) => {
+        formData.append('documents[]', file);
+      });
+      documentTypes.forEach((type) => {
+        formData.append('document_types[]', type);
+      });
+
+      const response = await api.post(`/tenants/${tenantId}/documents`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API uploadTenantDocuments:', error);
+
+      if (apiError.response?.data) {
+        throw apiError.response.data;
+      }
+      throw error;
+    }
+  },
+
   completeTenantRegistration: async (
     payload: CompleteTenantRegistrationPayload
   ): Promise<{
@@ -718,6 +782,38 @@ export const tenantService = {
       if (apiError.response?.data) {
         throw apiError.response.data;
       }
+      throw error;
+    }
+  },
+
+  // GET /api/landlord/tenants/{id} - Détails d'un locataire
+  getTenant: async (id: number): Promise<TenantApi> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<TenantApi>(`/tenants/${id}`);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getTenant:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // PUT /api/tenants/{tenant}/properties/{property} - Mise à jour assigns property
+  updateTenantProperty: async (
+    tenantId: number,
+    propertyId: number,
+    payload: { status?: string }
+  ): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put(`/tenants/${tenantId}/properties/${propertyId}`, payload);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updateTenantProperty:', error);
+      if (apiError.response?.data) throw apiError.response.data;
       throw error;
     }
   },
@@ -814,6 +910,20 @@ export const leaseService = {
       throw error;
     }
   },
+
+  updateLease: async (uuid: string, payload: Partial<CreateLeasePayload>): Promise<Lease> => {
+    try {
+      await initializeCsrfToken();
+
+      const response = await api.put<Lease>(`/leases/${uuid}`, payload);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updateLease:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
 };
 
 // ================= ETATS DES LIEUX (PROPERTY CONDITION REPORTS) =================
@@ -847,6 +957,7 @@ export interface PropertyConditionReport {
   signature_data?: string | null;
   signed_by?: string | null;
   signed_at?: string | null;
+  created_at?: string;
 
   photos?: PropertyConditionPhoto[];
   lease?: Lease | null;
@@ -873,6 +984,20 @@ export interface CreateConditionReportPayload {
 }
 
 export const conditionReportService = {
+  /**
+   * GET /api/condition-reports
+   * Get all condition reports for the current landlord
+   */
+  listAll: async (): Promise<PropertyConditionReport[]> => {
+    await initializeCsrfToken();
+
+    const response = await api.get<PropertyConditionReport[]>(
+      `/condition-reports`
+    );
+
+    return response.data;
+  },
+
   /**
    * GET /properties/{property}/condition-reports
    * Backend renvoie un tableau direct
@@ -1107,7 +1232,66 @@ export const contractService = {
   },
 };
 
-// ================= NOTICES SERVICE =================
+// ================= LANDLORD DASHBOARD SERVICE =================
+
+// Types pour le dashboard propriétaire
+export interface LandlordDashboardStats {
+  total_properties: number;
+  occupied_properties: number;
+  vacant_properties: number;
+  total_tenants: number;
+  active_leases: number;
+  pending_invoices: number;
+  total_rent_expected: number;
+  total_rent_collected: number;
+  occupancy_rate: number;
+  recent_documents?: Array<{
+    id: number;
+    type: string;
+    name: string;
+    created_at: string;
+  }>;
+  monthly_rent_data?: Array<{
+    month: string;
+    expected: number;
+    collected: number;
+  }>;
+}
+
+export const landlordDashboardService = {
+  // GET /api/dashboard - Statistiques du dashboard propriétaire
+  getStats: async (): Promise<LandlordDashboardStats> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<LandlordDashboardStats>('/dashboard');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API landlordDashboardService.getStats:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // GET /api/occupation-stats - Stats d'occupation
+  getOccupationStats: async (): Promise<{
+    occupied: number;
+    vacant: number;
+    total: number;
+    rate: number;
+  }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get('/landlord/occupation-stats');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API landlordDashboardService.getOccupationStats:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+};
 
 export interface Notice {
   id: number;
@@ -1188,14 +1372,38 @@ export interface RentReceipt {
   issued_date: string;  // YYYY-MM-DD
 
   amount_paid: number;
+  month?: number;
+  year?: number;
+  reference?: string;
   currency?: string | null;
   notes?: string | null;
+  pdf_path?: string | null;
 
   created_at: string;
 
-  lease?: Lease;
-  property?: { id: number; address: string; city?: string | null };
-  tenant?: { id: number; first_name?: string | null; last_name?: string | null; email?: string | null };
+  lease?: {
+    id: number;
+    rent_amount: number;
+    charges_amount?: number;
+    tenant?: {
+      id: number;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string;
+    };
+  };
+  property?: { 
+    id: number; 
+    name?: string;
+    address: string; 
+    city?: string | null 
+  };
+  tenant?: { 
+    id: number; 
+    first_name?: string | null; 
+    last_name?: string | null; 
+    email?: string | null 
+  };
 }
 
 export interface CreateRentReceiptPayload {
@@ -1253,8 +1461,37 @@ export interface Invoice {
   lease_id: number;
   type: 'rent' | 'deposit' | 'charge' | 'repair';
   due_date: string;
+  period_start?: string | null;
+  period_end?: string | null;
   amount_total: number;
-  [key: string]: unknown;
+  amount_paid?: number;
+  status?: 'pending' | 'paid' | 'partially_paid' | 'overdue' | 'failed' | 'draft';
+  invoice_number?: string;
+  created_at?: string;
+  updated_at?: string;
+  paid_at?: string | null;
+  payment_method?: string;
+  
+  // Relations
+  lease?: {
+    id: number;
+    rent_amount: number;
+    charges_amount?: number;
+    tenant?: {
+      id: number;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string;
+    };
+    property?: {
+      id: number;
+      name?: string;
+      address?: string;
+      city?: string;
+      zip_code?: string;
+      surface?: number;
+    };
+  };
 }
 
 export interface TenantInvoice {
@@ -1315,6 +1552,580 @@ export const invoiceService = {
       throw error;
     }
   },
+
+  // Télécharger la facture en PDF
+  downloadInvoice: async (id: number | string): Promise<Blob> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get(`/invoices/${id}/pdf`, {
+        responseType: 'blob',
+      });
+      return new Blob([response.data], { type: 'application/pdf' });
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API downloadInvoice:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+};
+
+// ================= MAINTENANCE (INTERVENTIONS) SERVICE =================
+
+export interface MaintenanceRequest {
+  id: number;
+  property_id: number;
+  tenant_id?: number | null;
+  landlord_id: number;
+  title: string;
+  category: string;
+  description?: string | null;
+  status: 'open' | 'in_progress' | 'resolved' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'emergency';
+  preferred_slots?: Array<{ date: string; from?: string; to?: string }> | null;
+  photos?: string[] | null;
+  assigned_provider?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  property?: {
+    id: number;
+    address: string;
+    city?: string | null;
+    name?: string | null;
+  };
+  tenant?: {
+    id: number;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string;
+  } | null;
+}
+
+export interface CreateMaintenanceRequestPayload {
+  property_id: number;
+  title: string;
+  category: 'plumbing' | 'electricity' | 'heating' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'emergency';
+  description?: string;
+  preferred_slots?: Array<{ date: string; from?: string; to?: string }>;
+  photos?: string[];
+  assigned_provider?: string;
+}
+
+export const maintenanceService = {
+  // Liste des interventions pour le landlord
+  listIncidents: async (): Promise<MaintenanceRequest[]> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get('/incidents');
+      // Gérer les structures possibles : tableau direct ou objet avec data
+      const data = response.data;
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data?.data && Array.isArray(data.data)) {
+        return data.data;
+      }
+      return [];
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API listIncidents:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // Créer une nouvelle intervention
+  createIncident: async (payload: CreateMaintenanceRequestPayload): Promise<MaintenanceRequest> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.post('/incidents', payload);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API createIncident:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // Mettre à jour une intervention (statut, prestataire)
+  updateIncident: async (id: number, payload: { status?: string; assigned_provider?: string }): Promise<MaintenanceRequest> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put(`/incidents/${id}`, payload);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updateIncident:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // Détail d'une intervention
+  getIncident: async (id: number): Promise<MaintenanceRequest> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get(`/incidents/${id}`);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getIncident:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+};
+
+// ================= ACCOUNTING SERVICE =================
+
+// Types pour la comptabilité
+export interface AccountingStats {
+  resultat_net: number;
+  resultat_net_formatted: string;
+  revenus: number;
+  revenus_formatted: string;
+  charges: number;
+  charges_formatted: string;
+  rentabilite: number;
+  active_properties: number;
+  transactions_count: number;
+  occupancy_rate: number;
+  occupied: number;
+  vacant: number;
+  total_properties: number;
+  revenus_par_categorie: Record<string, number>;
+  charges_par_categorie: Record<string, number>;
+  repartition_par_bien: Record<string, { revenus: number; charges: number; resultat: number }>;
+  variation: string;
+}
+
+export interface AccountingTransaction {
+  id: string;
+  date: string;
+  type: 'REVENU' | 'CHARGE';
+  description: string;
+  amount: number;
+  category: string;
+  property_name: string;
+  property_id: number;
+  currency: string;
+}
+
+export const accountingService = {
+  // Récupérer les statistiques comptables
+  getStats: async (year?: number): Promise<AccountingStats> => {
+    try {
+      await initializeCsrfToken();
+      const params = year ? { year } : {};
+      const response = await api.get('/accounting/stats', { params });
+      return response.data;
+    } catch (error) {
+      // En cas d'erreur, retourner des stats vides
+      console.error('Erreur API getStats:', error);
+      return {
+        resultat_net: 0,
+        resultat_net_formatted: '0 €',
+        revenus: 0,
+        revenus_formatted: '0 €',
+        charges: 0,
+        charges_formatted: '0 €',
+        rentabilite: 0,
+        active_properties: 0,
+        transactions_count: 0,
+        occupancy_rate: 0,
+        occupied: 0,
+        vacant: 0,
+        total_properties: 0,
+        revenus_par_categorie: {},
+        charges_par_categorie: {},
+        repartition_par_bien: {},
+        variation: '0%',
+      };
+    }
+  },
+
+  // Récupérer les transactions
+  getTransactions: async (filters?: { property_id?: string; category?: string; year?: number }): Promise<AccountingTransaction[]> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get('/accounting/transactions', { params: filters });
+      const data = response.data;
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data?.data && Array.isArray(data.data)) {
+        return data.data;
+      }
+      return [];
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getTransactions:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+
+  // Créer une transaction (revenu via quittance ou charge via facture)
+  createTransaction: async (payload: {
+    type: 'revenu' | 'charge';
+    property_id: number;
+    lease_id?: number;
+    category: string;
+    description: string;
+    amount: number;
+    payment_date: string;
+    payment_method?: string;
+  }): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+
+      if (payload.type === 'revenu') {
+        // Pour un revenu, créer une quittance
+        const receiptPayload = {
+          lease_id: payload.lease_id,
+          paid_month: payload.payment_date.substring(0, 7), // YYYY-MM
+          issued_date: payload.payment_date,
+          notes: payload.description,
+        };
+        const response = await api.post('/rent-receipts', receiptPayload);
+        return { message: 'Quittance créée avec succès' };
+      } else {
+        // Pour une charge, créer une facture
+        const invoicePayload = {
+          lease_id: payload.lease_id,
+          type: payload.category === 'travaux' ? 'repair' : 'charge',
+          due_date: payload.payment_date,
+          amount_total: payload.amount,
+          payment_method: payload.payment_method || 'especes',
+        };
+        const response = await api.post('/invoices', invoicePayload);
+        return { message: 'Facture créée avec succès' };
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API createTransaction:', error);
+      if (apiError.response?.data) throw apiError.response.data;
+      throw error;
+    }
+  },
+};
+
+// ================= DOCUMENT ARCHIVES SERVICE =================
+
+export interface ArchiveDocument {
+  id: string;
+  type: string;
+  typeBadge: string;
+  typeBadgeColor: string;
+  typeCategory: string;
+  titre: string;
+  bien: string;
+  champ1Label: string;
+  champ1Value: string;
+  champ2Label: string;
+  champ2Value: string;
+  champ3Label: string;
+  champ3Value: string;
+  champ4Label: string;
+  champ4Value: string;
+  dateBas: string;
+  date_archive: string;
+  property_id: number;
+  lease_id?: number;
+}
+
+export interface ArchiveStats {
+  total_documents: number;
+  baux_termines: number;
+  edl_archives: number;
+  quittances_archives: number;
+  total_size: string;
+}
+
+export interface ArchiveResponse {
+  archives: ArchiveDocument[];
+  stats: ArchiveStats;
+}
+
+export const documentArchiveService = {
+  // Récupérer les archives de documents
+  getArchives: async (): Promise<ArchiveResponse> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<ArchiveResponse>('/archives');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getArchives:', error);
+      // En cas d'erreur, retourner une réponse vide
+      return {
+        archives: [],
+        stats: {
+          total_documents: 0,
+          baux_termines: 0,
+          edl_archives: 0,
+          quittances_archives: 0,
+          total_size: '0 KB',
+        },
+      };
+    }
+  },
+
+  // Récupérer les statistiques des archives
+  getStats: async (): Promise<ArchiveStats> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<ArchiveStats>('/archives/stats');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getArchiveStats:', error);
+      return {
+        total_documents: 0,
+        baux_termines: 0,
+        edl_archives: 0,
+        quittances_archives: 0,
+        total_size: '0 KB',
+      };
+    }
+  },
+};
+
+// ================= LANDLORD SETTINGS SERVICE =================
+
+// Types pour les paramètres utilisateur
+interface UserSecurity {
+  two_factor_enabled: boolean;
+  last_password_change: string | null;
+  last_login_at: string | null;
+  last_login_ip: string | null;
+}
+
+interface UserPreferences {
+  language: string;
+  timezone: string;
+  date_format: string;
+  currency: string;
+  dark_mode: boolean;
+}
+
+interface UserNotifications {
+  payment_received: boolean;
+  payment_reminder: boolean;
+  lease_expiry: boolean;
+  maintenance_request: boolean;
+  monthly_report: boolean;
+  email_notifications: boolean;
+}
+
+interface UserPrivacy {
+  data_sharing: boolean;
+}
+
+export interface UserSettings {
+  user: {
+    id: number;
+    email: string;
+    phone: string;
+    first_name: string;
+    last_name: string;
+    created_at: string;
+  };
+  security: UserSecurity;
+  preferences: UserPreferences;
+  notifications: UserNotifications;
+  privacy: UserPrivacy;
+}
+
+export const landlordSettingsService = {
+  // Récupérer les paramètres
+  getSettings: async (): Promise<UserSettings> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<UserSettings>('/settings');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getSettings:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Mettre à jour le profil
+  updateProfile: async (data: { first_name?: string; last_name?: string; phone?: string }): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put('/settings/profile', data);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updateProfile:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Changer le mot de passe
+  updatePassword: async (data: { current_password: string; new_password: string; confirm_password: string }): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put('/settings/password', data);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updatePassword:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Mettre à jour les préférences
+  updatePreferences: async (data: Partial<UserPreferences>): Promise<{ message: string; preferences: UserPreferences }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put('/settings/preferences', data);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updatePreferences:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Mettre à jour les notifications
+  updateNotifications: async (data: Partial<UserNotifications>): Promise<{ message: string; notifications: UserNotifications }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put('/settings/notifications', data);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updateNotifications:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Mettre à jour la confidentialité
+  updatePrivacy: async (data: UserPrivacy): Promise<{ message: string; privacy: UserPrivacy }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.put('/settings/privacy', data);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API updatePrivacy:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Activer 2FA
+  enableTwoFactor: async (): Promise<{ secret: string; recovery_codes: string[] }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.post('/settings/2fa/enable');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API enableTwoFactor:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Désactiver 2FA
+  disableTwoFactor: async (): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.post('/settings/2fa/disable');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API disableTwoFactor:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Télécharger les données
+  downloadData: async (): Promise<any> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get('/settings/download-data');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API downloadData:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Supprimer le compte
+  deleteAccount: async (): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.delete('/settings/account');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API deleteAccount:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+};
+
+// ================= LANDLORD NOTIFICATIONS SERVICE =================
+
+// Types pour les notifications du propriétaire
+export interface LandlordNotification {
+  id: number;
+  type: 'success' | 'warning' | 'error' | 'info';
+  title: string;
+  message: string;
+  subtext?: string;
+  is_read: boolean;
+  created_at: string;
+  link?: string;
+  icon?: string;
+}
+
+export const landlordNotificationsService = {
+  // Récupérer toutes les notifications
+  getNotifications: async (): Promise<LandlordNotification[]> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.get<LandlordNotification[]>('/notifications');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API getNotifications:', error);
+      return [];
+    }
+  },
+
+  // Marquer une notification comme lue
+  markAsRead: async (notificationId: number): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.post<{ message: string }>(`/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API markAsRead:', error);
+      throw apiError.response?.data || error;
+    }
+  },
+
+  // Marquer toutes les notifications comme lues
+  markAllAsRead: async (): Promise<{ message: string }> => {
+    try {
+      await initializeCsrfToken();
+      const response = await api.post<{ message: string }>('/notifications/read-all');
+      return response.data;
+    } catch (error) {
+      const apiError = error as ApiError;
+      console.error('Erreur API markAllAsRead:', error);
+      throw apiError.response?.data || error;
+    }
+  },
 };
 
 // Export apiService as an object with all services
@@ -1329,8 +2140,17 @@ export const apiService = {
   ...noticeService,
   ...rentReceiptService,
   ...invoiceService,
+  ...landlordDashboardService,
+  ...maintenanceService,
+  ...accountingService,
+  ...documentArchiveService,
+  ...landlordSettingsService,
+  ...landlordNotificationsService,
   getLeases: leaseService.listLeases,
   createInvoice: invoiceService.createInvoice,
+  listIncidents: maintenanceService.listIncidents,
+  createIncident: maintenanceService.createIncident,
+  updateIncident: maintenanceService.updateIncident,
 };
 
 

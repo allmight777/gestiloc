@@ -116,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Users,
       submenu: [
         { 
-          id: 'list-coowners', 
+          id: 'coproprietaires', 
           label: t('sidebar.coOwnersList', 'Liste des co-propriétaires'), 
           icon: Users 
         },

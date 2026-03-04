@@ -512,4 +512,92 @@ HTML;
             ], 500);
         }
     }
+
+    /**
+     * ✅ Renvoyer une invitation à un copropriétaire
+     * Régénère un nouveau token et envoie un nouvel email
+     */
+    public function resendInvitation(Request $request, $invitationId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->isLandlord()) {
+            return response()->json(['message' => 'Forbidden - Seuls les propriétaires peuvent renvoyer des invitations'], 403);
+        }
+
+        $landlord = $user->landlord;
+        if (!$landlord) {
+            return response()->json(['message' => 'Landlord profile missing'], 422);
+        }
+
+        $invitation = CoOwnerInvitation::findOrFail($invitationId);
+
+        // Vérifier que l'invitation appartient au landlord
+        if ($invitation->landlord_id != $landlord->id) {
+            return response()->json(['message' => 'Cette invitation ne vous appartient pas'], 403);
+        }
+
+        // Vérifier que l'invitation n'a pas déjà été acceptée
+        if ($invitation->accepted_at) {
+            return response()->json(['message' => 'Cette invitation a déjà été acceptée'], 400);
+        }
+
+        // Régénérer un nouveau token
+        $invitation->token = CoOwnerInvitation::makeToken();
+        $invitation->expires_at = now()->addDays(7);
+        $invitation->save();
+
+        $meta = $invitation->meta ?? [];
+        $invitationType = $meta['invitation_type'] ?? 'co_owner';
+
+        // Générer le nouveau lien signé
+        $signedUrl = URL::temporarySignedRoute(
+            'api.auth.accept-co-owner-invitation',
+            now()->addDays(7),
+            ['invitationId' => $invitation->id]
+        );
+
+        $ref = $this->invitationRef($invitation);
+        $toTarget = $invitation->email;
+
+        if ($invitationType === 'agency') {
+            $typeLabel = 'Agence Immobilière';
+            $emailTitle = 'Invitation renouvelée - Agence Immobilière ✉️';
+            $emailSubject = "✉️ Invitation renouvelée Gestiloc Agence : ";
+        } else {
+            $typeLabel = 'Copropriétaire';
+            $emailTitle = 'Invitation renouvelée - Copropriétaire ✉️';
+            $emailSubject = "✉️ Invitation renouvelée Gestiloc Copropriétaire : ";
+        }
+
+        $content = <<<HTML
+<div style="font-size:14px;color:#374151;line-height:1.7;">
+  Bonjour,<br><br>
+  Votre invitation à rejoindre <strong>{$this->appName()}</strong> en tant que {$typeLabel} a été renouvelée.
+  Pour accéder à votre espace et définir votre mot de passe, utilisez l'invitation ci-dessous.
+</div>
+<div style="height:14px"></div>
+{$this->inviteCardHtml($invitation, $signedUrl, $invitationType)}
+<div style="height:16px"></div>
+{$this->buttonHtml('Ouvrir Gestiloc', $this->frontendUrl())}
+HTML;
+
+        $this->trySendMail($toTarget, $emailSubject . $ref, $emailTitle, $ref, $content);
+
+        Log::info('Co-owner invitation resent', [
+            'invitation_id' => $invitation->id,
+            'email' => $invitation->email,
+            'landlord_id' => $landlord->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Invitation renouvelée et email envoyé',
+            'invitation' => [
+                'id' => $invitation->id,
+                'email' => $invitation->email,
+                'expires_at' => $invitation->expires_at,
+                'invitation_type' => $invitationType,
+            ],
+        ]);
+    }
 }

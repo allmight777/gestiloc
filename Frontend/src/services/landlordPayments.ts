@@ -33,7 +33,29 @@ export interface Invoice {
   invoice_number?: string;
   created_at?: string;
   updated_at?: string;
-  [key: string]: any;
+  paid_at?: string | null;
+  payment_method?: string;
+  // Relations imbriquées retournées par InvoiceResource
+  lease?: {
+    id: number;
+    rent_amount: number;
+    charges_amount: number;
+    tenant?: {
+      id: number;
+      full_name: string;
+      email?: string;
+      phone?: string;
+    };
+    property?: {
+      id: number;
+      name?: string;
+      address?: string;
+      city?: string;
+      zip_code?: string;
+      surface?: number;
+      room_count?: number;
+    };
+  };
 }
 
 export interface PayLinkResponse {
@@ -424,6 +446,364 @@ export const landlordPayments = {
     } catch (err) {
       const nice = extractApiMessage(err);
       logAxiosError("landlordPayments.createOrUpdateSubaccount", err, { body });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 6) Payment Statistics (GET /admin/payments/statistics)
+  // ========================================
+  async getPaymentStatistics(period: string = 'month'): Promise<{
+    period: string;
+    total_amount: number;
+    completed_amount: number;
+    failed_amount: number;
+    refunded_amount: number;
+    transaction_count: number;
+    success_rate: number;
+  }> {
+    console.log('[landlordPayments.getPaymentStatistics] GET /admin/payments/statistics');
+
+    try {
+      const { data } = await api.get('/admin/payments/statistics', {
+        params: { period }
+      });
+      console.log('[landlordPayments.getPaymentStatistics] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.getPaymentStatistics', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 7) Refund Payment (POST /admin/payments/{id}/refund)
+  // ========================================
+  async refundPayment(paymentId: number, reason?: string): Promise<any> {
+    console.log('[landlordPayments.refundPayment] POST /admin/payments/{id}/refund', { paymentId, reason });
+
+    try {
+      const { data } = await api.post(`/admin/payments/${paymentId}/refund`, {
+        reason: reason || 'Remboursé manuellement'
+      });
+      console.log('[landlordPayments.refundPayment] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.refundPayment', err, { paymentId, reason });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 8) Reject Payment (POST /admin/payments/{id}/reject)
+  // ========================================
+  async rejectPayment(paymentId: number, reason?: string): Promise<any> {
+    console.log('[landlordPayments.rejectPayment] POST /admin/payments/{id}/reject', { paymentId, reason });
+
+    try {
+      const { data } = await api.post(`/admin/payments/${paymentId}/reject`, {
+        reason: reason || 'Rejeté manuellement'
+      });
+      console.log('[landlordPayments.rejectPayment] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.rejectPayment', err, { paymentId, reason });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 9) Send Invoice Reminder (POST /invoices/{id}/remind)
+  // ========================================
+  async sendInvoiceReminder(invoiceId: number): Promise<any> {
+    console.log('[landlordPayments.sendInvoiceReminder] POST /invoices/{id}/remind', { invoiceId });
+
+    try {
+      const { data } = await api.post(`/invoices/${invoiceId}/remind`);
+      console.log('[landlordPayments.sendInvoiceReminder] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.sendInvoiceReminder', err, { invoiceId });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 10) Terminate Lease (POST /leases/{uuid}/terminate)
+  // ========================================
+  async terminateLease(leaseUuid: string, endDate: string, reason?: string): Promise<any> {
+    console.log('[landlordPayments.terminateLease] POST /leases/{uuid}/terminate', { leaseUuid, endDate, reason });
+
+    try {
+      const { data } = await api.post(`/leases/${leaseUuid}/terminate`, {
+        end_date: endDate,
+        reason: reason || 'Terminé par le propriétaire'
+      });
+      console.log('[landlordPayments.terminateLease] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.terminateLease', err, { leaseUuid, endDate, reason });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 11) Get Delegation Audits (GET /delegations/{id}/audits)
+  // ========================================
+  async getDelegationAudits(delegationId: number): Promise<any[]> {
+    console.log('[landlordPayments.getDelegationAudits] GET /delegations/{id}/audits', { delegationId });
+
+    try {
+      const { data } = await api.get(`/delegations/${delegationId}/audits`);
+      console.log('[landlordPayments.getDelegationAudits] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.getDelegationAudits', err, { delegationId });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 12) Settings - Update Preferences (PUT /settings/preferences)
+  // ========================================
+  async updatePreferences(preferences: Record<string, any>): Promise<any> {
+    console.log('[landlordPayments.updatePreferences] PUT /settings/preferences', preferences);
+
+    try {
+      const { data } = await api.put('/settings/preferences', preferences);
+      console.log('[landlordPayments.updatePreferences] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.updatePreferences', err, { preferences });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 13) Settings - Update Privacy (PUT /settings/privacy)
+  // ========================================
+  async updatePrivacy(privacy: Record<string, any>): Promise<any> {
+    console.log('[landlordPayments.updatePrivacy] PUT /settings/privacy', privacy);
+
+    try {
+      const { data } = await api.put('/settings/privacy', privacy);
+      console.log('[landlordPayments.updatePrivacy] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.updatePrivacy', err, { privacy });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 14) Settings - Enable 2FA (POST /settings/2fa/enable)
+  // ========================================
+  async enable2FA(): Promise<any> {
+    console.log('[landlordPayments.enable2FA] POST /settings/2fa/enable');
+
+    try {
+      const { data } = await api.post('/settings/2fa/enable');
+      console.log('[landlordPayments.enable2FA] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.enable2FA', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 15) Settings - Disable 2FA (POST /settings/2fa/disable)
+  // ========================================
+  async disable2FA(): Promise<any> {
+    console.log('[landlordPayments.disable2FA] POST /settings/2fa/disable');
+
+    try {
+      const { data } = await api.post('/settings/2fa/disable');
+      console.log('[landlordPayments.disable2FA] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.disable2FA', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 16) Settings - Download Data (GET /settings/download-data)
+  // ========================================
+  async downloadData(): Promise<Blob> {
+    console.log('[landlordPayments.downloadData] GET /settings/download-data');
+
+    try {
+      const response = await api.get('/settings/download-data', {
+        responseType: 'blob'
+      });
+      console.log('[landlordPayments.downloadData] success');
+      return response.data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.downloadData', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 17) Settings - Delete Account (DELETE /settings/account)
+  // ========================================
+  async deleteAccount(): Promise<any> {
+    console.log('[landlordPayments.deleteAccount] DELETE /settings/account');
+
+    try {
+      const { data } = await api.delete('/settings/account');
+      console.log('[landlordPayments.deleteAccount] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.deleteAccount', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 18) Archive Stats (GET /archives/stats)
+  // ========================================
+  async getArchiveStats(): Promise<any> {
+    console.log('[landlordPayments.getArchiveStats] GET /archives/stats');
+
+    try {
+      const { data } = await api.get('/archives/stats');
+      console.log('[landlordPayments.getArchiveStats] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.getArchiveStats', err);
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 19) Assign Property to Tenant (POST /tenants/{id}/assign-property)
+  // ========================================
+  async assignPropertyToTenant(tenantId: number, propertyId: number, leaseId?: number, startDate?: string, endDate?: string): Promise<any> {
+    console.log('[landlordPayments.assignPropertyToTenant] POST /tenants/{id}/assign-property', { tenantId, propertyId, leaseId, startDate, endDate });
+
+    try {
+      const { data } = await api.post(`/tenants/${tenantId}/assign-property`, {
+        property_id: propertyId,
+        lease_id: leaseId,
+        start_date: startDate,
+        end_date: endDate,
+      });
+      console.log('[landlordPayments.assignPropertyToTenant] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.assignPropertyToTenant', err, { tenantId, propertyId });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 20) Unassign Property from Tenant (DELETE /tenants/{id}/properties/{property})
+  // ========================================
+  async unassignPropertyFromTenant(tenantId: number, propertyId: number): Promise<any> {
+    console.log('[landlordPayments.unassignPropertyFromTenant] DELETE /tenants/{id}/properties/{property}', { tenantId, propertyId });
+
+    try {
+      const { data } = await api.delete(`/tenants/${tenantId}/properties/${propertyId}`);
+      console.log('[landlordPayments.unassignPropertyFromTenant] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.unassignPropertyFromTenant', err, { tenantId, propertyId });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 21) Get Tenant Documents (GET /tenants/{id}/documents)
+  // ========================================
+  async getTenantDocuments(tenantId: number): Promise<any[]> {
+    console.log('[landlordPayments.getTenantDocuments] GET /tenants/{id}/documents', { tenantId });
+
+    try {
+      const { data } = await api.get(`/tenants/${tenantId}/documents`);
+      console.log('[landlordPayments.getTenantDocuments] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.getTenantDocuments', err, { tenantId });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 22) Upload Tenant Documents (POST /tenants/{id}/documents)
+  // ========================================
+  async uploadTenantDocuments(tenantId: number, files: File[], documentTypes: string[] = []): Promise<any> {
+    console.log('[landlordPayments.uploadTenantDocuments] POST /tenants/{id}/documents', { tenantId, fileCount: files.length });
+
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('documents[]', file);
+    });
+    documentTypes.forEach((type, index) => {
+      formData.append(`document_types[${index}]`, type);
+    });
+
+    try {
+      const { data } = await api.post(`/tenants/${tenantId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      console.log('[landlordPayments.uploadTenantDocuments] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.uploadTenantDocuments', err, { tenantId, fileCount: files.length });
+      if (nice) throw new Error(nice);
+      throw err;
+    }
+  },
+
+  // ========================================
+  // 23) Get Property Delegation Audits (GET /properties/{id}/delegation-audits)
+  // ========================================
+  async getPropertyDelegationAudits(propertyId: number): Promise<any[]> {
+    console.log('[landlordPayments.getPropertyDelegationAudits] GET /properties/{id}/delegation-audits', { propertyId });
+
+    try {
+      const { data } = await api.get(`/properties/${propertyId}/delegation-audits`);
+      console.log('[landlordPayments.getPropertyDelegationAudits] success =>', data);
+      return data;
+    } catch (err) {
+      const nice = extractApiMessage(err);
+      logAxiosError('landlordPayments.getPropertyDelegationAudits', err, { propertyId });
       if (nice) throw new Error(nice);
       throw err;
     }

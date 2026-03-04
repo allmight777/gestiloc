@@ -40,6 +40,27 @@ export type NormalizedInvoice = Invoice & {
   _paidAt: string | null;
 };
 
+export type PayLinkInfo = {
+  token: string;
+  invoice?: Invoice;
+  used_at?: string | null;
+  expires_at?: string | null;
+  property?: {
+    title?: string;
+    name?: string;
+    address?: string;
+  };
+  lease?: {
+    property_title?: string;
+    property_address?: string;
+  };
+  tenant?: {
+    name?: string;
+    full_name?: string;
+    email?: string;
+  };
+};
+
 const normalizeArray = (data: unknown): unknown[] => {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object' && 'data' in data && Array.isArray((data as { data: unknown }).data)) {
@@ -156,5 +177,19 @@ export const tenantPayments = {
       responseType: "blob",
     });
     return new Blob([res.data], { type: "application/pdf" });
+  },
+
+  // ✅ Récupérer infos d'un lien de paiement
+  async getPayLink(token: string): Promise<PayLinkInfo> {
+    const { data } = await api.get(`/tenant/pay-link/${token}`);
+    return data as PayLinkInfo;
+  },
+
+  // ✅ Initier paiement via lien
+  async initPayment(token: string): Promise<{ checkout_url: string; payment_id?: number }> {
+    const { data } = await api.post(`/tenant/pay-link/${token}/pay`, {});
+    const checkout_url = data?.checkout_url || data?.url || data?.checkoutUrl;
+    if (!checkout_url) throw new Error("checkout_url introuvable (backend).");
+    return { checkout_url, payment_id: data?.payment_id };
   },
 };

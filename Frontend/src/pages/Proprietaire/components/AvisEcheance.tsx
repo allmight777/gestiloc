@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { Plus, Search, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Settings, Eye, Download, Send, Loader2 } from 'lucide-react';
+import { invoiceService, Invoice, propertyService } from '@/services/api';
 
+// Type pour transformer les données API en format affichage
 interface AvisData {
-    id: string;
+    id: number;
     statutBadge: string;
     statutBadgeColor: string;
     titre: string;
@@ -12,70 +15,203 @@ interface AvisData {
     montantLoyer: string;
     charges: string;
     envoyeLe: string;
+    status: string;
+    lease_id: number;
 }
 
-const mockAvis: AvisData[] = [
-    {
-        id: '1', statutBadge: '🚨 EN RETARD DE 5 JOURS', statutBadgeColor: '#ef4444',
-        titre: 'EDL - Martin Dupont', lieu: 'Boulogne-Billancourt • Locataire',
-        periode: 'Février 2025', echeance: '01 Fév 2025',
-        montantLoyer: '850 €', charges: '120 €',
-        envoyeLe: 'Envoyé le 25 Jan 2025',
-    },
-    {
-        id: '2', statutBadge: '📧 À ENVOYER', statutBadgeColor: '#f59e0b',
-        titre: 'EDL - Sophia Bernard', lieu: 'Paris 15ème • Locataire',
-        periode: 'Mars 2025', echeance: '01 Mar 2025',
-        montantLoyer: '1 200 €', charges: '180 €',
-        envoyeLe: 'Créé le 06 Fev 2025',
-    },
-    {
-        id: '3', statutBadge: '⏳ EN ATTENTE DE PAIEMENT', statutBadgeColor: '#6b7280',
-        titre: 'EDL - Montée Alba', lieu: 'Villeurbanne • Locataire',
-        periode: 'Février 2025', echeance: '05 Fév 2025',
-        montantLoyer: '720 €', charges: '95 €',
-        envoyeLe: 'Envoyé le 28 Jan 2025',
-    },
-    {
-        id: '4', statutBadge: '✓ PAYÉ LE 29 JAN 2025', statutBadgeColor: '#83C757',
-        titre: 'EDL - Jean-Pierre Roussel', lieu: 'La Rochelle • Locataire',
-        periode: 'Février 2025', echeance: '01 Fév 2025',
-        montantLoyer: '950 €', charges: '110 €',
-        envoyeLe: 'Envoyé le 20 Jan 2025',
-    },
-    {
-        id: '5', statutBadge: '📧 À ENVOYER', statutBadgeColor: '#f59e0b',
-        titre: 'EDL - Marie Lefevre', lieu: 'Lyon 6ème • Locataire',
-        periode: 'Mars 2025', echeance: '01 Mar 2025',
-        montantLoyer: '980 €', charges: '140 €',
-        envoyeLe: 'Créé le 05 Fev 2025',
-    },
-    {
-        id: '6', statutBadge: '⏳ EN ATTENTE DE PAIEMENT', statutBadgeColor: '#6b7280',
-        titre: 'EDL - Thomas Moreau', lieu: 'Marseille • Locataire',
-        periode: 'Février 2025', echeance: '03 Fév 2025',
-        montantLoyer: '1 100 €', charges: '150 €',
-        envoyeLe: 'Envoyé le 27 Jan 2025',
-    },
-];
+// Fonction pour transformer une réponse API en type AvisData
+const transformApiToAvis = (apiInvoice: Invoice): AvisData => {
+    const propertyAddress = apiInvoice.lease?.property?.address || '';
+    const propertyCity = apiInvoice.lease?.property?.city || '';
+    const tenantName = apiInvoice.lease?.tenant 
+        ? `${apiInvoice.lease.tenant.first_name || ''} ${apiInvoice.lease.tenant.last_name || ''}`.trim()
+        : 'Locataire';
+    
+    // Déterminer le statut
+    let statutBadge = '';
+    let statutBadgeColor = '';
+    
+    switch (apiInvoice.status) {
+        case 'paid':
+            statutBadge = '✓ PAYÉ';
+            statutBadgeColor = '#83C757';
+            break;
+        case 'pending':
+            statutBadge = '⏳ EN ATTENTE';
+            statutBadgeColor = '#6b7280';
+            break;
+        case 'overdue':
+            statutBadge = '🚨 EN RETARD';
+            statutBadgeColor = '#ef4444';
+            break;
+        default:
+            statutBadge = '📧 À ENVOYER';
+            statutBadgeColor = '#f59e0b';
+    }
+    
+    // Formater la période
+    let periode = '';
+    if (apiInvoice.period_start && apiInvoice.period_end) {
+        const start = new Date(apiInvoice.period_start).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+        const end = new Date(apiInvoice.period_end).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+        periode = start === end ? start : `${start} - ${end}`;
+    } else if (apiInvoice.period_start) {
+        periode = new Date(apiInvoice.period_start).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+    }
+    
+    return {
+        id: apiInvoice.id || 0,
+        statutBadge,
+        statutBadgeColor,
+        titre: `Avis - ${tenantName}`,
+        lieu: `${propertyAddress}${propertyCity ? ', ' + propertyCity : ''}`,
+        periode,
+        echeance: apiInvoice.due_date ? new Date(apiInvoice.due_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—',
+        montantLoyer: apiInvoice.amount_total ? `${apiInvoice.amount_total.toLocaleString('fr-FR')} €` : '—',
+        charges: '—',
+        envoyeLe: apiInvoice.created_at ? `Créé le ${new Date(apiInvoice.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}` : '—',
+        status: apiInvoice.status || 'pending',
+        lease_id: apiInvoice.lease_id || 0
+    };
+};
+
+// Fonction pour calculer les statistiques
+const calculateStats = (avisList: AvisData[]) => {
+    const totalARecvoir = avisList
+        .filter(a => a.status !== 'paid')
+        .reduce((sum, a) => {
+            const amount = parseFloat(a.montantLoyer.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+            return sum + amount;
+        }, 0);
+    
+    const enAttente = avisList.filter(a => a.status === 'pending').length;
+    const enRetard = avisList.filter(a => a.status === 'overdue').length;
+    const ceMois = avisList.length;
+    
+    return {
+        totalARecvoir: totalARecvoir.toLocaleString('fr-FR') + ' €',
+        enAttente: enAttente.toString(),
+        enRetard: enRetard.toString(),
+        ceMois: ceMois + ' avis'
+    };
+};
 
 interface AvisEcheanceProps {
     notify: (msg: string, type: 'success' | 'info' | 'error') => void;
 }
 
 const AvisEcheance: React.FC<AvisEcheanceProps> = ({ notify }) => {
+    const navigate = useNavigate();
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [searchTerm, setSearchTerm] = useState('');
+    const [avisList, setAvisList] = useState<AvisData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ totalARecvoir: '0 €', enAttente: '0', enRetard: '0', ceMois: '0 avis' });
+    const [filterBien, setFilterBien] = useState('Tous les biens');
+    const [properties, setProperties] = useState<{id: number; name: string}[]>([]);
+    const [downloadingIds, setDownloadingIds] = useState<Record<number, boolean>>({});
+    const [selectedAvis, setSelectedAvis] = useState<AvisData | null>(null);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const filters = ['Tous', 'A envoyer', 'En attente', 'Payés', 'En retard'];
 
-    const filtered = mockAvis.filter(a => a.titre.toLowerCase().includes(searchTerm.toLowerCase()));
+    // Charger les biens pour le filtre
+    useEffect(() => {
+        const fetchProperties = async () => {
+            try {
+                const props = await propertyService.listProperties();
+                setProperties(props.data || []);
+            } catch (error) {
+                console.error('Erreur lors du chargement des biens:', error);
+            }
+        };
+        fetchProperties();
+    }, []);
 
-    const stats = [
-        { label: 'TOTAL À RECEVOIR', value: '8 450 €', color: '#83C757' },
-        { label: 'EN ATTENTE', value: '3 250 €', color: '#f59e0b' },
-        { label: 'EN RETARD', value: '1 200 €', color: '#ef4444' },
-        { label: 'CE MOIS', value: '12 avis', color: '#1a1a1a' },
-    ];
+    // Charger les données depuis l'API
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const apiInvoices = await invoiceService.listInvoices();
+                const transformedAvis = apiInvoices.map(transformApiToAvis);
+                setAvisList(transformedAvis);
+                
+                // Calculer les statistiques
+                const calculatedStats = calculateStats(transformedAvis);
+                setStats(calculatedStats);
+            } catch (error) {
+                console.error('Erreur lors du chargement des avis:', error);
+                notify?.('Erreur lors du chargement des avis d\'échéance', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [notify]);
+
+    // Appliquer les filtres
+    const filtered = avisList.filter(a => {
+        const matchesSearch = a.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           a.lieu.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (!matchesSearch) return false;
+        
+        // Filtre par bien
+        if (filterBien !== 'Tous les biens') {
+            const property = properties.find(p => p.name === filterBien);
+            if (property && !a.lieu.includes(property.name) && !a.lieu.includes(`#${property.id}`)) {
+                return false;
+            }
+        }
+        
+        switch (activeFilter) {
+            case 'A envoyer':
+                return a.status === 'draft';
+            case 'En attente':
+                return a.status === 'pending';
+            case 'Payés':
+                return a.status === 'paid';
+            case 'En retard':
+                return a.status === 'overdue';
+            default:
+                return true;
+        }
+    });
+
+    // Voir les détails d'un avis
+    const handleView = (avis: AvisData) => {
+        setSelectedAvis(avis);
+        setShowViewModal(true);
+    };
+
+    // Modifier un avis - naviguer vers la page de modification
+    const handleEdit = (avis: AvisData) => {
+        navigate(`/proprietaire/factures/${avis.id}/modifier`);
+    };
+
+    // Télécharger le PDF de l'avis d'échéance
+    const handleDownload = async (avis: AvisData) => {
+        setDownloadingIds(prev => ({ ...prev, [avis.id]: true }));
+        try {
+            const blob = await invoiceService.downloadInvoice(avis.id);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `avis_echeance_${avis.id}_${avis.titre.replace(/\s+/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            notify?.('Avis d\'échéance téléchargé avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors du téléchargement:', error);
+            notify?.('Erreur lors du téléchargement de l\'avis d\'échéance', 'error');
+        } finally {
+            setDownloadingIds(prev => ({ ...prev, [avis.id]: false }));
+        }
+    };
 
     return (
         <>
@@ -119,6 +255,7 @@ const AvisEcheance: React.FC<AvisEcheanceProps> = ({ notify }) => {
         .ae-icon-btn { background: none; border: none; cursor: pointer; padding: 4px; font-size: 0.85rem; color: #9ca3af; }
         .ae-icon-btn.green { color: #83C757; }
         .ae-icon-btn.orange { color: #f59e0b; }
+        .ae-loading { text-align: center; padding: 40px; color: #6b7280; }
         @media (max-width: 1400px) { .ae-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 1024px) { .ae-grid { grid-template-columns: repeat(2, 1fr); } .ae-stats { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 640px) {
@@ -146,18 +283,28 @@ const AvisEcheance: React.FC<AvisEcheanceProps> = ({ notify }) => {
                         <h1 className="ae-title">Avis d'échéance</h1>
                         <p className="ae-subtitle">Créez vos avis d'échéance de loyer et suivez les paiements attendus. Générez automatiquement les avis pour vos locataires.</p>
                     </div>
-                    <button className="ae-add-btn" onClick={() => notify('Création avis à venir', 'info')}>
+                    <button className="ae-add-btn" onClick={() => navigate('/proprietaire/avis-echeance/nouveau')}>
                         <Plus size={15} /> Créer un nouvel avis d'échéance
                     </button>
                 </div>
 
                 <div className="ae-stats">
-                    {stats.map(s => (
-                        <div className="ae-stat" key={s.label}>
-                            <p className="ae-stat-label">{s.label}</p>
-                            <p className="ae-stat-value" style={{ color: s.color }}>{s.value}</p>
-                        </div>
-                    ))}
+                    <div className="ae-stat">
+                        <p className="ae-stat-label">TOTAL À RECEVOIR</p>
+                        <p className="ae-stat-value" style={{ color: '#83C757' }}>{loading ? '...' : stats.totalARecvoir}</p>
+                    </div>
+                    <div className="ae-stat">
+                        <p className="ae-stat-label">EN ATTENTE</p>
+                        <p className="ae-stat-value" style={{ color: '#f59e0b' }}>{loading ? '...' : stats.enAttente}</p>
+                    </div>
+                    <div className="ae-stat">
+                        <p className="ae-stat-label">EN RETARD</p>
+                        <p className="ae-stat-value" style={{ color: '#ef4444' }}>{loading ? '...' : stats.enRetard}</p>
+                    </div>
+                    <div className="ae-stat">
+                        <p className="ae-stat-label">CE MOIS</p>
+                        <p className="ae-stat-value" style={{ color: '#1a1a1a' }}>{loading ? '...' : stats.ceMois}</p>
+                    </div>
                 </div>
 
                 <div className="ae-filters">
@@ -168,7 +315,16 @@ const AvisEcheance: React.FC<AvisEcheanceProps> = ({ notify }) => {
 
                 <div className="ae-card">
                     <p className="ae-filter-title">FILTRER PAR BIEN</p>
-                    <select className="ae-select"><option>Tous les biens</option></select>
+                    <select 
+                        className="ae-select"
+                        value={filterBien}
+                        onChange={(e) => setFilterBien(e.target.value)}
+                    >
+                        <option>Tous les biens</option>
+                        {properties.map(p => (
+                            <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="ae-card">
@@ -177,37 +333,43 @@ const AvisEcheance: React.FC<AvisEcheanceProps> = ({ notify }) => {
                             <Search size={16} className="ae-search-icon" />
                             <input className="ae-search-input" placeholder="Rechercher" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
-                        <button className="ae-btn-display"><Settings size={15} /> Affichage</button>
+                        <button className="ae-btn-display" onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}><Settings size={15} /> {viewMode === 'grid' ? 'Liste' : 'Grille'}</button>
                     </div>
                 </div>
 
-                <div className="ae-grid">
-                    {filtered.map(a => (
-                        <div className="ae-item" key={a.id}>
-                            <div className="ae-item-top">
-                                <span className="ae-status-badge" style={{ background: a.statutBadgeColor + '20', color: a.statutBadgeColor }}>{a.statutBadge}</span>
-                                <p className="ae-item-titre">{a.titre}</p>
-                                <p className="ae-item-lieu">📍 {a.lieu}</p>
-                                <div className="ae-detail-row">
-                                    <div><p className="ae-detail-label">Période</p><p className="ae-detail-value">{a.periode}</p></div>
-                                    <div><p className="ae-detail-label">Échéance</p><p className="ae-detail-value">{a.echeance}</p></div>
+                {loading ? (
+                    <div className="ae-loading">Chargement des avis d'échéance...</div>
+                ) : (
+                    <div className="ae-grid">
+                        {filtered.map(a => (
+                            <div className="ae-item" key={a.id}>
+                                <div className="ae-item-top">
+                                    <span className="ae-status-badge" style={{ background: a.statutBadgeColor + '20', color: a.statutBadgeColor }}>{a.statutBadge}</span>
+                                    <p className="ae-item-titre">{a.titre}</p>
+                                    <p className="ae-item-lieu">📍 {a.lieu}</p>
+                                    <div className="ae-detail-row">
+                                        <div><p className="ae-detail-label">Période</p><p className="ae-detail-value">{a.periode}</p></div>
+                                        <div><p className="ae-detail-label">Échéance</p><p className="ae-detail-value">{a.echeance}</p></div>
+                                    </div>
+                                    <div className="ae-detail-row">
+                                        <div><p className="ae-detail-label">Montant loyer</p><p className="ae-detail-value" style={{ color: '#83C757' }}>{a.montantLoyer}</p></div>
+                                        <div><p className="ae-detail-label">Charges</p><p className="ae-detail-value">{a.charges}</p></div>
+                                    </div>
                                 </div>
-                                <div className="ae-detail-row">
-                                    <div><p className="ae-detail-label">Montant loyer</p><p className="ae-detail-value" style={{ color: '#83C757' }}>{a.montantLoyer}</p></div>
-                                    <div><p className="ae-detail-label">Charges</p><p className="ae-detail-value">{a.charges}</p></div>
+                                <div className="ae-footer">
+                                    <span className="ae-footer-date">{a.envoyeLe}</span>
+                                    <div className="ae-footer-actions">
+                                        <button className="ae-icon-btn" title="Voir" onClick={() => handleView(a)}><Eye size={16} /></button>
+                                        <button className="ae-icon-btn orange" title="Modifier" onClick={() => handleEdit(a)}>✏️</button>
+                                        <button className="ae-icon-btn green" title="Télécharger" onClick={() => handleDownload(a)} disabled={downloadingIds[a.id]}>
+                                            {downloadingIds[a.id] ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="ae-footer">
-                                <span className="ae-footer-date">{a.envoyeLe}</span>
-                                <div className="ae-footer-actions">
-                                    <button className="ae-icon-btn">👁️</button>
-                                    <button className="ae-icon-btn orange">✏️</button>
-                                    <button className="ae-icon-btn green">📥</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </>
     );

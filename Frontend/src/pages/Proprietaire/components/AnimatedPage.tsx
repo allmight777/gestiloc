@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import '../animations.css';
 
 interface AnimatedPageProps {
@@ -14,21 +14,10 @@ export const AnimatedPage: React.FC<AnimatedPageProps> = ({
   delay = 0,
   className = ''
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [delay]);
-
-  const animationClass = isVisible ? `animate-${animation}` : 'opacity-0';
   const delayClass = delay > 0 ? `animate-delay-${delay}` : '';
 
   return (
-    <div className={`${animationClass} ${delayClass} ${className}`}>
+    <div className={`animate-${animation} ${delayClass} ${className}`}>
       {children}
     </div>
   );

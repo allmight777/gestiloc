@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Search,
@@ -10,28 +12,91 @@ import {
   Mail,
   Eye,
   BarChart3,
+  Loader2,
+  RefreshCw,
+  Undo2,
+  XCircle,
 } from "lucide-react";
+import { landlordPayments, type Invoice, type CreateInvoicePayload } from "@/services/landlordPayments";
+import { leaseService } from "@/services/api";
 
 /* ─── Types ─── */
 
 interface PaymentRow {
-  id: string;
+  id: number;
+  invoiceNumber?: string;
   locataire: string;
   email: string;
   bien: string;
-  montant: string;
+  bienId?: number;
+  montant: number;
   echeance: string;
   statut: "paid" | "late" | "pending";
-  datePaiement: string;
+  datePaiement: string | null;
   mode: string;
+  leaseId?: number;
 }
 
 interface PaymentsProps {
   notify: (msg: string, type: "success" | "info" | "error") => void;
 }
 
-/* ─── Mock data ─── */
+/* ─── Helper functions ─── */
 
+const formatDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const getStatutFromInvoice = (invoice: Invoice): "paid" | "late" | "pending" => {
+  const now = new Date();
+  const dueDate = new Date(invoice.due_date);
+  
+  if (invoice.status === "paid" || invoice.status === "completed") {
+    return "paid";
+  }
+  
+  if (dueDate < now) {
+    return "late";
+  }
+  
+  return "pending";
+};
+
+const transformInvoiceToPaymentRow = (invoice: Invoice): PaymentRow => {
+  const statut = getStatutFromInvoice(invoice);
+  // L'API retourne la relation 'lease' avec les données imbriquées
+  // InvoiceResource retourne: property.address, property.city, tenant.full_name, tenant.email
+  const leaseData = invoice.lease;
+  const property = leaseData?.property;
+  const tenant = leaseData?.tenant;
+  
+  // Fallback pour le nom du bien: name > address > city > "Bien"
+  const bienLabel = property?.name || property?.address || property?.city || "Bien";
+  
+  // Fallback pour le nom du locataire: full_name > "Locataire"
+  const locataireLabel = tenant?.full_name || "Locataire";
+  
+  return {
+    id: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+    locataire: locataireLabel,
+    email: tenant?.email || "-",
+    bien: bienLabel,
+    bienId: property?.id,
+    montant: invoice.amount_total || 0,
+    echeance: formatDate(invoice.due_date),
+    statut,
+    datePaiement: invoice.paid_at ? formatDate(invoice.paid_at) : null,
+    mode: invoice.payment_method || "Virement",
+    leaseId: invoice.lease_id,
+  };
+};
+
+/* ─── Mock data - Plus utilisé (données maintenant chargées depuis l'API) ─── */
+
+/*
 const mockPayments: PaymentRow[] = [
   {
     id: "1",
@@ -67,20 +132,300 @@ const mockPayments: PaymentRow[] = [
     mode: "Virement",
   },
 ];
+*/
 
 /* ─── Component ─── */
 
 export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"actifs" | "archives">("actifs");
   const [filterBien, setFilterBien] = useState("Tous les biens");
   const [linesPerPage, setLinesPerPage] = useState("100");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [biens, setBiens] = useState<string[]>(["Tous les biens"]);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [leases, setLeases] = useState<{id: number; property: {name: string; address: string}; tenant: {full_name: string}}[]>([]);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState('month');
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentRow | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
 
-  const filteredPayments = mockPayments.filter(
-    (p) =>
+  // Query pour les statistiques de paiement depuis l'API
+  const { data: apiStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['paymentStatistics', statsPeriod],
+    queryFn: () => landlordPayments.getPaymentStatistics(statsPeriod),
+    staleTime: 30000, // 30 secondes
+  });
+
+  // Form state for creating invoice
+  const [formData, setFormData] = useState<{
+    lease_id: number | "";
+    type: "rent" | "deposit" | "charge" | "repair";
+    due_date: string;
+    period_start: string;
+    period_end: string;
+    amount_total: string;
+    payment_method: string;
+  }>({
+    lease_id: "",
+    type: "rent",
+    due_date: "",
+    period_start: "",
+    period_end: "",
+    amount_total: "",
+    payment_method: "fedapay",
+  });
+
+  // Charger les factures depuis l'API
+  const fetchInvoices = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const invoices = await landlordPayments.listInvoices();
+      
+      // Transformer les données API en format attendu
+      const transformedPayments = invoices.map(transformInvoiceToPaymentRow);
+      setPayments(transformedPayments);
+      
+      // Extraire la liste des biens uniques
+      const uniqueBiens = [...new Set(transformedPayments.map(p => p.bien))];
+      setBiens(["Tous les biens", ...uniqueBiens]);
+      
+    } catch (err) {
+      console.error("Erreur lors du chargement des factures:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors du chargement des factures";
+      setError(errorMessage);
+      notify("Erreur lors du chargement des factures", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les leases pour le formulaire de création de facture
+  const fetchLeases = async () => {
+    try {
+      const leasesData = await leaseService.listLeases();
+      setLeases(leasesData);
+    } catch (err) {
+      console.error("Erreur lors du chargement des baux:", err);
+      notify("Erreur lors du chargement des baux", "error");
+    }
+  };
+
+  // Ouvrir le modal de création
+  const openCreateModal = () => {
+    fetchLeases();
+    setShowCreateModal(true);
+  };
+
+  // Créer une nouvelle facture
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.lease_id || !formData.due_date || !formData.amount_total) {
+      notify("Veuillez remplir tous les champs obligatoires", "error");
+      return;
+    }
+
+    setCreatingInvoice(true);
+    try {
+      const payload: CreateInvoicePayload = {
+        lease_id: Number(formData.lease_id),
+        type: formData.type,
+        due_date: formData.due_date,
+        period_start: formData.period_start || undefined,
+        period_end: formData.period_end || undefined,
+        amount_total: parseFloat(formData.amount_total),
+        payment_method: formData.payment_method,
+      };
+
+      await landlordPayments.createInvoice(payload);
+      notify("Facture créée avec succès!", "success");
+      setShowCreateModal(false);
+      setFormData({
+        lease_id: "",
+        type: "rent",
+        due_date: "",
+        period_start: "",
+        period_end: "",
+        amount_total: "",
+        payment_method: "fedapay",
+      });
+      fetchInvoices(); // Rafraîchir la liste
+    } catch (err) {
+      console.error("Erreur lors de la création de la facture:", err);
+      notify("Erreur lors de la création de la facture", "error");
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  // Filtrer les paiements
+  const filteredPayments = payments.filter((p) => {
+    const matchesSearch =
+      !searchTerm ||
       p.locataire.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      p.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesBien =
+      filterBien === "Tous les biens" ||
+      p.bien === filterBien;
+    
+    return matchesSearch && matchesBien;
+  });
+
+  // Envoyer un rappel de paiement
+  const handleSendReminder = async (invoiceId: number) => {
+    setActionLoading(`remind-${invoiceId}`);
+    try {
+      // Note: L'endpoint POST /api/invoices/{id}/remind existe
+      // Mais n'est pas exposé dans le service landlordPayments
+      // On utilise l'api directement
+      const { default: api } = await import("@/services/api");
+      await api.post(`/invoices/${invoiceId}/remind`);
+      notify("Rappel envoyé avec succès!", "success");
+    } catch (err) {
+      console.error("Erreur lors de l'envoi du rappel:", err);
+      notify("Erreur lors de l'envoi du rappel", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Générer une quittance
+  const handleGenerateReceipt = async (invoiceId: number, leaseId: number) => {
+    setActionLoading(`receipt-${invoiceId}`);
+    try {
+      // Utiliser l'API pour générer la quittance PDF
+      const { default: api } = await import("@/services/api");
+      const response = await api.get(`/rent-receipts/${invoiceId}/pdf`, {
+        responseType: 'blob'
+      });
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `quittance_${invoiceId}_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      notify("Quittance générée avec succès!", "success");
+    } catch (err) {
+      console.error("Erreur lors de la génération de la quittance:", err);
+      notify("Erreur lors de la génération de la quittance", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Exporter les factures (CSV)
+  const handleExport = async () => {
+    setActionLoading("export");
+    try {
+      // Créer un CSV des factures
+      const csvContent = [
+        ["N° Facture", "Locataire", "Bien", "Montant", "Échéance", "Statut", "Date Paiement"].join(","),
+        ...payments.map(p => [
+          p.invoiceNumber || p.id,
+          `"${p.locataire}"`,
+          `"${p.bien}"`,
+          p.montant,
+          p.echeance,
+          p.statut,
+          p.datePaiement || "-"
+        ].join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `factures_${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      notify("Export CSV effectué avec succès!", "success");
+    } catch (err) {
+      console.error("Erreur lors de l'export:", err);
+      notify("Erreur lors de l'export", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Ouvrir le modal de remboursement
+  const openRefundModal = (payment: PaymentRow) => {
+    setSelectedPayment(payment);
+    setRefundReason("");
+    setShowRefundModal(true);
+  };
+
+  // Ouvrir le modal de rejet
+  const openRejectModal = (payment: PaymentRow) => {
+    setSelectedPayment(payment);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  // Confirmer le remboursement
+  const handleRefund = async () => {
+    if (!selectedPayment) return;
+    
+    setActionLoading(`refund-${selectedPayment.id}`);
+    try {
+      await landlordPayments.refundPayment(selectedPayment.id, refundReason);
+      notify("Paiement remboursé avec succès!", "success");
+      setShowRefundModal(false);
+      fetchInvoices(); // Rafraîchir la liste
+    } catch (err) {
+      console.error("Erreur lors du remboursement:", err);
+      notify("Erreur lors du remboursement", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Confirmer le rejet
+  const handleReject = async () => {
+    if (!selectedPayment) return;
+    
+    setActionLoading(`reject-${selectedPayment.id}`);
+    try {
+      await landlordPayments.rejectPayment(selectedPayment.id, rejectReason);
+      notify("Paiement rejeté avec succès!", "success");
+      setShowRejectModal(false);
+      fetchInvoices(); // Rafraîchir la liste
+    } catch (err) {
+      console.error("Erreur lors du rejet:", err);
+      notify("Erreur lors du rejet", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+  const stats = {
+    totalExpected: apiStats?.total_amount || payments.reduce((sum, p) => sum + p.montant, 0),
+    totalReceived: apiStats?.completed_amount || payments.filter(p => p.statut === "paid").reduce((sum, p) => sum + p.montant, 0),
+    totalLate: apiStats?.failed_amount || payments.filter(p => p.statut === "late").reduce((sum, p) => sum + p.montant, 0),
+    recoveryRate: apiStats?.success_rate || (payments.length > 0 
+      ? Math.round((payments.filter(p => p.statut === "paid").length / payments.length) * 100) 
+      : 0),
+  };
 
   const statutBadge = (statut: PaymentRow["statut"]) => {
     switch (statut) {
@@ -239,7 +584,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
           font-family: 'Manrope', sans-serif;
           font-weight: 500;
           color: #6b7280;
-          background: #fff;
+          background: transparent;
           outline: none;
           appearance: none;
           background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239CA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -437,7 +782,7 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             onClick={() => setActiveTab("actifs")}
           >
             <span>✓</span> Actifs
-            <span className="pm-tab-count">{mockPayments.length}</span>
+            <span className="pm-tab-count">{loading ? "..." : payments.length}</span>
           </button>
           <button
             className={`pm-tab ${activeTab === "archives" ? "active" : ""}`}
@@ -455,7 +800,9 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
             <div className="pm-filter-field">
               <span className="pm-filter-label">Bien</span>
               <select className="pm-select" value={filterBien} onChange={(e) => setFilterBien(e.target.value)}>
-                <option>Tous les biens</option>
+                {biens.map((bien) => (
+                  <option key={bien} value={bien}>{bien}</option>
+                ))}
               </select>
             </div>
             <div className="pm-filter-field">
@@ -482,72 +829,122 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button className="pm-btn-display">
+            <button className="pm-btn-display" onClick={() => notify('Fonctionnalité d\'affichage en cours de développement', 'info')}>
               <Settings size={15} />
               Affichage
             </button>
           </div>
         </div>
 
-        {/* Stats cards */}
+        {/* Stats cards - with API data fallback */}
         <div className="pm-stats">
           <div className="pm-stat green">
             <p className="pm-stat-label">Loyers attendus</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/cash.png" alt="cash" />
-              245 000 FCFA
+              {statsLoading ? "..." : `${stats.totalExpected.toLocaleString("fr-FR")} FCFA`}
             </p>
-            <p className="pm-stat-sub">5 paiements ce mois</p>
+            <p className="pm-stat-sub">{payments.length} paiement{payments.length !== 1 ? "s" : ""} ce mois</p>
           </div>
           <div className="pm-stat blue">
             <p className="pm-stat-label">Loyers reçus</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/checklist.png" alt="checklist" />
-              180 000 FCFA
+              {statsLoading ? "..." : `${stats.totalReceived.toLocaleString("fr-FR")} FCFA`}
             </p>
-            <p className="pm-stat-sub">5 paiements ce mois</p>
+            <p className="pm-stat-sub">{payments.filter(p => p.statut === "paid").length} paiements ce mois</p>
           </div>
           <div className="pm-stat red">
             <p className="pm-stat-label">En retard</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/Error.png" alt="error" />
-              65 000 FCFA
+              {statsLoading ? "..." : `${stats.totalLate.toLocaleString("fr-FR")} FCFA`}
             </p>
-            <p className="pm-stat-sub">2 paiements en retard</p>
+            <p className="pm-stat-sub">{payments.filter(p => p.statut === "late").length} paiements en retard</p>
           </div>
           <div className="pm-stat orange">
             <p className="pm-stat-label">Taux de recouvrement</p>
             <p className="pm-stat-value">
               <img src="/Ressource_gestiloc/Bar chart.png" alt="chart" />
-              73%
+              {statsLoading ? "..." : `${stats.recoveryRate}%`}
             </p>
-            <p className="pm-stat-sub">+5% vs mois dernier</p>
+            <p className="pm-stat-sub">{payments.filter(p => p.statut === "paid").length}/{payments.length} payés</p>
           </div>
         </div>
 
         {/* Action buttons */}
         <div className="pm-actions">
-          <button className="pm-action-btn green" onClick={() => notify("Formulaire d'enregistrement à venir", "info")}>
+          <button 
+            className="pm-action-btn green" 
+            onClick={() => navigate('/proprietaire/factures/nouveau')}
+            disabled={actionLoading !== null}
+          >
             <Plus size={15} />
             Enregistrer un paiement
           </button>
-          <button className="pm-action-btn gray" onClick={() => notify("Fonction rappels à venir", "info")}>
-            <AlertTriangle size={15} />
+          <button 
+            className="pm-action-btn gray" 
+            onClick={() => {
+              // Envoyer un rappel à toutes les factures en attente/en retard
+              const pendingInvoices = payments.filter(p => p.statut !== 'paid');
+              if (pendingInvoices.length === 0) {
+                notify("Aucune facture en attente de rappel", "info");
+                return;
+              }
+              pendingInvoices.forEach((inv, idx) => {
+                setTimeout(() => handleSendReminder(inv.id), idx * 500);
+              });
+            }}
+            disabled={actionLoading !== null || payments.length === 0}
+          >
+            {actionLoading?.startsWith('remind') ? <Loader2 size={15} className="animate-spin" /> : <AlertTriangle size={15} />}
             Rappels
           </button>
-          <button className="pm-action-btn gray" onClick={() => notify("Génération quittances à venir", "info")}>
+          <button 
+            className="pm-action-btn gray" 
+            onClick={() => notify("Sélectionnez une facture dans la liste pour générer la quittance", "info")}
+            disabled={actionLoading !== null || payments.length === 0}
+          >
             <FileText size={15} />
             Quittances
           </button>
-          <button className="pm-action-btn gray" onClick={() => notify("Export à venir", "info")}>
-            <Download size={15} />
+          <button 
+            className="pm-action-btn gray" 
+            onClick={handleExport}
+            disabled={actionLoading !== null || payments.length === 0}
+          >
+            {actionLoading === 'export' ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
             Exporter
           </button>
         </div>
 
         {/* Table */}
         <div className="pm-table-card">
-          <table className="pm-table">
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+              <span className="ml-3 text-gray-600">Chargement des factures...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-red-600 mb-4">{error}</p>
+              <button 
+                className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                onClick={fetchInvoices}
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : filteredPayments.length === 0 ? (
+            <div className="text-center py-16">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Aucune facture trouvée</h3>
+              <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
+                Aucune facture ne correspond à votre recherche.
+              </p>
+            </div>
+          ) : (
+            <table className="pm-table">
             <thead>
               <tr>
                 <th>Locataire</th>
@@ -570,30 +967,412 @@ export const Payments: React.FC<PaymentsProps> = ({ notify }) => {
                     </div>
                   </td>
                   <td style={{ maxWidth: 180, fontSize: "0.75rem" }}>{p.bien}</td>
-                  <td style={{ fontWeight: 700 }}>{p.montant}</td>
+                  <td style={{ fontWeight: 700 }}>{p.montant.toLocaleString("fr-FR")} FCFA</td>
                   <td>{p.echeance}</td>
                   <td>{statutBadge(p.statut)}</td>
                   <td>{p.datePaiement}</td>
                   <td>{p.mode}</td>
                   <td>
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                      <button className="pm-action-icon" title="Plus">
+                      <button 
+                        className="pm-action-icon" 
+                        title="Voir"
+                        onClick={() => navigate(`/proprietaire/factures/${p.id}`)}
+                      >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="5" r="1" />
                           <circle cx="12" cy="12" r="1" />
                           <circle cx="12" cy="19" r="1" />
                         </svg>
                       </button>
-                      <button className="pm-action-icon" title="Mail">
-                        <Mail size={14} />
+                      <button 
+                        className="pm-action-icon" 
+                        title="Envoyer un rappel"
+                        onClick={() => handleSendReminder(p.id)}
+                        disabled={actionLoading === `remind-${p.id}` || p.statut === 'paid'}
+                      >
+                        {actionLoading === `remind-${p.id}` ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Mail size={14} />
+                        )}
                       </button>
+                      <button 
+                        className="pm-action-icon" 
+                        title="Générer quittance"
+                        onClick={() => p.leaseId && handleGenerateReceipt(p.id, p.leaseId)}
+                        disabled={actionLoading === `receipt-${p.id}` || p.statut !== 'paid'}
+                      >
+                        {actionLoading === `receipt-${p.id}` ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <FileText size={14} />
+                        )}
+                      </button>
+                      {p.statut === 'paid' && (
+                        <button 
+                          className="pm-action-icon" 
+                          title="Rembourser"
+                          onClick={() => openRefundModal(p)}
+                          disabled={actionLoading === `refund-${p.id}` || actionLoading === `reject-${p.id}`}
+                          style={{ color: '#f59e0b' }}
+                        >
+                          {actionLoading === `refund-${p.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Undo2 size={14} />
+                          )}
+                        </button>
+                      )}
+                      {p.statut === 'paid' && (
+                        <button 
+                          className="pm-action-icon" 
+                          title="Rejeter"
+                          onClick={() => openRejectModal(p)}
+                          disabled={actionLoading === `refund-${p.id}` || actionLoading === `reject-${p.id}`}
+                          style={{ color: '#ef4444' }}
+                        >
+                          {actionLoading === `reject-${p.id}` ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          )}
         </div>
+
+        {/* Modal de création de facture */}
+        {showCreateModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '500px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>Nouvelle facture</h2>
+                <button 
+                  onClick={() => setShowCreateModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6b7280' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateInvoice}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                    Bail *
+                  </label>
+                  <select
+                    className="pm-select"
+                    value={formData.lease_id}
+                    onChange={(e) => setFormData({ ...formData, lease_id: e.target.value ? Number(e.target.value) : "" })}
+                    required
+                  >
+                    <option value="">Sélectionner un bail</option>
+                    {leases.map((lease) => (
+                      <option key={lease.id} value={lease.id}>
+                        {lease.tenant?.full_name} - {lease.property?.name || lease.property?.address}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                    Type de facture *
+                  </label>
+                  <select
+                    className="pm-select"
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as "rent" | "deposit" | "charge" | "repair" })}
+                    required
+                  >
+                    <option value="rent">Loyer</option>
+                    <option value="deposit">Dépôt de garantie</option>
+                    <option value="charge">Charge</option>
+                    <option value="repair">Réparation</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                      Date d'échéance *
+                    </label>
+                    <input
+                      type="date"
+                      className="pm-select"
+                      value={formData.due_date}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                      Montant total (FCFA) *
+                    </label>
+                    <input
+                      type="number"
+                      className="pm-select"
+                      value={formData.amount_total}
+                      onChange={(e) => setFormData({ ...formData, amount_total: e.target.value })}
+                      placeholder="Ex: 150000"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                      Période début
+                    </label>
+                    <input
+                      type="date"
+                      className="pm-select"
+                      value={formData.period_start}
+                      onChange={(e) => setFormData({ ...formData, period_start: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                      Période fin
+                    </label>
+                    <input
+                      type="date"
+                      className="pm-select"
+                      value={formData.period_end}
+                      onChange={(e) => setFormData({ ...formData, period_end: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                    Mode de paiement
+                  </label>
+                  <select
+                    className="pm-select"
+                    value={formData.payment_method}
+                    onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
+                  >
+                    <option value="fedapay">Fedapay (Paiement en ligne)</option>
+                    <option value="virement">Virement bancaire</option>
+                    <option value="especes">Espèces</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="pm-action-btn gray"
+                    style={{ padding: '10px 20px' }}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="pm-action-btn green"
+                    style={{ padding: '10px 20px' }}
+                    disabled={creatingInvoice}
+                  >
+                    {creatingInvoice ? (
+                      <><Loader2 size={15} className="animate-spin" /> Création...</>
+                    ) : (
+                      <><Plus size={15} /> Créer la facture</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de remboursement */}
+        {showRefundModal && selectedPayment && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '450px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#f59e0b' }}>
+                  <Undo2 size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                  Rembourser le paiement
+                </h2>
+                <button 
+                  onClick={() => setShowRefundModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6b7280' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px', padding: '12px', background: '#fef3c7', borderRadius: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <strong>Locataire:</strong> {selectedPayment.locataire}<br />
+                  <strong>Montant:</strong> {selectedPayment.montant.toLocaleString("fr-FR")} FCFA
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                  Motif du remboursement (optionnel)
+                </label>
+                <textarea
+                  className="pm-select"
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="Entrez le motif du remboursement..."
+                  rows={3}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRefundModal(false)}
+                  className="pm-action-btn gray"
+                  style={{ padding: '10px 20px' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleRefund}
+                  className="pm-action-btn"
+                  style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff' }}
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading !== null ? (
+                    <><Loader2 size={15} className="animate-spin" /> Traitement...</>
+                  ) : (
+                    <><Undo2 size={15} /> Confirmer le remboursement</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de rejet */}
+        {showRejectModal && selectedPayment && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '450px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>
+                  <XCircle size={20} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                  Rejeter le paiement
+                </h2>
+                <button 
+                  onClick={() => setShowRejectModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#6b7280' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px', padding: '12px', background: '#fee2e2', borderRadius: '8px' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                  <strong>Locataire:</strong> {selectedPayment.locataire}<br />
+                  <strong>Montant:</strong> {selectedPayment.montant.toLocaleString("fr-FR")} FCFA
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '6px' }}>
+                  Motif du rejet (optionnel)
+                </label>
+                <textarea
+                  className="pm-select"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Entrez le motif du rejet..."
+                  rows={3}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="pm-action-btn gray"
+                  style={{ padding: '10px 20px' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="pm-action-btn"
+                  style={{ padding: '10px 20px', background: '#ef4444', color: '#fff' }}
+                  disabled={actionLoading !== null}
+                >
+                  {actionLoading !== null ? (
+                    <><Loader2 size={15} className="animate-spin" /> Traitement...</>
+                  ) : (
+                    <><XCircle size={15} /> Confirmer le rejet</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

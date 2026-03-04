@@ -71,110 +71,6 @@ interface LayoutProps {
   toggleTheme: () => void;
 }
 
-// Icônes SVG colorées style illustration — comme dans la photo
-const NavIcons: Record<string, React.FC<{ active?: boolean }>> = {
-  home: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="3" y="13" width="22" height="13" rx="2" fill="#a8d5a2" />
-      <polygon points="14,3 2,14 26,14" fill="#529D21" />
-      <rect x="11" y="18" width="6" height="8" rx="1" fill="#fff" />
-    </svg>
-  ),
-  location: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <ellipse cx="14" cy="26" rx="6" ry="1.5" fill="#e0e0e0" />
-      <path d="M14 3C9.58 3 6 6.58 6 11c0 6.63 8 14 8 14s8-7.37 8-14c0-4.42-3.58-8-8-8z" fill="#F5A623" />
-      <circle cx="14" cy="11" r="3" fill="#fff" />
-    </svg>
-  ),
-  landlord: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="4" y="8" width="20" height="17" rx="2" fill="#fbd38d" />
-      <rect x="2" y="11" width="24" height="3" rx="1" fill="#F5A623" />
-      <rect x="8" y="14" width="5" height="5" rx="1" fill="#fff" />
-      <rect x="15" y="14" width="5" height="5" rx="1" fill="#fff" />
-      <triangle points="14,2 3,11 25,11" fill="#c8a96e" />
-      <polygon points="14,2 3,11 25,11" fill="#e8c97e" />
-    </svg>
-  ),
-  receipts: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="5" y="3" width="18" height="22" rx="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-      <rect x="8" y="8" width="12" height="1.5" rx="0.75" fill="#64748b" />
-      <rect x="8" y="12" width="9" height="1.5" rx="0.75" fill="#64748b" />
-      <rect x="8" y="16" width="6" height="1.5" rx="0.75" fill="#64748b" />
-      <rect x="5" y="21" width="18" height="4" rx="0 0 2 2" fill="#529D21" opacity="0.3" />
-    </svg>
-  ),
-  documents: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="3" y="6" width="16" height="20" rx="2" fill="#fef08a" stroke="#ca8a04" strokeWidth="1" />
-      <rect x="7" y="6" width="18" height="20" rx="2" fill="#fde047" stroke="#ca8a04" strokeWidth="1" />
-      <rect x="10" y="11" width="10" height="1.5" rx="0.75" fill="#92400e" />
-      <rect x="10" y="15" width="7" height="1.5" rx="0.75" fill="#92400e" />
-    </svg>
-  ),
-  interventions: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="12" y="3" width="4" height="16" rx="2" fill="#94a3b8" transform="rotate(45 14 14)" />
-      <rect x="12" y="9" width="4" height="16" rx="2" fill="#64748b" transform="rotate(-45 14 14)" />
-      <circle cx="20" cy="8" r="4" fill="#f87171" />
-      <line x1="18" y1="8" x2="22" y2="8" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="20" y1="6" x2="20" y2="10" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  tasks: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="5" y="4" width="18" height="20" rx="2" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
-      <rect x="9" y="2" width="10" height="4" rx="2" fill="#94a3b8" />
-      <path d="M9 13 l3 3 l7-7" stroke="#529D21" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  ),
-  notes: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="4" y="4" width="20" height="20" rx="2" fill="#fef9c3" stroke="#fde68a" strokeWidth="1" />
-      <rect x="8" y="9" width="12" height="1.5" rx="0.75" fill="#78716c" />
-      <rect x="8" y="13" width="9" height="1.5" rx="0.75" fill="#78716c" />
-      <rect x="8" y="17" width="5" height="1.5" rx="0.75" fill="#78716c" />
-      <path d="M20 20 l4-4 v4 z" fill="#fde68a" />
-    </svg>
-  ),
-  notice: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="4" y="6" width="20" height="18" rx="2" fill="#ede9fe" stroke="#a78bfa" strokeWidth="1" />
-      <path d="M9 6 V4 Q14 2 19 4 V6" fill="#c4b5fd" />
-      <rect x="8" y="11" width="12" height="1.5" rx="0.75" fill="#7c3aed" />
-      <rect x="8" y="15" width="8" height="1.5" rx="0.75" fill="#7c3aed" />
-      <path d="M17 19 l3-2 v4 z" fill="#a78bfa" />
-    </svg>
-  ),
-  payments: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect x="2" y="8" width="24" height="14" rx="3" fill="#529D21" />
-      <rect x="2" y="12" width="24" height="4" fill="#3d7a18" />
-      <rect x="5" y="17" width="5" height="2" rx="1" fill="#a8d5a2" />
-      <rect x="12" y="17" width="3" height="2" rx="1" fill="#a8d5a2" />
-      <circle cx="22" cy="9" r="5" fill="#F5A623" />
-      <text x="22" y="13" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="bold">$</text>
-    </svg>
-  ),
-  settings: () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="4" fill="#64748b" />
-      {[0,45,90,135,180,225,270,315].map((deg, i) => (
-        <rect
-          key={i}
-          x="13" y="3"
-          width="2" height="4"
-          rx="1"
-          fill="#94a3b8"
-          transform={`rotate(${deg} 14 14)`}
-        />
-      ))}
-    </svg>
-  ),
-};
-
 export const Layout: React.FC<LayoutProps> = ({
   children,
   activeTab,
@@ -195,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // Nouvel état pour la confirmation
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -214,7 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    setShowLogoutConfirm(false); // Fermer la modale
+    setShowLogoutConfirm(false);
     try {
       await api.post('/logout');
       localStorage.removeItem('user');
@@ -241,7 +137,7 @@ export const Layout: React.FC<LayoutProps> = ({
       const notificationsData = response.data.notifications || [];
       const notificationsWithUniqueKeys = notificationsData.map((notif: NotificationItem, index: number) => ({
         ...notif,
-        _uniqueKey: `notif-${notif.id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        _uniqueKey: `notif-${notif.id || 'unknown'}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
       setNotifications(notificationsWithUniqueKeys);
       setUnreadCount(response.data.unread_count || 0);
@@ -330,17 +226,17 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   const menuItems = [
-    { id: 'home',          label: 'Tableau de bord',   iconKey: 'home' },
-    { id: 'landlord',      label: 'Mon propriétaire',  iconKey: 'landlord' },
-    { id: 'location',      label: 'Ma location',       iconKey: 'location' },
-    { id: 'receipts',      label: 'Mes quittances',    iconKey: 'receipts' },
-    { id: 'documents',     label: 'Documents',         iconKey: 'documents' },
-    { id: 'interventions', label: 'Mes interventions', iconKey: 'interventions' },
-    { id: 'tasks',         label: 'Mes tâches',        iconKey: 'tasks' },
-    { id: 'notes',         label: 'Mes notes',         iconKey: 'notes' },
-    { id: 'notice',        label: 'Préavis',           iconKey: 'notice' },
-    { id: 'payments',      label: 'Paiements',         iconKey: 'payments' },
-    { id: 'settings',      label: 'Paramètres',        iconKey: 'settings' },
+    { id: 'home', label: 'Tableau de bord', image: '/Ressource_gestiloc/tb_locataire.png' },
+    { id: 'location', label: 'Ma location', image: '/Ressource_gestiloc/Ma_location.png' },
+    { id: 'landlord', label: 'Mon propriétaire', image: '/Ressource_gestiloc/mon_proprio.png' },
+    { id: 'receipts', label: 'Mes quittances', image: '/Ressource_gestiloc/Mes_quittances.png' },
+    { id: 'documents', label: 'Documents', image: '/Ressource_gestiloc/Document In Folder.png' },
+    { id: 'interventions', label: 'Mes interventions', image: '/Ressource_gestiloc/Tools.png' },
+    { id: 'tasks', label: 'Mes tâches', image: '/Ressource_gestiloc/Nouvelles_taches.png' },
+    { id: 'notes', label: 'Mes notes', image: '/Ressource_gestiloc/Edit Property.png' },
+    { id: 'notice', label: 'Préavis', image: '/Ressource_gestiloc/preavis.png' },
+    { id: 'payments', label: 'Paiements', image: '/Ressource_gestiloc/paiement.png' },
+    { id: 'settings', label: 'Paramètres', image: '/Ressource_gestiloc/parametre_loc.png' },
   ];
 
   const userInitials = user
@@ -353,140 +249,101 @@ export const Layout: React.FC<LayoutProps> = ({
       : user.email
     : 'Utilisateur';
 
-  // ─── SIDEBAR CONTENT (partagé mobile + desktop) ───────────────────────────
-  const SidebarContent = () => (
-    <>
-      {/* Nav items */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        <div className="space-y-0.5">
-          {menuItems.map((item) => {
-            const isActive = activeTab === item.id;
-            const IconComponent = NavIcons[item.iconKey];
-            const isFirst = item.id === 'home';
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavigate(item.id as Tab)}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-150
-                  ${isActive
-                    ? 'text-[#529D21]'
-                    : isFirst
-                      ? 'text-[#529D21] hover:bg-gray-50'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }
-                `}
-                style={isActive ? {
-                  background: 'linear-gradient(to right, rgba(253,230,138,0.6), rgba(253,230,138,0.05))',
-                } : {}}
-              >
-                {/* Icône SVG illustration */}
-                <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
-                  {IconComponent ? <IconComponent active={isActive} /> : null}
-                </span>
-                <span className={`${isActive || isFirst ? 'font-semibold' : 'font-normal'}`}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* User Profile + Déconnexion — toujours en bas */}
-      <div className="p-4 border-t border-gray-100 shrink-0">
-        <div
-          onClick={() => handleNavigate('profile' as Tab)}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors mb-1"
-        >
-          <div className="w-9 h-9 rounded-full bg-[#529D21] flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {userInitials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{userLabel}</p>
-            <p className="text-xs text-gray-400">Locataire</p>
-          </div>
-        </div>
-
-        {/* Bouton de déconnexion modifié pour ouvrir la modale */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
-        >
-          <LogOut size={16} className="shrink-0" />
-          <span>Déconnexion</span>
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-50 flex flex-col">
+      {/* HEADER */}
+      <header className="fixed top-0 left-0 right-0 z-[100] h-[58px] flex items-center justify-between px-4 sm:px-8" style={{
+        background: 'linear-gradient(90deg, #4CAF50 0%, #43a047 60%, #388E3C 100%)',
+      }}>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={24} className="text-white" />
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">GestiLoc</h1>
+        </div>
 
-      {/* ── HEADER ── */}
-      <header
-        className="px-4 sm:px-6 py-3 fixed top-0 left-0 right-0 z-[100] h-[60px]"
-        style={{ background: 'rgba(82, 157, 33, 0.82)' }}
-      >
-        <div className="flex justify-between items-center h-full">
-          <div className="flex items-center gap-3">
-            {activeTab !== 'home' && (
-              <button
-                onClick={() => handleNavigate('home')}
-                className="p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
-                aria-label="Retour"
-              >
-                <ArrowLeft size={24} className="text-white" />
-              </button>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Notifications desktop */}
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30 relative"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)', backdropFilter: 'blur(4px)', fontFamily: "'Manrope', sans-serif", letterSpacing: '0.01em' }}
+            aria-label="Notifications"
+          >
+            <img src="/Ressource_gestiloc/Bell.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-white/20 transition-colors"
-              aria-label="Menu"
-            >
-              <Menu size={24} className="text-white" />
-            </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Gestiloc</h1>
-          </div>
+          </button>
+          {/* Notifications mobile */}
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30 relative"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Notifications"
+          >
+            <img src="/Ressource_gestiloc/Bell.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              className="relative flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-              <span className="hidden sm:inline text-sm">Notifications</span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => setShowHelp(!showHelp)}
-              aria-label="Aide"
-            >
-              <HelpCircle size={18} />
-              <span className="hidden sm:inline text-sm">Aide</span>
-            </button>
-            <button
-              className="flex items-center gap-2 px-3 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-              onClick={() => handlePageChange('profile')}
-              aria-label="Mon compte"
-            >
-              <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
-                <span className="text-xs font-bold">{userInitials}</span>
-              </div>
-              <span className="hidden sm:inline text-sm">Mon compte</span>
-            </button>
-          </div>
+          {/* Aide desktop */}
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)', backdropFilter: 'blur(4px)', fontFamily: "'Manrope', sans-serif", letterSpacing: '0.01em' }}
+            aria-label="Aide"
+          >
+            <img src="/Ressource_gestiloc/question_mark.png" alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+            Aide
+          </button>
+          {/* Aide mobile */}
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Aide"
+          >
+            <img src="/Ressource_gestiloc/question_mark.png" alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+          </button>
+
+          {/* Mon compte desktop */}
+          <button
+            onClick={() => handlePageChange('profile')}
+            className="hidden sm:flex items-center gap-2 py-2 px-4 rounded-full text-white text-sm font-semibold transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)', backdropFilter: 'blur(4px)', fontFamily: "'Manrope', sans-serif", letterSpacing: '0.01em' }}
+            aria-label="Mon compte"
+          >
+            <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold">
+              {userInitials}
+            </div>
+            Mon compte
+          </button>
+          {/* Mon compte mobile */}
+          <button
+            onClick={() => handlePageChange('profile')}
+            className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:bg-white/30"
+            style={{ background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.45)' }}
+            aria-label="Mon compte"
+          >
+            <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-xs font-bold">
+              {userInitials}
+            </div>
+          </button>
         </div>
       </header>
 
-      {/* ── MOBILE BACKDROP ── */}
+      {/* MOBILE BACKDROP */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-[90] lg:hidden"
@@ -494,36 +351,93 @@ export const Layout: React.FC<LayoutProps> = ({
         />
       )}
 
-      {/* ── SIDEBAR ── */}
+      {/* SIDEBAR */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-[280px] z-[100]
-          bg-white flex flex-col
+          fixed top-0 left-0 h-full z-[100]
+          bg-white
+          flex flex-col
           transition-transform duration-300 ease-out
-          lg:border-r lg:border-gray-200 lg:shadow-none
-          ${isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0 lg:w-64 lg:top-[60px] lg:h-[calc(100vh-60px)] lg:z-40'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:z-40'}
         `}
+        style={
+          isMobileMenuOpen ? {
+            width: '343px',
+            height: '857px',
+            borderRadius: '31px',
+            boxShadow: '0px 5px 8.6px 0px rgba(131, 199, 87, 1)',
+          } : {
+            width: '343px',
+            height: 'auto',
+            borderRadius: '31px',
+            boxShadow: '0px 5px 8.6px 0px rgba(131, 199, 87, 1)',
+            top: '80px',
+            left: '50px',
+            maxHeight: 'calc(100vh - 140px)',
+          }
+        }
       >
-        {/* Mobile Header */}
-        <div
-          className="lg:hidden flex items-center justify-between px-4 py-3 shrink-0"
-          style={{ background: 'rgba(82, 157, 33, 0.82)' }}
-        >
-          <h2 className="text-base font-bold text-white">Menu</h2>
+        {/* Mobile Header with Close */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b-2 border-[#83C757]" style={{ background: 'rgba(82, 157, 33, 1)' }}>
+          <h2 className="text-lg font-bold text-white">Menu</h2>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
-            aria-label="Fermer"
+            className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+            aria-label="Fermer le menu"
           >
-            <X size={22} className="text-white" />
+            <X size={24} className="text-white" />
           </button>
         </div>
 
-        <SidebarContent />
+        {/* Menu Navigation */}
+        <nav className="flex-1 overflow-y-auto">
+          <div className="space-y-0">
+            {menuItems.map((item, index) => {
+              const isActive = activeTab === item.id;
+              const isFirst = index === 0;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.id as Tab)}
+                  className={`w-full flex items-center gap-3 px-4 text-sm font-medium transition-all ${
+                    isActive && isFirst
+                      ? 'bg-gradient-to-r from-[rgba(255,213,124,0.87)] to-white text-[#529D21] rounded-t-[31px] rounded-b-none h-[101px] pt-3'
+                      : isActive
+                      ? 'bg-gradient-to-r from-[rgba(255,213,124,0.87)] to-white text-[#529D21] py-3'
+                      : isFirst
+                      ? 'text-gray-900 py-3 rounded-t-[31px] bg-white'
+                      : 'text-gray-700 hover:bg-white/50 py-3'
+                  }`}
+                >
+                  <img
+                    src={item.image}
+                    alt={item.label}
+                    className="w-6 h-6 flex-shrink-0 object-contain"
+                  />
+                  <span className={`truncate ${
+                    isFirst ? 'font-[Merriweather] text-[18px] leading-[100%] tracking-[-0.17px]' : ''
+                  }`}>{item.label}</span>
+                </button>
+              );
+            })}
+
+            {/* ── BOUTON DÉCONNEXION stylé ── */}
+            <div className="px-4 py-3 rounded-b-[31px] bg-white">
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="logout-btn w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-2xl text-sm font-semibold text-white transition-all duration-200 active:scale-[0.97]"
+              >
+                <LogOut size={16} className="logout-icon flex-shrink-0" />
+                <span>Déconnexion</span>
+              </button>
+            </div>
+          </div>
+        </nav>
       </aside>
 
-      {/* ── MAIN CONTENT ── */}
-      <div className="flex flex-1 h-[calc(100vh-60px)] relative pt-[60px]">
+      {/* MAIN CONTENT */}
+      <div className="flex flex-1 h-[calc(100vh-58px)] relative pt-[58px]">
         {/* Toasts */}
         <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-3">
           {toasts.map((toast) => (
@@ -531,7 +445,7 @@ export const Layout: React.FC<LayoutProps> = ({
           ))}
         </div>
 
-        <main className="flex-1 flex flex-col ml-0 lg:ml-64 h-full overflow-hidden z-0 relative">
+        <main className="flex-1 flex flex-col ml-0 lg:ml-[400px] h-full overflow-hidden z-0 relative">
           <div id="app-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 scroll-smooth">
             {activeTab === 'landlord' ? (
               <Landlord notify={notify} />
@@ -550,7 +464,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-slideUp">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                   <LogOut size={28} className="text-red-600" />
                 </div>
                 <div>
@@ -558,7 +472,7 @@ export const Layout: React.FC<LayoutProps> = ({
                   <p className="text-sm text-gray-500">Êtes-vous sûr de vouloir vous déconnecter ?</p>
                 </div>
               </div>
-              
+
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
                 <p className="text-sm text-amber-800 flex items-start gap-3">
                   <AlertTriangle size={20} className="shrink-0 mt-0.5" />
@@ -596,12 +510,12 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       )}
 
-      {/* ── NOTIFICATIONS DROPDOWN ── */}
+      {/* NOTIFICATIONS DROPDOWN */}
       {showNotifications && (
-        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto max-h-[600px]">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
               {unreadCount > 0 && (
                 <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
                   {unreadCount} nouvelle{unreadCount > 1 ? 's' : ''}
@@ -695,16 +609,16 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       )}
 
-      {/* ── HELP DROPDOWN ── */}
+      {/* HELP DROPDOWN */}
       {showHelp && (
-        <div className="fixed top-20 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Aide</h3>
+        <div className="fixed inset-0 sm:inset-auto sm:top-20 sm:right-6 sm:w-96 bg-white sm:rounded-xl shadow-2xl border-t sm:border border-gray-200 z-[110] flex flex-col h-full sm:h-auto">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h3 className="text-lg font-bold text-gray-900">Aide & Support</h3>
             <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
               <X size={20} className="text-gray-500" />
             </button>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto max-h-96">
             {[
               { color: 'bg-green-500', title: 'Guide de démarrage', sub: 'Apprenez les bases de GestiLoc' },
               { color: 'bg-blue-500', title: "Centre d'aide complet", sub: 'Accédez à tous nos guides' },
@@ -721,10 +635,10 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
             <button
               onClick={() => { setShowHelp(false); window.location.href = '/help'; }}
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="w-full py-3 bg-white border border-gray-200 rounded-xl text-sm text-blue-600 hover:text-blue-700 font-bold shadow-sm transition-all active:scale-[0.98]"
             >
               Voir toute l'aide
             </button>
@@ -732,27 +646,36 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       )}
 
-      {/* Styles pour les animations */}
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        .animate-slideUp { animation: slideUp 0.3s ease-out; }
+
+        /* ── Bouton déconnexion ── */
+        .logout-btn {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+          box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+          border: 1px solid rgba(185, 28, 28, 0.4);
+          letter-spacing: 0.02em;
         }
-        .animate-slideUp {
-          animation: slideUp 0.3s ease-out;
+        .logout-btn:hover {
+          background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%);
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+          transform: translateY(-1px);
+        }
+        .logout-btn:hover .logout-icon {
+          transform: translateX(2px);
+          transition: transform 0.2s ease;
+        }
+        .logout-icon {
+          transition: transform 0.2s ease;
         }
       `}</style>
     </div>

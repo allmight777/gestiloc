@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   TrendingUp,
@@ -41,11 +41,13 @@ import {
   leaseService,
   noticeService,
   rentReceiptService,
+  landlordDashboardService,
   type Property,
   type Lease,
   type Notice,
   type RentReceipt,
   type TenantApi,
+  type LandlordDashboardStats,
 } from "@/services/api"; // adapte le chemin si besoin
 
 interface DashboardProps {
@@ -94,10 +96,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
   const [leases, setLeases] = useState<Lease[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [receipts, setReceipts] = useState<RentReceipt[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<LandlordDashboardStats | null>(null);
 
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const promises = {
@@ -106,6 +109,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
         leases: leaseService.listLeases(),
         notices: noticeService.list(),
         receipts: rentReceiptService.listIndependent(),
+        stats: landlordDashboardService.getStats(),
       } as const;
 
       const entries = Object.entries(promises) as [keyof typeof promises, Promise<any>][];
@@ -135,6 +139,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
             case "receipts":
               setReceipts(Array.isArray(value) ? value : []);
               break;
+            case "stats":
+              setDashboardStats(value);
+              break;
             default:
               break;
           }
@@ -159,6 +166,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
             case "receipts":
               setReceipts([]);
               break;
+            case "stats":
+              setDashboardStats(null);
+              break;
             default:
               break;
           }
@@ -170,12 +180,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [notify]);
 
   useEffect(() => {
     fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchAll]);
 
   /** Derived stats */
   const activeLeases = useMemo(
@@ -508,13 +517,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
         </div>
 
         <Card className="p-6">
-          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-            {selectedPropertyId ? (
-              <EtatsLieux propertyId={String(selectedPropertyId)} />
+          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white p-6 text-sm text-slate-500">
+            {properties.length > 0 ? (
+              <>
+                Sélectionnez un bien ci-dessus pour voir ses états des lieux.
+                <Link
+                  to="/proprietaire/etats-lieux"
+                  className="text-blue-600 hover:text-[#529D21] ml-1"
+                >
+                  Voir tous les états des lieux
+                </Link>
+              </>
             ) : (
-              <div className="p-6 text-sm text-slate-500">
-                Ajoutez un bien pour afficher ses états des lieux.
-              </div>
+              "Ajoutez un bien pour afficher ses états des lieux."
             )}
           </div>
         </Card>
@@ -522,9 +537,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, idx) => (
+        {kpis.map((kpi) => (
           <div
-            key={idx}
+            key={kpi.label}
             className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all"
           >
             <div className={`w-12 h-12 rounded-xl ${kpi.color} flex items-center justify-center mb-4`}>
@@ -696,9 +711,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
             </div>
 
             <div className="space-y-3">
-              {activity.map((item, idx) => (
+              {activity.map((item) => (
                 <div
-                  key={idx}
+                  key={`${item.kind}-${item.date}-${item.title}`}
                   className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center gap-3 flex-1">
@@ -749,9 +764,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
             </div>
 
             <div className="space-y-3">
-              {alerts.map((a, idx) => (
+              {alerts.map((a) => (
                 <div
-                  key={idx}
+                  key={a.message}
                   className={[
                     "p-3 rounded-xl border-l-4",
                     a.severity === "high"
