@@ -1,23 +1,16 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
-        DB::statement("
-            ALTER TABLE users
-            MODIFY COLUMN status ENUM('active','suspended','deactivated','pending') NOT NULL DEFAULT 'active'
-        ");
+        DB::statement("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check");
+        DB::statement("ALTER TABLE users ADD CONSTRAINT users_status_check CHECK (status IN ('active', 'suspended', 'deactivated', 'pending'))");
+        DB::statement("ALTER TABLE users ALTER COLUMN status SET DEFAULT 'active'");
     }
-
     public function down(): void
     {
-        DB::statement("
-            ALTER TABLE users
-            MODIFY COLUMN status ENUM('active','suspended','deactivated') NOT NULL DEFAULT 'active'
-        ");
+        DB::statement("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check");
+        DB::statement("ALTER TABLE users ADD CONSTRAINT users_status_check CHECK (status IN ('active', 'suspended', 'deactivated'))");
     }
 };
