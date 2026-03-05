@@ -107,7 +107,7 @@ class DashboardController extends Controller
             ->where('status', 'paid')
             ->where('created_at', '>=', Carbon::now()->subMonths(6))
             ->select(
-                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"),
+                DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
                 DB::raw('SUM(amount_paid) as total')
             )
             ->groupBy('month')
