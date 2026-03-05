@@ -59,7 +59,7 @@ export const DelegationsList: React.FC<DelegationsListProps> = ({ notify }) => {
 
   const fetchDelegations = async () => {
     try {
-      const response = await fetch('/api/co-owners/me/delegations', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/co-owners/me/delegations`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'

@@ -79,7 +79,7 @@ export const InviteLandlord: React.FC<InviteLandlordProps> = ({ notify }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/landlords/invite', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/landlords/invite`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

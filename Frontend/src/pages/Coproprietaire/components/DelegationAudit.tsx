@@ -52,7 +52,7 @@ export const DelegationAudit: React.FC<DelegationAuditProps> = ({ notify }) => {
 
   const fetchAudits = async () => {
     try {
-      const response = await fetch('/api/my-delegation-audits', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/my-delegation-audits`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
