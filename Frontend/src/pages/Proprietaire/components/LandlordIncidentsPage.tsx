@@ -28,8 +28,8 @@ const statusLabel: Record<IncidentStatus, string> = {
 
 /**
  * ✅ Base URL backend depuis api.ts (source unique)
- * api.defaults.baseURL = "https://wheat-skunk-120710.hostingersite.com/api"
- * -> origin "https://wheat-skunk-120710.hostingersite.com"
+ * api.defaults.baseURL = "https://gestiloc-backend.onrender.com/api"
+ * -> origin "https://gestiloc-backend.onrender.com"
  */
 const getBackendOrigin = () => {
   const base = api.defaults.baseURL || "";
