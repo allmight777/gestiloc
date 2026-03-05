@@ -344,9 +344,9 @@ class CoOwnerTenantController extends Controller
                 // 5. Envoyer l'email d'invitation
                 $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user, $validated['email']);
 
-                return redirect()
-                    ->route('co-owner.tenants.index')
-                    ->with('success', 'Locataire créé avec succès ! Un email d\'invitation a été envoyé.');
+                $apiToken = $request->get('api_token') ?? $request->bearerToken();
+                $indexUrl = route('co-owner.tenants.index') . ($apiToken ? '?api_token=' . $apiToken : '');
+                return redirect($indexUrl)->with('success', 'Locataire créé avec succès !');
 
             });
 
