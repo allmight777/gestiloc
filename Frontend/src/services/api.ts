@@ -191,7 +191,7 @@ const getCsrfToken = async () => {
   
   // Mode backend : appel réel au serveur Laravel
   try {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
+    `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/sanctum/csrf-cookie`, {
       withCredentials: true,
       headers: {
         Accept: 'application/json',
