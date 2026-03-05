@@ -70,7 +70,7 @@ export const CoOwnerActivation: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/co-owner/set-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/co-owner/set-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
