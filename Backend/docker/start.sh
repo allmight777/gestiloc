@@ -7,8 +7,7 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Fresh migration avec seeders
-php artisan migrate:fresh --seed --force || echo "⚠️ Migration warning"
+php artisan migrate --force || echo "⚠️ Migration warning"
 
 php-fpm -D
 echo "=== Starting Nginx on port 10000 ==="
