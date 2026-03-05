@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://gestiloc-backend.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://gestiloc-backend.onrender.com/api';
 
 // Types pour les co-propriétaires
 export interface CoOwner {
