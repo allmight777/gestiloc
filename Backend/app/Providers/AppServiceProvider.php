@@ -10,6 +10,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
+        if (app()->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+            \Illuminate\Support\Facades\URL::forceRootUrl('https://gestiloc-backend.onrender.com');
+        }
         // Helper pour générer l'URL React
         app()->singleton('react_url', function () {
             return env('REACT_APP_URL', 'https://gestiloc-frontend.vercel.app');
