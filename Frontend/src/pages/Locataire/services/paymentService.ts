@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { PaymentSession, PaymentInitializePayload, PaymentConfirmation } from '../types';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'https://gestiloc-backend.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,

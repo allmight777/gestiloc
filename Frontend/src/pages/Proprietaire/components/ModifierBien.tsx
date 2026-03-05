@@ -62,7 +62,7 @@ const statusLabel: Record<string, string> = {
 };
 
 const getBackendOrigin = () => {
-  const baseURL = "http://localhost:8000";
+  const baseURL = "https://gestiloc-backend.onrender.com";
   try {
     return new URL(baseURL).origin;
   } catch {

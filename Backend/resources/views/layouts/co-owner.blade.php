@@ -1338,8 +1338,8 @@
     <script>
         // Configuration des URLs
         const CONFIG = {
-            LARAVEL_URL: 'http://localhost:8000',
-            REACT_URL: 'http://localhost:8080',
+            LARAVEL_URL: 'https://gestiloc-backend.onrender.com',
+            REACT_URL: 'https://gestiloc.vercel.app',
             LOGIN_URL: '/login',
             LOGOUT_URL: '/logout'
         };

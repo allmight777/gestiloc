@@ -9,6 +9,6 @@ return [
     'base_url' => env('FEDAPAY_BASE_URL', 'https://api.fedapay.com/v1'),
     'currency' => env('FEDAPAY_CURRENCY', 'XOF'),
     'commission_rate' => (float) env('FEDAPAY_COMMISSION_RATE'),
-    'front_url' => env('FRONT_URL', 'http://localhost:8080'),
+    'front_url' => env('FRONT_URL', 'https://gestiloc.vercel.app'),
     'back_url' => env('FEDAPAY_BACK_URL', env('APP_URL')),
 ];

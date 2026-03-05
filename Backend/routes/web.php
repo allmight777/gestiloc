@@ -22,39 +22,35 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Page d'accueil Laravel (publique)
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
+
 // Route publique pour voir le dossier partagé
 Route::get('/dossier-partage/{shareUrl}', function ($shareUrl) {
     return view('dossier-public', ['shareUrl' => $shareUrl]);
 })->name('dossier.public');
 
-// Routes de test Laravel (publiques)
-Route::get('/test-laravel', function () {
-    return "Page Laravel de test - Ça fonctionne !";
-});
-
-Route::get('/test-laravel-page', function () {
-    return view('test-laravel');
-});
-
 // Routes de login/logout (publiques)
 Route::get('/login', function () {
-    // Si l'utilisateur a un token valide, rediriger vers le dashboard React
     if (request()->has('api_token') || request()->cookie('laravel_session')) {
+        $apiToken = request()->get('api_token');
+        $redirectUrl = "https://gestiloc-frontend.vercel.app/dashboard";
+
         return "
             <script>
-                const urlParams = new URLSearchParams(window.location.search);
-                const apiToken = urlParams.get('api_token');
+                const apiToken = '{$apiToken}';
                 if (apiToken) {
                     localStorage.setItem('token', apiToken);
                 }
-                window.location.href = 'http://localhost:8080/dashboard';
+                window.location.href = '{$redirectUrl}';
             </script>
         ";
     }
     return view('auth.login');
 })->name('login');
 
-// Route de déconnexion (publique)
 Route::get('/logout', function () {
     auth()->logout();
     session()->flush();
@@ -65,47 +61,19 @@ Route::get('/logout', function () {
         <head>
             <title>Déconnexion - GestiLoc</title>
             <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    margin: 0;
-                }
-                .container {
-                    text-align: center;
-                    background: white;
-                    padding: 3rem;
-                    border-radius: 1rem;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                }
-                .spinner {
-                    border: 4px solid rgba(0,0,0,0.1);
-                    border-left-color: #667eea;
-                    border-radius: 50%;
-                    width: 40px;
-                    height: 40px;
-                    animation: spin 1s linear infinite;
-                    margin: 0 auto 1rem;
-                }
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
+                body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #764ba2; margin: 0; color: white; }
+                .container { text-align: center; background: white; padding: 2rem; border-radius: 1rem; color: #333; }
             </style>
         </head>
         <body>
             <div class='container'>
-                <div class='spinner'></div>
                 <h2>Déconnexion en cours...</h2>
-                <p>Redirection vers la page de connexion</p>
             </div>
             <script>
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 setTimeout(() => {
-                    window.location.href = 'http://localhost:8080/login';
+                    window.location.href = 'https://gestiloc-frontend.vercel.app/login';
                 }, 1000);
             </script>
         </body>
@@ -358,6 +326,7 @@ Route::middleware([\App\Http\Middleware\AuthenticateWithToken::class])->group(fu
 | Catch-all React - DOIT ÊTRE LA DERNIÈRE ROUTE
 |--------------------------------------------------------------------------
 */
+
 Route::get('/{any}', function () {
     return view('react-app');
-})->where('any', '^(?!api).*$');
+})->where('any', '^(?!api|admin|login|logout).*$');

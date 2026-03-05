@@ -1718,7 +1718,7 @@
                 return;
             }
 
-            const baseUrl = 'http://localhost:8080';
+            const baseUrl = 'https://gestiloc.vercel.app';
             let fullUrl = baseUrl + path;
 
             const separator = fullUrl.includes('?') ? '&' : '?';
@@ -1774,7 +1774,7 @@
                 localStorage.removeItem('user');
 
                 // Rediriger vers la page de login React
-                window.location.href = 'http://localhost:8080/login';
+                window.location.href = 'https://gestiloc.vercel.app/login';
             }
         }
 

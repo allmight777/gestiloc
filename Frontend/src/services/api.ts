@@ -167,8 +167,8 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
-// 🔹 baseURL = http://localhost:8000/api
-const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'http://localhost:8000/api';
+// 🔹 baseURL = https://gestiloc-backend.onrender.com/api
+const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://gestiloc-backend.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -191,7 +191,7 @@ const getCsrfToken = async () => {
   
   // Mode backend : appel réel au serveur Laravel
   try {
-    await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/sanctum/csrf-cookie`, {
+    await axios.get(`${import.meta.env.VITE_API_URL || 'https://gestiloc-backend.onrender.com'}/sanctum/csrf-cookie`, {
       withCredentials: true,
       headers: {
         Accept: 'application/json',
