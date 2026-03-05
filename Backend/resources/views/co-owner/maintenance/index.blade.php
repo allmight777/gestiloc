@@ -63,7 +63,7 @@
     <!-- Filtres avancés -->
     <div class="filters-card">
         <h3 class="filters-title">FILTRE</h3>
-        <form method="GET" action="{{ route('co-owner.maintenance.index') }}" class="filters-form">
+        <form method="GET" action="{{ route('co-owner.maintenance.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="filters-form">
             @if(request('status_filter'))
                 <input type="hidden" name="status_filter" value="{{ request('status_filter') }}">
             @endif
@@ -232,8 +232,11 @@
                             <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                         </a>
                         @if($request->status === 'open')
-                            <form action="{{ route('co-owner.maintenance.start', $request) }}" method="POST" style="display: inline;">
+                            <form action="{{ route('co-owner.maintenance.start') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="display: inline;">
                                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                                 <button type="submit" class="action-btn btn-primary" title="Prendre en charge">
                                     <i data-lucide="play" style="width: 16px; height: 16px;"></i>
                                 </button>

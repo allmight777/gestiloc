@@ -697,8 +697,11 @@
             </div>
 
             <div class="form-body">
-                <form action="{{ route('co-owner.management.invite') }}" method="POST" id="invite_form">
+                <form action="{{ route('co-owner.management.invite') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" id="invite_form">
                     @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                     <input type="hidden" name="invitation_type" id="invitation_type" value="co_owner">
 
                     <!-- Indicateur de progression -->

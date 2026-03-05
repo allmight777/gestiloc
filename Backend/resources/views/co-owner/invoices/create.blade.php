@@ -369,8 +369,11 @@
     </div>
 
     <div class="form-card">
-        <form action="{{ route('co-owner.invoices.store') }}" method="POST" id="invoice-form">
+        <form action="{{ route('co-owner.invoices.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" id="invoice-form">
             @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
             <!-- Step 1: Location et Type -->
             <div class="step-content active" id="step-1">

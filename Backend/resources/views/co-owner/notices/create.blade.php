@@ -27,8 +27,11 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('co-owner.notices.store') }}" class="form-card">
+            <form method="POST" action="{{ route('co-owner.notices.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="form-card">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
                 <!-- Sélection du bail -->
                 <div class="form-group">

@@ -52,8 +52,11 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('co-owner.notices.update', $notice) }}" class="form-card">
+            <form method="POST" action="{{ route('co-owner.notices.update') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="form-card">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                 @method('PUT')
 
                 <!-- Type de préavis -->

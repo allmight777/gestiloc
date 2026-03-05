@@ -43,8 +43,11 @@
         </div>
     @else
         <div class="form-container">
-            <form method="POST" action="{{ route('co-owner.quittances.store') }}">
+            <form method="POST" action="{{ route('co-owner.quittances.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
                 <div class="form-grid">
                     <!-- Sélection du bail -->

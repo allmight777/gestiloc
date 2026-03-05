@@ -211,15 +211,18 @@
 
                 <div class="action-buttons">
                     @if($maintenance->status == 'open')
-                        <form action="{{ route('co-owner.maintenance.start', $maintenance) }}" method="POST" style="display: inline;">
+                        <form action="{{ route('co-owner.maintenance.start') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="display: inline;">
                             @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                             <button type="submit" class="button button-primary">
                                 <i data-lucide="play" style="width: 16px; height: 16px;"></i>
                                 Prendre en charge
                             </button>
                         </form>
 
-                        <form action="{{ route('co-owner.maintenance.assign', $maintenance) }}" method="POST" style="display: none;" id="assign-form">
+                        <form action="{{ route('co-owner.maintenance.assign') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="display: none;" id="assign-form">
                             @csrf
                             <div class="form-group">
                                 <label class="form-label">Nom du prestataire</label>
@@ -244,7 +247,7 @@
                             Assigner un prestataire
                         </button>
 
-                        <form action="{{ route('co-owner.maintenance.cancel', $maintenance) }}" method="POST" style="display: none;" id="cancel-form">
+                        <form action="{{ route('co-owner.maintenance.cancel') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="display: none;" id="cancel-form">
                             @csrf
                             <div class="form-group">
                                 <label class="form-label">Raison de l'annulation</label>
@@ -262,7 +265,7 @@
                         </button>
 
                     @elseif($maintenance->status == 'in_progress')
-                        <form action="{{ route('co-owner.maintenance.resolve', $maintenance) }}" method="POST" style="display: none;" id="resolve-form">
+                        <form action="{{ route('co-owner.maintenance.resolve') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="display: none;" id="resolve-form">
                             @csrf
                             <div class="form-group">
                                 <label class="form-label">Détails de la résolution</label>
@@ -291,7 +294,7 @@
                         <i data-lucide="message-square"></i>
                         Répondre au locataire
                     </h3>
-                   <form action="{{ route('co-owner.maintenance.reply', $maintenance) }}" method="POST" class="reply-form">
+                   <form action="{{ route('co-owner.maintenance.reply') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" class="reply-form">
                         @csrf
                         <div class="form-group">
                             <label class="form-label">Votre message</label>

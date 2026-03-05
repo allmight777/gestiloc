@@ -31,8 +31,11 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('co-owner.maintenance.update', $maintenance) }}" enctype="multipart/form-data" class="maintenance-form" id="maintenanceForm">
+        <form method="POST" action="{{ route('co-owner.maintenance.update') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" enctype="multipart/form-data" class="maintenance-form" id="maintenanceForm">
             @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
             @method('PUT')
 
             @if(session('error'))

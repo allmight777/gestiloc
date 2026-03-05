@@ -1163,7 +1163,7 @@
 
     <!-- Filtres -->
     <div class="filters-card">
-        <form method="GET" action="{{ route('co-owner.management.index') }}" class="filters-form">
+        <form method="GET" action="{{ route('co-owner.management.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="filters-form">
             <div class="search-wrapper">
                 <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"></circle>

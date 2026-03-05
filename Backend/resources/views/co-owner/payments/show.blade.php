@@ -246,9 +246,12 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" onclick="closeModal('archiveModal')">Annuler</button>
-                <form id="archiveForm" action="{{ route('co-owner.payments.archive', $payment->id) }}" method="POST"
+                <form id="archiveForm" action="{{ route('co-owner.payments.archive') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST"
                     style="display: inline;">
                     @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                     @method('PUT')
                     <button type="submit" class="btn-confirm" style="background: #dc3545;" id="confirmArchiveBtn">
                         <span class="btn-icon">📁</span>

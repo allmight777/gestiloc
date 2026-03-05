@@ -246,8 +246,11 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('co-owner.assign-property.store') }}" id="lease-form">
+            <form method="POST" action="{{ route('co-owner.assign-property.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" id="lease-form">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
                 <!-- Section: Informations de location -->
                 <div style="background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">

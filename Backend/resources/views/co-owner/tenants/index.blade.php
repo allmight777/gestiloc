@@ -104,7 +104,7 @@
                     FILTRER - UTILISEZ LES OPTIONS CI-DESSOUS
                 </div>
 
-                <form method="GET" action="{{ route('co-owner.tenants.index') }}" id="filter-form">
+                <form method="GET" action="{{ route('co-owner.tenants.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" id="filter-form">
                     <input type="hidden" name="status" value="{{ $status }}">
 
                     <div class="filters-grid">
@@ -137,7 +137,7 @@
             </div>
 
             <!-- Search and Actions -->
-            <form method="GET" action="{{ route('co-owner.tenants.index') }}" class="search-actions">
+            <form method="GET" action="{{ route('co-owner.tenants.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="search-actions">
                 <input type="hidden" name="status" value="{{ $status }}">
                 <input type="hidden" name="property_id" value="{{ $propertyId }}">
                 <input type="hidden" name="per_page" value="{{ $perPage }}">
@@ -356,6 +356,9 @@
             <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Annuler</button>
             <form id="actionForm" method="POST" style="display: inline;">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                 @method('PUT')
                 <button type="submit" class="modal-btn modal-btn-confirm" id="confirmBtn"></button>
             </form>

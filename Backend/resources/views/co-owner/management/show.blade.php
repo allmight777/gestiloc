@@ -1138,6 +1138,9 @@
                 @if($coOwner->status == 'active')
                     <form method="POST" id="revokeForm" style="display: inline;">
                         @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                         <button type="button" onclick="showRevokeModal()" class="action-btn revoke">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
@@ -1146,7 +1149,7 @@
                         </button>
                     </form>
                 @else
-                    <form action="{{ route('co-owner.management.reactivate', $coOwner->id) }}" method="POST" class="inline">
+                    <form action="{{ route('co-owner.management.reactivate') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="action-btn reactivate">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1194,7 +1197,7 @@
             <h2>Déléguer un nouveau bien</h2>
         </div>
         <div class="form-body">
-            <form action="{{ route('co-owner.management.delegate', $coOwner->id) }}" method="POST">
+            <form action="{{ route('co-owner.management.delegate') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST">
                 @csrf
                 <div class="form-grid">
                     <div class="form-group">

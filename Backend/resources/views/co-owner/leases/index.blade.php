@@ -21,7 +21,7 @@
         <div class="filters-card">
             <h3 class="filters-title">FILTRER PAR BIEN</h3>
 
-            <form method="GET" action="{{ route('co-owner.leases.index') }}" class="filters-form">
+            <form method="GET" action="{{ route('co-owner.leases.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="filters-form">
                 <div class="filter-row">
                     <div class="filter-select-wrapper">
                         <select name="property_id" class="filter-select" onchange="this.form.submit()">

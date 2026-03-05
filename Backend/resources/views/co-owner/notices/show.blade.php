@@ -17,9 +17,12 @@
                         <i data-lucide="edit" style="width: 18px; height: 18px;"></i>
                         Modifier
                     </a>
-                    <form action="{{ route('co-owner.notices.destroy', $notice) }}" method="POST"
+                    <form action="{{ route('co-owner.notices.destroy') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST"
                         onsubmit="return confirm('Supprimer définitivement ce préavis ?');" style="display: inline;">
                         @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger">
                             <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
@@ -189,7 +192,7 @@
                         <h3>Gérer le statut</h3>
                     </div>
                     <div class="status-actions">
-                        <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
+                        <form action="{{ route('co-owner.notices.update-status') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST"
                             class="status-form">
                             @csrf
                             <input type="hidden" name="status" value="confirmed">
@@ -198,7 +201,7 @@
                                 <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Confirmer le préavis
                             </button>
                         </form>
-                        <form action="{{ route('co-owner.notices.update-status', $notice) }}" method="POST"
+                        <form action="{{ route('co-owner.notices.update-status') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST"
                             class="status-form">
                             @csrf
                             <input type="hidden" name="status" value="cancelled">

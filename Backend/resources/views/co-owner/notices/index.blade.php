@@ -69,7 +69,7 @@
         </div>
 
         <!-- Formulaire de filtres -->
-        <form method="GET" action="{{ route('co-owner.notices.index') }}" id="filter-form">
+        <form method="GET" action="{{ route('co-owner.notices.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" id="filter-form">
             <!-- Filtres statut -->
             <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
                 <button type="submit" name="status" value="all"
@@ -357,8 +357,11 @@
                                 Modifier
                             </a>
 
-                            <form action="{{ route('co-owner.notices.destroy', $notice) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce préavis ?')">
+                            <form action="{{ route('co-owner.notices.destroy') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce préavis ?')">
                                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                                 @method('DELETE')
                                 <button type="submit"
                                         style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; background: white; color: #EF4444; border: 1px solid #FCA5A5; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"

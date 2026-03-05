@@ -537,8 +537,11 @@
 
     <!-- Formulaire -->
     <div class="form-card">
-        <form action="{{ route('co-owner.condition-reports.store') }}" method="POST" enctype="multipart/form-data" id="conditionReportForm">
+        <form action="{{ route('co-owner.condition-reports.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" enctype="multipart/form-data" id="conditionReportForm">
             @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
             <!-- Section informations générales -->
             <div class="form-section">

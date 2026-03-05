@@ -82,9 +82,12 @@
                             <i class="fas fa-camera me-2"></i>Ajouter des photos
                         </button>
 
-                        <form action="{{ route('co-owner.condition-reports.destroy', $report->id) }}"
+                        <form action="{{ route('co-owner.condition-reports.destroy') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}"
                               method="POST" class="d-grid">
-                            @csrf @method('DELETE')
+                            @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif @method('DELETE')
                             <button type="submit" class="btn btn-outline-danger"
                                     onclick="return confirm('Supprimer cet état des lieux ?')">
                                 <i class="fas fa-trash me-2"></i>Supprimer
@@ -156,7 +159,7 @@
 <div class="modal fade" id="addPhotosModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('co-owner.condition-reports.add-photos', $report->id) }}"
+            <form action="{{ route('co-owner.condition-reports.add-photos') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}"
                   method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">

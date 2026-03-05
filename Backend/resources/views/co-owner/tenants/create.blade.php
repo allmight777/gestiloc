@@ -61,8 +61,11 @@
                 </button>
             </div>
 
-            <form id="tenantForm" method="POST" action="{{ route('co-owner.tenants.store') }}" enctype="multipart/form-data">
+            <form id="tenantForm" method="POST" action="{{ route('co-owner.tenants.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" enctype="multipart/form-data">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
                 <!-- Tab 1: Informations personnelles -->
                 <div id="tab-infos" class="section">

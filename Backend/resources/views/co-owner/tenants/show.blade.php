@@ -90,9 +90,12 @@
                 <div style="flex: 1;">
                     <strong>En attente d'acceptation</strong>
                     <p style="margin: 0.25rem 0 0 0;">Le locataire n'a pas encore accepté l'invitation.</p>
-                    <form action="{{ route('co-owner.tenants.resend-invitation', $tenant) }}"
+                    <form action="{{ route('co-owner.tenants.resend-invitation') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}"
                           method="POST" style="margin-top: 0.75rem;">
                         @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                         <button type="submit" class="button" style="background: rgba(245,158,11,.12); color: #854d0e; border-color: rgba(245,158,11,.25);">
                             <i data-lucide="paper-plane" style="width: 16px; height: 16px;"></i>
                             Renvoyer l'invitation

@@ -19,8 +19,11 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('co-owner.payments.store') }}" class="form-card" id="paymentForm">
+            <form method="POST" action="{{ route('co-owner.payments.store') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" class="form-card" id="paymentForm">
                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
                 <!-- Informations principales -->
                 <div class="form-grid">

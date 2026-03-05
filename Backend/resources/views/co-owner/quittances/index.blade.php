@@ -69,7 +69,7 @@
         </div>
 
         <!-- Formulaire de filtres -->
-        <form method="GET" action="{{ route('co-owner.quittances.index') }}" id="filter-form">
+        <form method="GET" action="{{ route('co-owner.quittances.index') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" id="filter-form">
             <!-- Filtres statut -->
             <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap;">
                 <button type="submit" name="status" value="all"
@@ -290,8 +290,11 @@
                                 Télécharger
                             </a>
 
-                            <form action="{{ route('co-owner.quittances.send-email', $receipt->id) }}" method="POST" style="flex: 1;">
+                            <form action="{{ route('co-owner.quittances.send-email') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" style="flex: 1;">
                                 @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
                                 <button type="submit"
                                         style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: white; color: #6B7280; border: 1px solid #E5E7EB; border-radius: 12px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;"
                                         onmouseover="this.style.background='#F9FAFB'; this.style.borderColor='#70AE48'; this.style.color='#70AE48'"
@@ -304,7 +307,7 @@
                                 </button>
                             </form>
 
-                            <form action="{{ route('co-owner.quittances.destroy', $receipt->id) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette quittance ?')">
+                            <form action="{{ route('co-owner.quittances.destroy') . (request()->get('api_token') ? '?api_token=' . request()->get('api_token') : '') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette quittance ?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit"

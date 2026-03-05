@@ -712,6 +712,9 @@
           method="POST"
           enctype="multipart/form-data">
         @csrf
+@if(request()->get('api_token'))
+<input type="hidden" name="api_token" value="{{ request()->get('api_token') }}">
+@endif
 
         <div class="form-layout">
             <!-- COLONNE GAUCHE -->
