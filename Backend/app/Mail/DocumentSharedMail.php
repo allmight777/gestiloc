@@ -22,7 +22,7 @@ class DocumentSharedMail extends Mailable
     public ?string $externalEmail;
     public string $frontendUrl;
 
-    public function __construct(Document $document, Tenant $tenant, ?User $user = null, ?string $externalEmail = null, string $frontendUrl = 'http://localhost:8080')
+    public function __construct(Document $document, Tenant $tenant, ?User $user = null, ?string $externalEmail = null, string $frontendUrl = '' . config('app.frontend_url') . '')
     {
         $this->document = $document;
         $this->tenant = $tenant;

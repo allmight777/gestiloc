@@ -11,7 +11,7 @@ class ReactRedirectController extends Controller
      */
     public function redirect(Request $request, $path = null)
     {
-        $reactUrl = config('app.react_url', 'http://localhost:8080');
+        $reactUrl = config('app.react_url', '' . config('app.frontend_url') . '');
         
         // Construire l'URL de redirection
         $redirectPath = $path ?? '';

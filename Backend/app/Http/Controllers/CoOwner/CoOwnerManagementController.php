@@ -93,9 +93,9 @@ class CoOwnerManagementController extends Controller
         if (!$user) {
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -260,9 +260,9 @@ class CoOwnerManagementController extends Controller
         if (!$user) {
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -407,9 +407,9 @@ class CoOwnerManagementController extends Controller
         if (!$user) {
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -438,9 +438,9 @@ class CoOwnerManagementController extends Controller
             }
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -770,9 +770,9 @@ class CoOwnerManagementController extends Controller
             }
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -877,7 +877,7 @@ class CoOwnerManagementController extends Controller
                         'permissions' => $permissions,
                         'expiresAt' => $validated['expires_at'] ? Carbon::parse($validated['expires_at'])->format('d/m/Y') : null,
                         'notes' => $notes,
-                        'dashboardUrl' => 'http://localhost:8080/coproprietaire/dashboard',
+                        'dashboardUrl' => '' . config('app.frontend_url') . '/coproprietaire/dashboard',
                     ], function ($message) use ($targetCoOwner) {
                         $message->to($targetCoOwner->user->email)
                                 ->subject('Un bien vous a été délégué');
@@ -948,9 +948,9 @@ class CoOwnerManagementController extends Controller
             }
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         if (!$user->hasRole(['landlord', 'co_owner'])) {
@@ -1061,9 +1061,9 @@ class CoOwnerManagementController extends Controller
         if (!$user) {
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         // Récupérer le co_owner à révoquer
@@ -1162,9 +1162,9 @@ class CoOwnerManagementController extends Controller
         if (!$user) {
             $apiToken = $request->get('api_token');
             if ($apiToken) {
-                return redirect('http://localhost:8000/login?api_token=' . $apiToken);
+                return redirect('' . config('app.frontend_url') . '/login?api_token=' . $apiToken);
             }
-            return redirect('http://localhost:8000/login');
+            return redirect('' . config('app.frontend_url') . '/login');
         }
 
         // Récupérer le co_owner à réactiver

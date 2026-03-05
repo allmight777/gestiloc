@@ -350,7 +350,7 @@ HTML;
             ->where('expires_at', '>', now())
             ->firstOrFail();
 
-        $frontendUrl = config('app.frontend_url', 'http://localhost:8080');
+        $frontendUrl = config('app.frontend_url', '' . config('app.frontend_url') . '');
 
         return redirect()->away(
             rtrim($frontendUrl, '/') .
@@ -706,7 +706,7 @@ HTML;
             ->where('expires_at', '>', now())
             ->firstOrFail();
 
-        $frontendUrl = config('app.frontend_url', 'http://localhost:8080');
+        $frontendUrl = config('app.frontend_url', '' . config('app.frontend_url') . '');
 
         return redirect()->away(
             rtrim($frontendUrl, '/') .

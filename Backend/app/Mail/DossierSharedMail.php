@@ -22,7 +22,7 @@ class DossierSharedMail extends Mailable
     public ?string $externalEmail;
     public string $frontendUrl;
 
-    public function __construct(Dossier $dossier, Tenant $tenant, ?User $user = null, ?string $externalEmail = null, string $frontendUrl = 'http://localhost:8080')
+    public function __construct(Dossier $dossier, Tenant $tenant, ?User $user = null, ?string $externalEmail = null, string $frontendUrl = '' . config('app.frontend_url') . '')
     {
         $this->dossier = $dossier;
         $this->tenant = $tenant;

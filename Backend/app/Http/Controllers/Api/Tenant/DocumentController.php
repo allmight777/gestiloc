@@ -699,7 +699,7 @@ public function downloadPdf($id)
         try {
             $users = User::whereIn('id', $document->shared_with ?? [])->get();
             $tenant = auth()->user()->tenant;
-            $frontendUrl = config('app.frontend_url', 'http://localhost:8080');
+            $frontendUrl = config('app.frontend_url', '' . config('app.frontend_url') . '');
 
             foreach ($users as $user) {
                 try {
