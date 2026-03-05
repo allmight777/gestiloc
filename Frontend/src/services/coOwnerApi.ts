@@ -180,7 +180,7 @@ class CoOwnerApiService {
       const response = await axios.get(`${API_BASE_URL}/co-owners/me/profile`, {
         headers: this.getAuthHeaders(),
       });
-      return response.data.data;
+      return response.data.data || response.data;
     } catch (error: any) {
       if (error.response?.status === 404) {
         console.log('getProfile: Endpoint not implemented yet, returning default profile');
