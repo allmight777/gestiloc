@@ -157,7 +157,7 @@
             <p>Vous pouvez consulter les détails de ce paiement dans votre espace GestiLoc.</p>
 
             <div style="text-align: center;">
-                <a href="{{ config('app.frontend_url', 'https://gestiloc.vercel.app') }}/{{ $recipientType === 'landlord' ? 'proprietaire' : 'coproprietaire' }}/paiements" class="button">
+                <a href="{{ config('app.frontend_url', 'https://gestiloc-frontend.vercel.app') }}/{{ $recipientType === 'landlord' ? 'proprietaire' : 'coproprietaire' }}/paiements" class="button">
                     Voir les paiements
                 </a>
             </div>

@@ -1339,7 +1339,7 @@
         // Configuration des URLs
         const CONFIG = {
             LARAVEL_URL: 'https://gestiloc-backend.onrender.com',
-            REACT_URL: 'https://gestiloc.vercel.app',
+            REACT_URL: 'https://gestiloc-frontend.vercel.app',
             LOGIN_URL: '/login',
             LOGOUT_URL: '/logout'
         };

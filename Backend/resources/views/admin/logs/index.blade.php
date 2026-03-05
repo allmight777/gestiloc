@@ -1154,11 +1154,11 @@
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                window.location.href = 'https://gestiloc-backend.onrender.com/login';
                 return;
             }
 
-            const baseUrl = 'https://gestiloc.vercel.app';
+            const baseUrl = 'https://gestiloc-frontend.vercel.app';
             let fullUrl = baseUrl + path;
 
             const separator = fullUrl.includes('?') ? '&' : '?';
@@ -1173,11 +1173,11 @@
 
             if (!token) {
                 alert('Session expirée, veuillez vous reconnecter');
-                window.location.href = 'https://wheat-skunk-120710.hostingersite.com/login';
+                window.location.href = 'https://gestiloc-backend.onrender.com/login';
                 return;
             }
 
-            const baseUrl = 'https://wheat-skunk-120710.hostingersite.com';
+            const baseUrl = 'https://gestiloc-backend.onrender.com';
             let fullUrl = baseUrl + path;
 
             const separator = fullUrl.includes('?') ? '&' : '?';
@@ -1391,7 +1391,7 @@
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = 'https://gestiloc.vercel.app/login';
+                window.location.href = 'https://gestiloc-frontend.vercel.app/login';
             }
         }
 
