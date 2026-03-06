@@ -345,6 +345,7 @@ class CoOwnerTenantController extends Controller
                 $this->sendInvitationEmail($tenant, $invitation, $signedUrl, $user, $validated['email']);
 
                 $apiToken = $request->get('api_token') ?? $request->bearerToken();
+                $apiToken = $request->get('api_token');
                 $indexUrl = route('co-owner.tenants.index') . ($apiToken ? '?api_token=' . $apiToken : '');
                 return redirect($indexUrl)->with('success', 'Locataire créé avec succès !');
 
@@ -524,9 +525,9 @@ HTML;
                 'status_set' => $statusValue
             ]);
 
-            return redirect()
-                ->route('co-owner.tenants.index', ['status' => 'active'])
-                ->with('success', 'Locataire archivé avec succès.');
+            $apiToken = $request->get('api_token');
+            $url = route('co-owner.tenants.index', ['status' => 'active']) . ($apiToken ? '&api_token=' . $apiToken : '');
+            return redirect($url)->with('success', 'Locataire archivé avec succès.');
 
         } catch (\Exception $e) {
             Log::error('Erreur archivage locataire', [
@@ -585,9 +586,9 @@ HTML;
                 'status_set' => $statusValue
             ]);
 
-            return redirect()
-                ->route('co-owner.tenants.index', ['status' => 'archived'])
-                ->with('success', 'Locataire restauré avec succès.');
+            $apiToken = $request->get('api_token');
+            $url = route('co-owner.tenants.index', ['status' => 'archived']) . ($apiToken ? '&api_token=' . $apiToken : '');
+            return redirect($url)->with('success', 'Locataire restauré avec succès.');
 
         } catch (\Exception $e) {
             Log::error('Erreur restauration locataire', [
