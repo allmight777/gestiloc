@@ -11,6 +11,11 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import './responsive.css';
+import { Layout } from './components/Layout';
+import Dashboard from './components/Dashboard';
+import { Payments } from './components/Payments';
+import { Messages } from './components/Messages';
 
 ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, DoughnutController, ArcElement, Tooltip, Legend);
 
