@@ -188,8 +188,8 @@ class CoOwnerNoticeController extends Controller
             ->toArray();
 
         if (empty($delegatedPropertyIds)) {
-            return redirect()->route('co-owner.notices.index')
-                ->with('error', 'Aucun bien délégué trouvé');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.notices.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('error', 'Aucun bien délégué trouvé');
         }
 
         // Récupérer les baux actifs
@@ -199,8 +199,8 @@ class CoOwnerNoticeController extends Controller
             ->get();
 
         if ($leases->isEmpty()) {
-            return redirect()->route('co-owner.notices.index')
-                ->with('error', 'Aucun bail actif trouvé pour vos biens délégués');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.notices.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('error', 'Aucun bail actif trouvé pour vos biens délégués');
         }
 
         return view('co-owner.notices.create', compact('leases', 'user'));
@@ -287,8 +287,8 @@ class CoOwnerNoticeController extends Controller
                 'lease_id' => $lease->id,
             ]);
 
-            return redirect()->route('co-owner.notices.index')
-                ->with('success', 'Préavis créé avec succès. Des emails ont été envoyés.');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.notices.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Préavis créé avec succès. Des emails ont été envoyés.');
 
         } catch (\Exception $e) {
             Log::error('Erreur création préavis co-propriétaire', [
@@ -430,8 +430,8 @@ class CoOwnerNoticeController extends Controller
                 'co_owner_id' => $coOwner->id,
             ]);
 
-            return redirect()->route('co-owner.notices.show', $notice)
-                ->with('success', 'Préavis modifié avec succès');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.notices.show') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Préavis modifié avec succès');
 
         } catch (\Exception $e) {
             Log::error('Erreur modification préavis', [
@@ -534,8 +534,8 @@ class CoOwnerNoticeController extends Controller
                 'co_owner_id' => $coOwner->id,
             ]);
 
-            return redirect()->route('co-owner.notices.index')
-                ->with('success', 'Préavis supprimé avec succès');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.notices.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Préavis supprimé avec succès');
 
         } catch (\Exception $e) {
             Log::error('Erreur suppression préavis', [

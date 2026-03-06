@@ -261,8 +261,8 @@ class CoOwnerConditionReportController extends Controller
 
                 DB::commit();
 
-                return redirect()->route('co-owner.condition-reports.show', $report->id)
-                    ->with('success', 'État des lieux créé avec succès.');
+                $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.condition-reports.show') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'État des lieux créé avec succès.');
 
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -415,8 +415,8 @@ class CoOwnerConditionReportController extends Controller
 
             DB::commit();
 
-            return redirect()->route('co-owner.condition-reports.index')
-                ->with('success', 'État des lieux supprimé avec succès.');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.condition-reports.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'État des lieux supprimé avec succès.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -569,8 +569,8 @@ class CoOwnerConditionReportController extends Controller
         try {
             $report->update($validated);
 
-            return redirect()->route('co-owner.condition-reports.show', $report->id)
-                ->with('success', 'État des lieux mis à jour avec succès.');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.condition-reports.show') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'État des lieux mis à jour avec succès.');
 
         } catch (\Exception $e) {
             Log::error('Erreur mise à jour état des lieux: ' . $e->getMessage());

@@ -290,8 +290,8 @@ class CoOwnerPaymentController extends Controller
             ]);
         });
 
-        return redirect()->route('co-owner.payments.index')
-            ->with('success', 'Paiement enregistré avec succès.');
+        $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.payments.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Paiement enregistré avec succès.');
     }
 
     /**
