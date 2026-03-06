@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import './responsive.css';
 import { Layout } from './components/Layout';
 import Dashboard from './components/Dashboard';
 import { Payments } from './components/Payments';
