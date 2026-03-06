@@ -168,7 +168,7 @@ class CoOwnerMaintenanceController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Erreur accès maintenance copropriétaire: ' . $e->getMessage());
-            return redirect('/login')->with('error', 'Session expirée. Veuillez vous reconnecter.');
+            return redirect(route('login'))->with('error', 'Session expirée.');
         }
     }
 
@@ -322,8 +322,8 @@ class CoOwnerMaintenanceController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            return redirect()->route('co-owner.maintenance.index')
-                ->with('success', 'Intervention créée avec succès !');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.maintenance.index') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Intervention créée avec succès !');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()
@@ -517,8 +517,8 @@ class CoOwnerMaintenanceController extends Controller
                 'new_status' => $validated['status'],
             ]);
 
-            return redirect()->route('co-owner.maintenance.show', $maintenance)
-                ->with('success', 'Intervention mise à jour avec succès !');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.maintenance.show') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Intervention mise à jour avec succès !');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()
@@ -623,8 +623,8 @@ class CoOwnerMaintenanceController extends Controller
                 'email' => $tenantUser->email
             ]);
 
-            return redirect()->route('co-owner.maintenance.show', $maintenance)
-                ->with('success', 'Votre réponse a été envoyée au locataire par email avec succès !');
+            $apiToken = $request->get('api_token');
+            return redirect(route('co-owner.maintenance.show') . ($apiToken ? '?api_token=' . $apiToken : ''))->with('success', 'Votre réponse a été envoyée au locataire par email avec succès !');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return back()
