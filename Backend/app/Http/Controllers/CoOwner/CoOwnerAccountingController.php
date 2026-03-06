@@ -82,7 +82,7 @@ class CoOwnerAccountingController extends Controller
             $years = Payment::whereHas('lease', function($q) use ($propertyIds) {
                     $q->whereIn('property_id', $propertyIds);
                 })
-                ->selectRaw('YEAR(paid_at) as year')
+                ->selectRaw('EXTRACT(YEAR FROM paid_at) as year')
                 ->whereNotNull('paid_at')
                 ->distinct()
                 ->orderBy('year', 'desc')
@@ -392,7 +392,7 @@ private function getAverageForMonth($propertyIds, $month)
         })
         ->where('status', 'approved')
         ->whereMonth('paid_at', $month)
-        ->selectRaw('YEAR(paid_at) as year')
+        ->selectRaw('EXTRACT(YEAR FROM paid_at) as year')
         ->distinct()
         ->count();
 
@@ -412,7 +412,7 @@ private function getAverageForMonth($propertyIds, $month)
                 $q->whereIn('property_id', $propertyIds);
             })
             ->where('status', 'approved')
-            ->selectRaw('YEAR(paid_at) as year, MONTH(paid_at) as month')
+            ->selectRaw('EXTRACT(YEAR FROM paid_at) as year, EXTRACT(MONTH FROM paid_at) as month')
             ->distinct()
             ->count();
 

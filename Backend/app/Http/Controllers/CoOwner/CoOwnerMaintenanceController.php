@@ -77,7 +77,7 @@ class CoOwnerMaintenanceController extends Controller
                 ->get();
 
             $years = MaintenanceRequest::whereIn('property_id', $delegatedProperties)
-                ->selectRaw('YEAR(created_at) as year')
+                ->selectRaw('EXTRACT(YEAR FROM created_at) as year')
                 ->distinct()
                 ->orderBy('year', 'desc')
                 ->pluck('year')

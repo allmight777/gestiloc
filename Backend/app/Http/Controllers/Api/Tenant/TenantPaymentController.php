@@ -882,7 +882,7 @@ class TenantPaymentController extends Controller
             }
 
             $paymentYears = Payment::where('tenant_id', $tenant->id)
-                ->selectRaw('YEAR(COALESCE(paid_at, created_at)) as year')
+                ->selectRaw('EXTRACT(YEAR FROM COALESCE(paid_at, created_at)) as year')
                 ->distinct()
                 ->pluck('year')
                 ->toArray();
@@ -890,13 +890,13 @@ class TenantPaymentController extends Controller
             $invoiceYears = Invoice::whereHas('lease', function($q) use ($tenant) {
                     $q->where('tenant_id', $tenant->id);
                 })
-                ->selectRaw('YEAR(period_start) as year')
+                ->selectRaw('EXTRACT(YEAR FROM period_start) as year')
                 ->distinct()
                 ->pluck('year')
                 ->toArray();
 
             $leaseYears = Lease::where('tenant_id', $tenant->id)
-                ->selectRaw('YEAR(start_date) as year')
+                ->selectRaw('EXTRACT(YEAR FROM start_date) as year')
                 ->distinct()
                 ->pluck('year')
                 ->toArray();
