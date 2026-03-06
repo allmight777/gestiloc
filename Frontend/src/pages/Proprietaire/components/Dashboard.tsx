@@ -1,820 +1,384 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useRef } from 'react';
+import { ChevronRight } from 'lucide-react';
 import {
-  TrendingUp,
-  TrendingDown,
-  Home,
-  AlertCircle,
-  DollarSign,
-  Building,
-  Zap,
-  ChevronRight,
-  MapPin,
-  FileSignature,
-  UserPlus,
-  FileText,
-  ClipboardList,
-} from "lucide-react";
-import EtatsLieux from "@/pages/Proprietaire/components/EtatsLieux";
-import { Card } from "./ui/Card";
-import { Button } from "./ui/Button";
-import { Skeleton } from "./ui/Skeleton";
-import { Tab } from "../types";
-
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarController,
+  BarElement,
+  DoughnutController,
+  ArcElement,
   Tooltip,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+} from 'chart.js';
 
-import {
-  propertyService,
-  tenantService,
-  leaseService,
-  noticeService,
-  rentReceiptService,
-  landlordDashboardService,
-  type Property,
-  type Lease,
-  type Notice,
-  type RentReceipt,
-  type TenantApi,
-  type LandlordDashboardStats,
-} from "@/services/api"; // adapte le chemin si besoin
+ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, DoughnutController, ArcElement, Tooltip, Legend);
+
 
 interface DashboardProps {
-  onNavigate: (tab: Tab) => void;
-  notify: (msg: string, type: "success" | "info" | "error") => void;
+  onNavigate?: (tab: string) => void;
+  notify?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-/** Helpers */
-const eur = (n: number) =>
-  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
-    isFinite(n) ? n : 0
-  );
+const DashboardComponent: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
 
-const toNumber = (v: any) => {
-  if (v === null || v === undefined) return 0;
-  if (typeof v === "number") return v;
-  const s = String(v).replace(/\s/g, "").replace(",", ".");
-  const m = s.match(/-?\d+(\.\d+)?/);
-  return m ? Number(m[0]) : 0;
-};
+  const barChartRef = useRef<HTMLCanvasElement>(null);
+  const donutChartRef = useRef<HTMLCanvasElement>(null);
+  const barChartInstance = useRef<ChartJS | null>(null);
+  const donutChartInstance = useRef<ChartJS | null>(null);
 
-const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-const monthLabelFR = (yyyyMm: string) => {
-  const [y, m] = yyyyMm.split("-").map((x) => Number(x));
-  const date = new Date(y, (m || 1) - 1, 1);
-  return date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
-};
-
-const safeImg = (p: Property) => {
-  const photos = p.photos || [];
-  // si backend renvoie déjà des URLs complètes
-  if (photos.length && /^https?:\/\//i.test(photos[0])) return photos[0];
-  // sinon, fallback joli (tu peux remplacer par ton endpoint storage si tu en as un)
-  return "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=400";
-};
-
-type ActivityItem =
-  | { kind: "receipt"; date: string; title: string; subtitle: string; amount: number }
-  | { kind: "notice"; date: string; title: string; subtitle: string; severity: "high" | "medium" | "low" };
-
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, notify }) => {
-  const [loading, setLoading] = useState(true);
-
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [tenants, setTenants] = useState<TenantApi[]>([]);
-  const [leases, setLeases] = useState<Lease[]>([]);
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [receipts, setReceipts] = useState<RentReceipt[]>([]);
-  const [dashboardStats, setDashboardStats] = useState<LandlordDashboardStats | null>(null);
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
-
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      const promises = {
-        props: propertyService.listProperties(),
-        tenants: tenantService.listTenants(),
-        leases: leaseService.listLeases(),
-        notices: noticeService.list(),
-        receipts: rentReceiptService.listIndependent(),
-        stats: landlordDashboardService.getStats(),
-      } as const;
-
-      const entries = Object.entries(promises) as [keyof typeof promises, Promise<any>][];
-      const results = await Promise.allSettled(entries.map(([, p]) => p));
-
-      for (let i = 0; i < entries.length; i++) {
-        const key = entries[i][0];
-        const res = results[i];
-        if (res.status === "fulfilled") {
-          const value = res.value;
-          switch (key) {
-            case "props": {
-              const props = value?.data ?? [];
-              setProperties(props);
-              setSelectedPropertyId((prev) => prev ?? (props[0]?.id ?? null));
-              break;
-            }
-            case "tenants":
-              setTenants(value?.tenants ?? []);
-              break;
-            case "leases":
-              setLeases(Array.isArray(value) ? value : []);
-              break;
-            case "notices":
-              setNotices(Array.isArray(value) ? value : []);
-              break;
-            case "receipts":
-              setReceipts(Array.isArray(value) ? value : []);
-              break;
-            case "stats":
-              setDashboardStats(value);
-              break;
-            default:
-              break;
-          }
-        } else {
-          const e = res.reason;
-          console.error(`[PROPRIETAIRE DASH] ${String(key)} error`, e?.response?.data || e);
-          notify(e?.message || `Erreur lors du chargement de ${String(key)}`, "error");
-          switch (key) {
-            case "props":
-              setProperties([]);
-              setSelectedPropertyId((prev) => prev ?? null);
-              break;
-            case "tenants":
-              setTenants([]);
-              break;
-            case "leases":
-              setLeases([]);
-              break;
-            case "notices":
-              setNotices([]);
-              break;
-            case "receipts":
-              setReceipts([]);
-              break;
-            case "stats":
-              setDashboardStats(null);
-              break;
-            default:
-              break;
-          }
-        }
-      }
-    } catch (e: any) {
-      console.error(e);
-      notify(e?.message || "Impossible de charger le tableau de bord", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [notify]);
-
+  // Chart.js - Bar Chart (Loyers)
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    if (!barChartRef.current) return;
 
-  /** Derived stats */
-  const activeLeases = useMemo(
-    () => leases.filter((l) => (l.status || "").toLowerCase() === "active"),
-    [leases]
-  );
-
-  const rentedPropertyIds = useMemo(() => {
-    const s = new Set<number>();
-    activeLeases.forEach((l) => s.add(Number(l.property_id)));
-    return s;
-  }, [activeLeases]);
-
-  const occupancy = useMemo(() => {
-    const total = properties.length || 0;
-    const rented = rentedPropertyIds.size;
-    return { total, rented, vacant: Math.max(0, total - rented) };
-  }, [properties.length, rentedPropertyIds]);
-
-  const monthlyExpectedRent = useMemo(() => {
-    // somme des loyers attendus (baux actifs)
-    return activeLeases.reduce((acc, l) => acc + toNumber(l.rent_amount), 0);
-  }, [activeLeases]);
-
-  const activeAlerts = useMemo(() => {
-    // alertes = notices pending + (option) quittances draft/impayés si tu ajoutes plus tard
-    const pendingNotices = notices.filter((n) => (n.status || "").toLowerCase() === "pending");
-    return pendingNotices.length;
-  }, [notices]);
-
-  const last6Months = useMemo(() => {
-    const arr: string[] = [];
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      arr.push(ym(d));
+    // Destroy previous instance
+    if (barChartInstance.current) {
+      barChartInstance.current.destroy();
     }
-    return arr;
-  }, []);
 
-  const financialData = useMemo(() => {
-    // Graph: Loyers attendus vs quittances émises (réel)
-    // receipts: amount_paid + paid_month (YYYY-MM)
-    const issuedByMonth = new Map<string, number>();
-    receipts.forEach((r) => {
-      const key = r.paid_month; // YYYY-MM
-      issuedByMonth.set(key, (issuedByMonth.get(key) || 0) + (r.amount_paid || 0));
+    barChartInstance.current = new ChartJS(barChartRef.current, {
+      type: 'bar',
+      data: {
+        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+        datasets: [
+          {
+            label: 'Loyers reçus',
+            data: [4200, 3800, 4500, 4100, 4800, 4600],
+            backgroundColor: '#4CAF50',
+            borderRadius: 3,
+            borderSkipped: false,
+            barPercentage: 0.40,
+            categoryPercentage: 0.80,
+          },
+          {
+            label: 'Loyers attendus',
+            data: [5000, 5000, 5000, 5000, 5000, 5000],
+            backgroundColor: '#FF9800',
+            borderRadius: 3,
+            borderSkipped: false,
+            barPercentage: 0.40,
+            categoryPercentage: 0.80,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toLocaleString('fr-FR')} FCFA`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: {
+              font: { family: 'Manrope', size: 11 },
+              color: '#666',
+            },
+          },
+          y: {
+            beginAtZero: true,
+            max: 6000,
+            border: { display: false },
+            grid: { color: '#efefef', lineWidth: 1 },
+            ticks: {
+              stepSize: 1000,
+              font: { family: 'Manrope', size: 10 },
+              color: '#777',
+            },
+          },
+        },
+      },
     });
 
-    return last6Months.map((key) => ({
-      month: monthLabelFR(key),
-      loyers_attendus: monthlyExpectedRent, // théorique (constant) — si tu veux mieux: calculer par bail + période
-      quittances_emises: issuedByMonth.get(key) || 0,
-    }));
-  }, [receipts, last6Months, monthlyExpectedRent]);
-
-  const occupationData = useMemo(
-    () => [
-      { name: "Loués", value: occupancy.rented, fill: "#10b981" },
-      { name: "Vacants", value: occupancy.vacant, fill: "#f59e0b" },
-    ],
-    [occupancy]
-  );
-
-  const kpis = useMemo(() => {
-    const totalProps = properties.length;
-    const occPct = totalProps ? (occupancy.rented / totalProps) * 100 : 0;
-
-    // tendance simple: compare quittances ce mois vs mois-1
-    const now = new Date();
-    const thisMonth = ym(new Date(now.getFullYear(), now.getMonth(), 1));
-    const prevMonth = ym(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-    const sumMonth = (m: string) =>
-      receipts
-        .filter((r) => r.paid_month === m)
-        .reduce((acc, r) => acc + (r.amount_paid || 0), 0);
-
-    const a = sumMonth(thisMonth);
-    const b = sumMonth(prevMonth);
-    const trendPct = b > 0 ? ((a - b) / b) * 100 : a > 0 ? 100 : 0;
-
-    return [
-      {
-        label: "Loyers attendus (mensuel)",
-        value: eur(monthlyExpectedRent),
-        trend: `${trendPct >= 0 ? "+" : ""}${trendPct.toFixed(1)}%`,
-        isPositive: trendPct >= 0,
-        icon: <DollarSign className="w-6 h-6" />,
-        color: "bg-emerald-100 text-emerald-700",
-      },
-      {
-        label: "Taux d’occupation",
-        value: `${occPct.toFixed(1)}%`,
-        trend: `${occupancy.rented}/${properties.length || 0}`,
-        isPositive: occPct >= 80,
-        icon: <Home className="w-6 h-6" />,
-        color: "bg-[#529D21]/10 text-[#529D21]",
-      },
-      {
-        label: "Nombre de biens",
-        value: String(properties.length),
-        trend: `${activeLeases.length} baux actifs`,
-        isPositive: true,
-        icon: <Building className="w-6 h-6" />,
-        color: "bg-[#83C757]/20 text-[#529D21]",
-      },
-      {
-        label: "Alertes actives",
-        value: String(activeAlerts),
-        trend: activeAlerts > 0 ? "À traiter" : "OK",
-        isPositive: activeAlerts === 0,
-        icon: <AlertCircle className="w-6 h-6" />,
-        color: "bg-orange-100 text-orange-700",
-      },
-    ];
-  }, [properties.length, occupancy, monthlyExpectedRent, receipts, activeLeases.length, activeAlerts]);
-
-  const recentProperties = useMemo(() => {
-    const statusLabel = (p: Property) => {
-      const s = (p.status || "").toLowerCase();
-      if (rentedPropertyIds.has(p.id)) return "Loué";
-      if (s.includes("work") || s.includes("trav")) return "Travaux";
-      if (s.includes("inactive") || s.includes("draft")) return "Inactif";
-      return "Vacant";
+    return () => {
+      if (barChartInstance.current) {
+        barChartInstance.current.destroy();
+      }
     };
+  }, []);
 
-    return properties
-      .slice()
-      .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
-      .slice(0, 3)
-      .map((p) => ({
-        id: p.id,
-        name: p.name || p.description || p.type || `Bien #${p.id}`,
-        address: `${p.city || ""}${p.district ? ` · ${p.district}` : ""}`.trim() || p.address,
-        status: statusLabel(p),
-        rent: p.rent_amount ? `${eur(toNumber(p.rent_amount))}/mois` : "—",
-        image: safeImg(p),
-      }));
-  }, [properties, rentedPropertyIds]);
+  // Chart.js - Donut Chart (Taux d'occupation)
+  useEffect(() => {
+    if (!donutChartRef.current) return;
 
-  const alerts = useMemo(() => {
-    const pending = notices
-      .filter((n) => (n.status || "").toLowerCase() === "pending")
-      .slice()
-      .sort((a, b) => (b.notice_date || "").localeCompare(a.notice_date || ""))
-      .slice(0, 4)
-      .map((n) => ({
-        message: `${n.reason} • Fin: ${n.end_date}`,
-        severity: "medium" as const,
-        icon: "📌",
-      }));
+    if (donutChartInstance.current) {
+      donutChartInstance.current.destroy();
+    }
 
-    // Exemple: si tu veux créer une “alerte” sur invitations locataires en attente
-    // (tenantsRes.invitations existe, mais pas stocké ici — ajoute-le si tu veux)
-    return pending.length ? pending : [{ message: "Aucune alerte pour le moment", severity: "low" as const, icon: "✅" }];
-  }, [notices]);
+    donutChartInstance.current = new ChartJS(donutChartRef.current, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [12, 3],
+          backgroundColor: ['rgba(129, 194, 88, 1)', 'rgba(253, 234, 91, 1)'],
+          borderWidth: 5,
+          borderColor: '#ffffff',
+          hoverOffset: 5,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '66%',
+        rotation: -100,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const labels = ['Occupés', 'Vacants'];
+                return ` ${labels[ctx.dataIndex]}: ${ctx.parsed}`;
+              },
+            },
+          },
+        },
+      },
+    });
 
-  const activity = useMemo<ActivityItem[]>(() => {
-    const lastReceipts = receipts
-      .slice()
-      .sort((a, b) => (b.issued_date || "").localeCompare(a.issued_date || ""))
-      .slice(0, 4)
-      .map<ActivityItem>((r) => ({
-        kind: "receipt",
-        date: r.issued_date,
-        title: `Quittance émise (${r.paid_month})`,
-        subtitle: r.property?.address ? `${r.property.address}${r.property.city ? `, ${r.property.city}` : ""}` : "—",
-        amount: r.amount_paid || 0,
-      }));
+    return () => {
+      if (donutChartInstance.current) {
+        donutChartInstance.current.destroy();
+      }
+    };
+  }, []);
 
-    const lastNotices = notices
-      .slice()
-      .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
-      .slice(0, 2)
-      .map<ActivityItem>((n) => ({
-        kind: "notice",
-        date: n.notice_date,
-        title: `Préavis (${n.type === "tenant" ? "locataire" : "bailleur"})`,
-        subtitle: n.property?.address ? n.property.address : n.reason,
-        severity: (n.status || "").toLowerCase() === "pending" ? "high" : "medium",
-      }));
+  const loyersData = [
+    { month: 'Jan', reçu: 4200, attendu: 5000 },
+    { month: 'Fév', reçu: 3800, attendu: 5000 },
+    { month: 'Mar', reçu: 4500, attendu: 5000 },
+    { month: 'Avr', reçu: 4100, attendu: 5000 },
+    { month: 'Mai', reçu: 4800, attendu: 5000 },
+    { month: 'Juin', reçu: 4600, attendu: 5000 },
+  ];
 
-    return [...lastReceipts, ...lastNotices].slice(0, 6);
-  }, [receipts, notices]);
+  const documents = [
+    { icon: '/Ressource_gestiloc/Profile.png', name: 'Contrat de bail-Dupont', date: '28 Janvier · 2026' },
+    { icon: '/Ressource_gestiloc/Error.png', name: 'Avis d\'échéance – Février', date: '24 janvier 2026' },
+    { icon: '/Ressource_gestiloc/US Capitol.png', name: 'État des lieux – Apt 12', date: '27 janvier 2026' },
+    { icon: '/Ressource_gestiloc/facture_travaux.png', name: 'Facture travaux – Villa 5', date: '23 janvier 2026' },
+    { icon: '/Ressource_gestiloc/Bell.png', name: 'Quittance – Martin', date: '25 janvier 2026' },
+  ];
 
-  if (loading) {
-    return (
-      <div className="space-y-8 animate-fade-in">
-        <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-2xl" />
-          ))}
-        </div>
-        <Skeleton className="h-80 w-full rounded-2xl" />
-      </div>
-    );
+  function handleStepClick(arg0: number): void {
+    throw new Error('Function not implemented.');
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <br />
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">Tableau de Bord Propriétaire</h1>
-          <p className="text-slate-500 mt-2 text-lg">
-            Synthèse en temps réel (biens, baux, quittances, alertes)
+    <div className="w-full space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
+        .font-merriweather { font-family: 'Merriweather', serif; }
+        .font-manrope { font-family: 'Manrope', sans-serif; }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+      `}</style>
+
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-[2rem] p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 md:min-h-[200px] transition-all duration-500 hover:shadow-2xl hover:shadow-green-500/10"
+        style={{ background: 'linear-gradient(135deg, #8CCC63 0%, #529D21 100%)' }}>
+        <div className="z-10 text-center md:text-left max-w-xl">
+          <h1 className="text-white text-2xl sm:text-3xl md:text-4xl font-black mb-4 font-merriweather leading-tight">
+            Bienvenue sur Gestiloc !
+          </h1>
+          <p className="text-white/95 text-sm sm:text-base leading-relaxed font-manrope font-medium">
+            Merci de vous être inscrit ! Nous sommes heureux de vous avoir à bord !
+            Dites-nous un peu plus sur vous afin de compléter votre profil et de profiter pleinement de toutes nos fonctionnalités.
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => onNavigate("documents")}>
-            Mes Documents
-          </Button>
-          <Button variant="primary" onClick={() => onNavigate("properties")}>
-            Ajouter un Bien
-          </Button>
-        </div>
+        <img
+          src="/Ressource_gestiloc/hand.png"
+          alt="Welcome"
+          className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 object-contain z-10 filter drop-shadow-2xl animate-float"
+        />
+        {/* Subtle decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full -ml-24 -mb-24 blur-3xl opacity-30" />
       </div>
 
-      {/* Quick Actions */}
-      <div className="rounded-2xl p-8 border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-            <Zap className="w-6 h-6 text-blue-600" />
-            Actions rapides
-          </h2>
-          <Button variant="ghost" size="sm" onClick={fetchAll}>
-            Rafraîchir
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            to="/proprietaire/ajouter-bien"
-            className="group relative block rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-blue-300 transition-all bg-gradient-to-b from-white to-slate-50"
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                <Building className="w-7 h-7 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-lg">+ Ajouter un bien</h3>
-                <p className="text-sm text-slate-500 mt-1">Enregistrez un nouveau bien immobilier</p>
-              </div>
-              <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
-                Créer
-              </span>
-            </div>
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronRight className="w-5 h-5 text-blue-600" />
-            </div>
-          </Link>
-
-          <Link
-            to="/proprietaire/ajouter-locataire"
-            className="group relative block rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-emerald-300 transition-all bg-gradient-to-b from-white to-slate-50"
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
-                <UserPlus className="w-7 h-7 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-lg">+ Ajouter un locataire</h3>
-                <p className="text-sm text-slate-500 mt-1">Invitez / enregistrez un locataire</p>
-              </div>
-              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
-                Créer
-              </span>
-            </div>
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronRight className="w-5 h-5 text-emerald-600" />
-            </div>
-          </Link>
-
-          <Link
-            to="/proprietaire/nouvelle-location"
-            className="group relative block rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-purple-300 transition-all bg-gradient-to-b from-white to-slate-50"
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-purple-50 group-hover:bg-purple-100 transition-colors">
-                <FileSignature className="w-7 h-7 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-lg">+ Nouvelle location</h3>
-                <p className="text-sm text-slate-500 mt-1">Créez un bail et démarrez une location</p>
-              </div>
-              <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-3 py-1 rounded-full">
-                Créer
-              </span>
-            </div>
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronRight className="w-5 h-5 text-purple-600" />
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Etats des lieux (choix sans input gris) */}
-      <div className="mt-2">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-slate-700" />
-            États des lieux
-          </h2>
-
-          <div className="flex flex-wrap gap-2">
-            {properties.slice(0, 6).map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelectedPropertyId(p.id)}
-                className={[
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-                  selectedPropertyId === p.id
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                {p.name || `Bien #${p.id}`}
-              </button>
-            ))}
-            <Link
-              to="/proprietaire/documents/etats-des-lieux"
-              className="text-sm font-medium text-blue-600 hover:text-[#529D21] flex items-center ml-2"
-            >
-              Voir tout <ChevronRight className="ml-1 h-4 w-4" />
-            </Link>
+      {/* Subscription Card */}
+      <div className="rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-orange-100/30 shadow-sm transition-all hover:shadow-md"
+        style={{ background: 'linear-gradient(90.54deg, #FFE9D9 0.09%, #FFE2CF 46.16%, #F2C6AB 99.91%)' }}>
+        <div className="flex items-center gap-4 w-full sm:w-auto justify-center sm:justify-start">
+          <div className="bg-white/40 p-2.5 rounded-xl backdrop-blur-sm shadow-sm">
+            <img src="/Ressource_gestiloc/crown.png" alt="crown" className="w-8 h-8 object-contain" />
+          </div>
+          <div className="text-left">
+            <div className="text-[0.65rem] font-bold text-orange-800/50 uppercase tracking-[0.1em] font-manrope">Abonnement actuel</div>
+            <div className="text-lg font-black text-[#e65100] font-merriweather leading-none mt-1">Premium</div>
           </div>
         </div>
-
-        <Card className="p-6">
-          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white p-6 text-sm text-slate-500">
-            {properties.length > 0 ? (
-              <>
-                Sélectionnez un bien ci-dessus pour voir ses états des lieux.
-                <Link
-                  to="/proprietaire/etats-lieux"
-                  className="text-blue-600 hover:text-[#529D21] ml-1"
-                >
-                  Voir tous les états des lieux
-                </Link>
-              </>
-            ) : (
-              "Ajoutez un bien pour afficher ses états des lieux."
-            )}
-          </div>
-        </Card>
+        <div className="w-full sm:w-auto flex sm:flex-col items-center sm:items-end justify-between sm:justify-center pt-3 sm:pt-0 border-t sm:border-t-0 border-orange-200/40">
+          <div className="text-[0.65rem] font-bold text-orange-800/50 uppercase tracking-[0.1em] font-manrope">Renouvellement</div>
+          <div className="text-base font-bold text-gray-900 font-manrope sm:mt-1">15 Mars 2026</div>
+        </div>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-lg hover:border-slate-300 transition-all"
-          >
-            <div className={`w-12 h-12 rounded-xl ${kpi.color} flex items-center justify-center mb-4`}>
-              {kpi.icon}
-            </div>
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
-              {kpi.label}
-            </p>
-            <div className="flex items-end justify-between gap-3">
-              <span className="text-2xl font-bold text-slate-900">{kpi.value}</span>
+      {/* Getting Started */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-6 sm:p-8 shadow-sm overflow-hidden">
+        <h2 className="text-xl sm:text-2xl font-black text-gray-900 mb-8 font-merriweather">
+          Pour démarrer, c'est simple…
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-center">
+          {/* Steps Column */}
+          <div className="lg:col-span-3 space-y-4">
+            {[
+              { id: 1, title: 'Créer un bien', desc: 'Créez la fiche de votre premier bien immobilier' },
+              { id: 2, title: 'Créer un locataire', desc: 'Ajoutez les informations de vos locataires' },
+              { id: 3, title: 'Créer une Location', desc: 'Liez votre bien à un locataire en quelques clics' }
+            ].map((step) => (
               <div
-                className={[
-                  "flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg",
-                  kpi.isPositive ? "text-emerald-700 bg-emerald-50" : "text-orange-700 bg-orange-50",
-                ].join(" ")}
+                key={step.id}
+                onClick={() => handleStepClick(step.id)}
+                className="group cursor-pointer rounded-2xl border border-gray-50 bg-gray-50/30 p-4 sm:p-5 flex items-center gap-4 sm:gap-6 transition-all hover:bg-white hover:border-green-100 hover:shadow-xl hover:shadow-green-500/5 active:scale-[0.98]"
               >
-                {kpi.isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                {kpi.trend}
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 text-white font-black text-lg sm:text-xl font-merriweather shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
+                  {step.id}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-base sm:text-lg font-bold text-gray-900 font-manrope group-hover:text-green-600 transition-colors truncate">
+                    {step.title}
+                  </div>
+                  <div className="text-[0.8rem] sm:text-sm text-gray-500 font-medium mt-0.5 sm:mt-1 truncate">
+                    {step.desc}
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-white shadow-sm ring-1 ring-gray-100 group-hover:ring-green-100 transition-all">
+                  <ChevronRight className="text-gray-300 group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" size={20} />
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
+
+          {/* Illustration Column */}
+          <div className="lg:col-span-2 hidden sm:flex items-center justify-center p-4">
+            <img
+              src="/Ressource_gestiloc/svg_propiro1.png"
+              alt="Steps"
+              className="w-full max-w-[260px] h-auto object-contain transition-transform hover:scale-105 duration-700"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Financial Chart */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Finances</h2>
-                <p className="text-sm text-slate-500 mt-1">Loyers attendus vs quittances émises (6 derniers mois)</p>
+      {/* Charts Box */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
+        {/* Bar Chart - Loyers */}
+        <div className="xl:col-span-2 bg-white border border-gray-100 rounded-[2rem] p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center shadow-inner ring-1 ring-green-100">
+                <img src="/Ressource_gestiloc/Accounting.png" className="w-7 h-7 object-contain" alt="" />
               </div>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("finances")}>
-                Voir détails →
-              </Button>
+              <h3 className="font-merriweather text-lg sm:text-xl font-black text-gray-900">Suivi des Loyers</h3>
             </div>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={financialData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0f172a",
-                    border: "none",
-                    borderRadius: "12px",
-                    color: "#fff",
-                  }}
-                  formatter={(value: any) => eur(Number(value))}
-                />
-                <Legend wrapperStyle={{ paddingTop: 16 }} />
-                <Bar dataKey="loyers_attendus" fill="#1d4ed8" radius={[10, 10, 0, 0]} />
-                <Bar dataKey="quittances_emises" fill="#10b981" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="relative w-full sm:w-auto">
+              <select className="appearance-none w-full sm:w-auto bg-transparent border border-gray-100 rounded-xl px-5 py-2.5 pr-10 text-xs font-bold font-manrope text-gray-600 hover:border-gray-200 focus:outline-none transition-all cursor-pointer shadow-sm">
+                <option>Cette année</option>
+                <option>Année précédente</option>
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <ChevronRight size={14} className="rotate-90" />
+              </div>
+            </div>
           </div>
 
-          {/* Properties */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Mes biens</h2>
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("properties")}>
-                Voir tous →
-              </Button>
+          <div className="relative h-[280px] sm:h-[320px] w-full px-2">
+            <canvas ref={barChartRef}></canvas>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 mt-8 pt-6 border-t border-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-3.5 h-3.5 rounded-full bg-green-500 shadow-lg shadow-green-500/20" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest font-manrope">Reçus</span>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recentProperties.map((property) => (
-                <div
-                  key={property.id}
-                  className="rounded-2xl overflow-hidden border border-slate-200 hover:shadow-md transition-all cursor-pointer bg-white"
-                  onClick={() => onNavigate("properties")}
-                >
-                  <div className="relative h-32 overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                    <div
-                      className={[
-                        "absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold",
-                        property.status === "Loué"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : property.status === "Vacant"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-blue-100 text-blue-800",
-                      ].join(" ")}
-                    >
-                      {property.status}
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-bold text-slate-900 text-sm line-clamp-2">{property.name}</h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
-                      <MapPin size={12} />
-                      {property.address}
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-slate-200">
-                      <p className="text-xs text-slate-500">Loyer</p>
-                      <p className="font-bold text-slate-900">{property.rent}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {!recentProperties.length && (
-                <div className="text-sm text-slate-500 col-span-full">
-                  Aucun bien pour le moment — ajoutez votre premier bien.
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              <div className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-lg shadow-orange-500/20" />
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest font-manrope">Attendus</span>
             </div>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="space-y-6">
-          {/* Occupation */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Occupation</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={occupationData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={85}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {occupationData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Donut Chart - Taux d'occupation */}
+        <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm flex flex-col items-center justify-between">
+          <h3 className="font-merriweather text-lg font-black text-gray-900 mb-8">Taux d'occupation</h3>
 
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Loués</span>
-                <span className="font-bold text-emerald-700">
-                  {occupancy.rented}/{occupancy.total}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Vacants</span>
-                <span className="font-bold text-amber-700">
-                  {occupancy.vacant}/{occupancy.total}
-                </span>
-              </div>
+          <div className="relative w-48 h-48 sm:w-56 sm:h-56 mb-8 group transition-transform hover:scale-105 duration-500">
+            <canvas ref={donutChartRef}></canvas>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-3xl sm:text-4xl font-black text-green-600 font-merriweather drop-shadow-sm">80%</span>
+              <span className="text-[0.65rem] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Global</span>
             </div>
           </div>
 
-          {/* Activity */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-900">Activité récente</h2>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700">
-                {activity.length}
-              </span>
+          <div className="grid grid-cols-2 gap-4 w-full border-t border-gray-50 pt-8">
+            <div className="text-center px-2">
+              <div className="text-2xl sm:text-3xl font-black text-green-500 font-merriweather">12</div>
+              <div className="text-[0.7rem] font-bold text-green-700/40 uppercase tracking-widest mt-2 font-manrope">Occupés</div>
             </div>
-
-            <div className="space-y-3">
-              {activity.map((item) => (
-                <div
-                  key={`${item.kind}-${item.date}-${item.title}`}
-                  className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div
-                      className={[
-                        "w-9 h-9 rounded-full flex items-center justify-center text-white",
-                        item.kind === "receipt" ? "bg-emerald-600" : item.severity === "high" ? "bg-red-600" : "bg-amber-600",
-                      ].join(" ")}
-                    >
-                      {item.kind === "receipt" ? <FileText size={16} /> : <AlertCircle size={16} />}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{item.title}</p>
-                      <p className="text-xs text-slate-500 truncate">{item.subtitle}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-right pl-3">
-                    <p className="text-xs text-slate-500">
-                      {item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}
-                    </p>
-                    {item.kind === "receipt" ? (
-                      <p className="text-sm font-bold text-emerald-700">+ {eur(item.amount)}</p>
-                    ) : (
-                      <p className="text-sm font-bold text-slate-700">—</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {!activity.length && (
-                <div className="text-sm text-slate-500">Aucune activité récente.</div>
-              )}
+            <div className="text-center border-l border-gray-100 px-2">
+              <div className="text-2xl sm:text-3xl font-black text-yellow-500 font-merriweather">3</div>
+              <div className="text-[0.7rem] font-bold text-yellow-700/40 uppercase tracking-widest mt-2 font-manrope">Vacants</div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Alerts */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-orange-600" />
-                Alertes
-              </h2>
-              <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">
-                {alerts[0]?.icon === "✅" ? 0 : alerts.length}
-              </span>
+      {/* Documents Section */}
+      <div className="bg-gray-100/40 rounded-[2.5rem] p-6 sm:p-10 transition-all border border-gray-100/50">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white rounded-2xl shadow-md ring-1 ring-black/5">
+              <img src="/Ressource_gestiloc/document.png" alt="docs" className="w-6 h-6 object-contain" />
             </div>
-
-            <div className="space-y-3">
-              {alerts.map((a) => (
-                <div
-                  key={a.message}
-                  className={[
-                    "p-3 rounded-xl border-l-4",
-                    a.severity === "high"
-                      ? "bg-red-50 border-red-500"
-                      : a.severity === "medium"
-                      ? "bg-amber-50 border-amber-500"
-                      : "bg-emerald-50 border-emerald-500",
-                  ].join(" ")}
-                >
-                  <div className="flex gap-2">
-                    <span className="text-lg">{a.icon}</span>
-                    <p
-                      className={[
-                        "text-xs font-semibold",
-                        a.severity === "high"
-                          ? "text-red-900"
-                          : a.severity === "medium"
-                          ? "text-amber-900"
-                          : "text-emerald-900",
-                      ].join(" ")}
-                    >
-                      {a.message}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 font-merriweather tracking-tight">
+              Nouveaux documents
+            </h2>
           </div>
+          <button
+            onClick={() => onNavigate && onNavigate('factures')}
+            className="group flex items-center gap-2 px-6 py-2.5 bg-white rounded-full text-sm font-bold text-green-600 shadow-sm border border-green-50 hover:bg-green-50 transition-all font-manrope"
+          >
+            Tout voir
+            <ChevronRight className="transition-transform group-hover:translate-x-1" size={16} strokeWidth={3} />
+          </button>
+        </div>
 
-          {/* IA Assistant CTA */}
-          <div className="rounded-2xl p-6 text-white shadow-lg border border-blue-600/20 bg-gradient-to-br from-blue-600 to-indigo-700">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-5 h-5" />
-              <h3 className="font-bold text-lg">GestiBot Assistant</h3>
-            </div>
-            <p className="text-sm text-blue-100 mb-4">
-              Analysez vos biens, vos baux et vos documents pour optimiser la rentabilité.
-            </p>
-            <Button
-              variant="primary"
-              className="w-full bg-white text-blue-700 hover:bg-blue-50"
-              onClick={() => onNavigate("ai-assistant")}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {documents.map((doc, idx) => (
+            <div
+              key={idx}
+              className="group cursor-pointer rounded-2xl bg-white p-4 flex items-center gap-4 transition-all hover:shadow-2xl hover:shadow-green-900/5 hover:-translate-y-1.5 active:scale-[0.98] border border-gray-100/50 hover:border-green-200/50"
             >
-              Lancer l’assistant →
-            </Button>
-          </div>
+              <div className="w-12 h-12 rounded-[1.2rem] bg-gray-50 flex items-center justify-center p-2.5 group-hover:bg-green-50 transition-colors shadow-inner">
+                <img src={doc.icon} alt={doc.name} className="w-full h-full object-contain filter group-hover:brightness-110" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[0.95rem] font-extrabold text-gray-900 font-manrope truncate group-hover:text-green-600 transition-colors">
+                  {doc.name}
+                </div>
+                <div className="text-[0.7rem] font-bold text-green-600 mt-1 flex items-center gap-1.5 opacity-70">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  {doc.date}
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-green-50 text-green-500">
+                <ChevronRight size={18} strokeWidth={3} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
+
+export default DashboardComponent;

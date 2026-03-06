@@ -1,730 +1,432 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Zap, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, ChevronDown } from 'lucide-react';
 
-// Injecter les styles d'animation pricing
-if (typeof document !== "undefined") {
-  const pricingStyles = document.createElement("style");
-  pricingStyles.textContent = `
-    @keyframes shimmer {
-      0% {
-        background-position: -1000px 0;
-      }
-      100% {
-        background-position: 1000px 0;
-      }
-    }
+const Pricing = () => {
+    const [isAnnual, setIsAnnual] = useState(false);
 
-    @keyframes glowPulse {
-      0%, 100% {
-        box-shadow: 0 0 20px rgba(30, 64, 175, 0.3), inset 0 0 20px rgba(30, 64, 175, 0.1);
-      }
-      50% {
-        box-shadow: 0 0 40px rgba(30, 64, 175, 0.6), inset 0 0 30px rgba(30, 64, 175, 0.2);
-      }
-    }
+    const monthlyPrices = [
+        {
+            id: 1,
+            name: "Gratuit",
+            price: "0",
+            subtitle: "Parfait pour vos début",
+            features: [
+                "Jusqu'à 10 baux",
+                "Gestion des baux et locataires",
+                "Quittances automatisées",
+                "État des lieux numériques",
+                "Support par email"
+            ],
+            color: "border-[#529D21]",
+            bg: "bg-white",
+            btnText: "Commencer gratuitement",
+            btnColor: "",
+            hoverColor: "",
+            popular: false,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#529D21' },
+            checkColor: "text-[#529D21]",
+            cardBg: "rgba(82, 157, 33, 1)"
+        },
+        {
+            id: 2,
+            name: "Pro",
+            price: "9.900",
+            subtitle: "Pour vos tailles réelles",
+            features: [
+                "Illimité baux",
+                "Toutes les fonctionnalités de Gratuit",
+                "Loyer et quittances automatique",
+                "Régularisation des charges",
+                "Comptabilité complète",
+                "Soutien prioritaire"
+            ],
+            color: "border-[#9747FF]",
+            bg: "bg-white",
+            btnText: "Essayez 30 jours gratuit",
+            btnColor: "",
+            hoverColor: "",
+            popular: true,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#9747FF' },
+            checkColor: "text-[#9747FF]",
+            cardBg: "rgba(151, 71, 255, 0.69)"
+        },
+        {
+            id: 3,
+            name: "Entreprise",
+            price: "50.000",
+            subtitle: "Pour les professionnels",
+            features: [
+                "Pack de plus de 100",
+                "Multi-utilisateurs (jusqu'à 10)",
+                "API et intégrations sur mesure",
+                "Support personnalisé 24/7",
+                "Formation dédiée",
+                "Gestionnaire de compte dédié"
+            ],
+            color: "border-[#529D21]",
+            bg: "bg-white",
+            btnText: "Contactez l'équipe",
+            btnColor: "",
+            hoverColor: "",
+            popular: false,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#529D21' },
+            checkColor: "text-[#529D21]",
+            cardBg: "rgba(82, 157, 33, 1)"
+        }
+    ];
 
-    @keyframes popIn {
-      0% {
-        transform: scale(0.8) rotateZ(-8deg);
-        opacity: 0;
-      }
-      50% {
-        transform: scale(1.05) rotateZ(2deg);
-      }
-      100% {
-        transform: scale(1) rotateZ(0deg);
-        opacity: 1;
-      }
-    }
+    const annualPrices = [
+        {
+            id: 1,
+            name: "Gratuit",
+            price: "60.000",
+            subtitle: "Parfait pour vos début",
+            features: [
+                "Jusqu'à 10 baux",
+                "Gestion des baux et locataires",
+                "Quittances automatisées",
+                "État des lieux numériques",
+                "Support par email"
+            ],
+            color: "border-[#529D21]",
+            bg: "bg-white",
+            btnText: "Commencer gratuitement",
+            btnColor: "",
+            hoverColor: "",
+            popular: false,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#529D21' },
+            checkColor: "text-[#529D21]",
+            cardBg: "rgba(82, 157, 33, 1)"
+        },
+        {
+            id: 2,
+            name: "Pro",
+            price: "144.000",
+            subtitle: "Pour vos tailles réelles",
+            features: [
+                "Illimité baux",
+                "Toutes les fonctionnalités de Gratuit",
+                "Loyer et quittances automatique",
+                "Régularisation des charges",
+                "Comptabilité complète",
+                "Soutien prioritaire"
+            ],
+            color: "border-[#9747FF]",
+            bg: "bg-white",
+            btnText: "Essayez 30 jours gratuit",
+            btnColor: "",
+            hoverColor: "",
+            popular: true,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#9747FF' },
+            checkColor: "text-[#9747FF]",
+            cardBg: "rgba(151, 71, 255, 0.69)"
+        },
+        {
+            id: 3,
+            name: "Entreprise",
+            price: "500.000",
+            subtitle: "Pour les professionnels",
+            features: [
+                "Pack de plus de 100",
+                "Multi-utilisateurs (jusqu'à 10)",
+                "API et intégrations sur mesure",
+                "Support personnalisé 24/7",
+                "Formation dédiée",
+                "Gestionnaire de compte dédié"
+            ],
+            color: "border-[#529D21]",
+            bg: "bg-white",
+            btnText: "Contactez l'équipe",
+            btnColor: "",
+            hoverColor: "",
+            popular: false,
+            nameStyle: { fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '28px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'left' as const, color: '#529D21' },
+            checkColor: "text-[#529D21]",
+            cardBg: "rgba(82, 157, 33, 1)"
+        }
+    ];
 
-    @keyframes borderFlow {
-      0% {
-        border-image-source: linear-gradient(90deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
-        border-image-slice: 1;
-      }
-      50% {
-        border-image-source: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
-        border-image-slice: 1;
-      }
-      100% {
-        border-image-source: linear-gradient(90deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
-        border-image-slice: 1;
-      }
-    }
+    const faqs = [
+        {
+            question: "Puis-je changer de plan à tout moment ?",
+            answer: "Oui, vous pouvez passer à un forfait supérieur ou inférieur à tout moment depuis vos paramètres de compte. Le calcul au pro-rata sera automatiquement appliqué : vous ne payez que la différence pour la période restante. Si vous passez à un forfait inférieur, le montant restant sera crédité sur votre compte pour les prochains mois."
+        },
+        {
+            question: "Y a-t-il un engagement de durée ?",
+            answer: "Aucun engagement ! Nos forfaits mensuels sont entièrement flexibles : vous pouvez résilier à tout moment sans frais supplémentaires. Les forfaits annuels vous permettent de bénéficier d'une réduction significative (jusqu'à 20%) mais vous engagent sur 12 mois. Cependant, même en forfait annuel, vous pouvez résilier prématurément et obtenir un remboursement proportionnel."
+        },
+        {
+            question: "Proposez-vous une période d'essai ?",
+            answer: "Absolument ! Nous offrons 30 jours d'essai gratuit sur le forfait Pro afin que vous puissiez tester toutes les fonctionnalités avancées sans aucun risque. Pas de carte bancaire requise pour commencer. Vous avez accès complet à : la gestion illimitée des baux, les quittances automatisées, la comptabilité et le soutien prioritaire. Vous pouvez annuler à tout moment pendant cette période."
+        },
+        {
+            question: "Quels moyens de paiement sont acceptés ?",
+            answer: "Nous avons choisi des moyens de paiement adaptés à tous en Afrique : Mobile Money (MTN Mobile Money, Moov Africa, Celtiis, Wave) pour des paiements rapides depuis votre téléphone, et toutes les cartes bancaires internationales (Visa, Mastercard, American Express). Tous les paiements sont sécurisés par encryption SSL 256-bit et traités via des passerelles certifiées PCI-DSS."
+        },
+        {
+            question: "Est-ce que mon compte est vraiment sécurisé ?",
+            answer: "La sécurité de vos données est notre priorité absolue. GestiLoc utilise : un chiffrement de niveau bancaire (SSL/TLS 256-bit) pour toutes les données, une authentification forte avec vérification en deux étapes, des sauvegardes automatiques quotidiennes, une infrastructure hébergée dans des centres de données sécurisés avec certifications ISO 27001. Vos données et celles de vos locataires sont protégées conformément au RGPD."
+        }
+    ];
 
-    @keyframes floatUp {
-      0%, 100% {
-        transform: translateY(0px);
-      }
-      50% {
-        transform: translateY(-8px);
-      }
-    }
+    const currentPrices = isAnnual ? annualPrices : monthlyPrices;
 
-    @keyframes magneticHover {
-      0% {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-      }
-      50% {
-        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-      }
-      100% {
-        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-      }
-    }
+    return (
+        <div className="font-sans text-[#1a1a1a]">
+            {/* Container Background with gradient */}
+            <div className="min-h-screen pb-20" style={{ background: 'linear-gradient(180deg, #83C757 3.37%, #83C757 26.92%, #C1E9A2 49.04%, #E4FFBD 69.23%, #FFFFFF 93.27%)' }}>
 
-    @keyframes checkBounce {
-      0% {
-        transform: scale(0) rotateZ(-180deg);
-      }
-      50% {
-        transform: scale(1.2) rotateZ(10deg);
-      }
-      100% {
-        transform: scale(1) rotateZ(0deg);
-      }
-    }
-
-    @keyframes shineEffect {
-      0% {
-        text-shadow: 0 0 0 rgba(60, 180, 255, 0);
-      }
-      50% {
-        text-shadow: 0 0 20px rgba(60, 180, 255, 0.8);
-      }
-      100% {
-        text-shadow: 0 0 0 rgba(60, 180, 255, 0);
-      }
-    }
-
-    .pricing-card-popular {
-      animation: glowPulse 3s ease-in-out infinite;
-      background: linear-gradient(135deg, rgba(30, 64, 175, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-    }
-
-    .pricing-badge {
-      animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-    }
-
-    .pricing-price {
-      animation: shineEffect 2s ease-in-out infinite;
-    }
-
-    .pricing-feature-check {
-      animation: checkBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .pricing-button {
-      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-      background-size: 200% 200%;
-      animation: magneticHover 3s ease-in-out infinite;
-      transition: all 0.3s ease;
-    }
-
-    .pricing-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 20px 40px rgba(30, 64, 175, 0.4);
-    }
-
-    .pricing-button:active {
-      transform: translateY(-1px);
-    }
-  `;
-  document.head.appendChild(pricingStyles);
-}
-
-const plans = [
-  {
-    name: "Starter",
-    price: "0 FCFA",
-    period: "/mois",
-    description: "Parfait pour débuter",
-    features: [
-      "Jusqu'à 3 biens",
-      "Gestion des baux et locataires",
-      "Quittances automatiques",
-      "États des lieux numériques",
-      "Support par email",
-    ],
-    cta: "Commencer gratuitement",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    price: "15 000 FCFA",
-    period: "/mois",
-    description: "Pour les bailleurs actifs",
-    features: [
-      "Biens illimités",
-      "Toutes les fonctionnalités Starter",
-      "Synchronisation bancaire",
-      "Révision de loyer automatique",
-      "Régularisation des charges",
-      "Comptabilité complète",
-      "Support prioritaire",
-    ],
-    cta: "Essayer 30 jours gratuits",
-    popular: true,
-  },
-  {
-    name: "Business",
-    price: "50 000 FCFA",
-    period: "/mois",
-    description: "Pour les professionnels",
-    features: [
-      "Tout du plan Pro",
-      "Multi-utilisateurs (jusqu'à 10)",
-      "API & intégrations avancées",
-      "Rapports personnalisés",
-      "Formation dédiée",
-      "Account manager dédié",
-    ],
-    cta: "Contacter l'équipe",
-    popular: false,
-  },
-];
-
-const faqs = [
-  {
-    question: "Puis-je changer de plan à tout moment ?",
-    answer: "Oui, vous pouvez passer à un plan supérieur ou inférieur à tout moment. Les changements prennent effet immédiatement.",
-  },
-  {
-    question: "Y a-t-il un engagement de durée ?",
-    answer: "Non, tous nos plans sont sans engagement. Vous pouvez annuler votre abonnement à tout moment.",
-  },
-  {
-    question: "Proposez-vous une période d'essai ?",
-    answer: "Oui, le plan Starter est gratuit sans limite de durée. Les plans Pro et Business bénéficient d'un essai gratuit de 30 jours.",
-  },
-  {
-    question: "Quels sont les moyens de paiement acceptés ?",
-    answer: "Nous acceptons le Mobile Money (MTN, Moov, Celtiis, Wave) ainsi que les cartes bancaires Visa et Mastercard.",
-  },
-  {
-    question: "Comment fonctionne le paiement par Mobile Money ?",
-    answer: "Sélectionnez votre opérateur (MTN, Moov, Celtiis ou Wave), composez le code sur votre téléphone, validez avec votre PIN et recevez une confirmation par SMS. C'est simple et 100% sécurisé.",
-  },
-];
-
-export default function Pricing() {
-  return (
-    <div className="pb-16">
-      <section className="bg-primary py-16 md:py-20">
-        <div className="container text-center">
-          <div className="page-subtitle text-primary-foreground/80">Tarification</div>
-          <motion.h1
-            className="text-3xl sm:text-4xl font-bold mb-4 md:text-5xl text-primary-foreground"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            Tarifs simples et transparents
-          </motion.h1>
-          <motion.p
-            className="text-base sm:text-lg text-primary-foreground/90 max-w-2xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            Choisissez le plan qui correspond à vos besoins. Sans engagement, changez quand vous voulez.
-          </motion.p>
-        </div>
-      </section>
-
-      <section className="pb-16">
-        <div className="container py-12 sm:py-16 md:py-24 text-center">
-          <motion.div
-            className="grid gap-8 lg:grid-cols-3"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.2,
-                  delayChildren: 0.4,
-                },
-              },
-            }}
-          >
-            {plans.map((plan, index) => (
-              <motion.div
-                key={index}
-                variants={{
-                  hidden: { opacity: 0, y: 50 },
-                  visible: { opacity: 1, y: 0 },
-                }}
-                transition={{ duration: 0.6 }}
-                whileHover={{ y: plan.popular ? -8 : -5 }}
-              >
-                <Card
-                  className={`relative overflow-visible transition-all duration-500 ${
-                    plan.popular 
-                      ? "border-2 border-primary shadow-2xl pricing-card-popular" 
-                      : "border border-border hover:border-primary/50 hover:shadow-lg"
-                  }`}
-                >
-                {/* Effet de brillance en arrière-plan pour la carte populaire */}
-                {plan.popular && (
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    animate={{
-                      x: ["-100%", "100%"],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      repeatDelay: 2,
-                    }}
-                    style={{ pointerEvents: "none" }}
-                  />
-                )}
-
-                {plan.popular && (
-                  <motion.div
-                    className="absolute -top-6 left-1/2 -translate-x-1/2 z-50"
-                    initial={{ scale: 0, rotate: -10 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ duration: 0.5, delay: 0.8 + index * 0.2, type: "spring" }}
-                  >
-                    <div className="pricing-badge rounded-full px-4 py-1.5 text-sm font-bold text-white flex items-center gap-2 shadow-lg whitespace-nowrap">
-                      <Sparkles className="h-4 w-4" />
-                      Le plus populaire
-                    </div>
-                  </motion.div>
-                )}
-
-                <CardHeader className="relative z-10">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.6 + index * 0.2 }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                        <CardDescription>{plan.description}</CardDescription>
-                      </div>
-                      {plan.popular && (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                        >
-                          <Zap className="h-6 w-6 text-primary fill-primary" />
-                        </motion.div>
-                      )}
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="pt-4"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.8 + index * 0.2 }}
-                  >
-                    <span className="pricing-price text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground ml-2">{plan.period}</span>
-                  </motion.div>
-                </CardHeader>
-
-                <CardContent className="relative z-10">
-                  <motion.ul
-                    className="space-y-3"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: {
-                        opacity: 1,
-                        transition: {
-                          staggerChildren: 0.1,
-                          delayChildren: 1 + index * 0.2,
-                        },
-                      },
-                    }}
-                  >
-                    {plan.features.map((feature, i) => (
-                      <motion.li
-                        key={i}
-                        className="flex items-start gap-3"
-                        variants={{
-                          hidden: { opacity: 0, x: -20 },
-                          visible: { opacity: 1, x: 0 },
-                        }}
-                      >
-                        <motion.div
-                          className="pricing-feature-check"
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ duration: 0.3, delay: 1.2 + index * 0.2 + i * 0.1 }}
-                        >
-                          <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
-                            plan.popular 
-                              ? "bg-primary/20" 
-                              : "bg-primary/10"
-                          }`}>
-                            <Check className="h-3.5 w-3.5 text-primary" />
-                          </div>
-                        </motion.div>
-                        <span className="text-sm leading-relaxed pt-0.5">{feature}</span>
-                      </motion.li>
-                    ))}
-                  </motion.ul>
-                </CardContent>
-
-                <CardFooter className="relative z-10">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="w-full"
-                  >
-                    <Button
-                      asChild
-                      className={`w-full pricing-button font-semibold py-6 text-base ${
-                        plan.popular 
-                          ? "bg-gradient-to-r from-primary to-blue-500 text-white shadow-lg hover:shadow-xl border-0" 
-                          : "border border-primary/30"
-                      }`}
-                      variant={plan.popular ? "default" : "outline"}
+                {/* Header Content */}
+                <div className="max-w-4xl mx-auto pt-16 px-6 text-center">
+                    <motion.h1 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="text-5xl md:text-7xl font-extrabold text-white mb-4"
+                        style={{ fontFamily: 'Lora', fontWeight: 700, fontStyle: 'italic' as const, fontSize: '48px', lineHeight: '100%', letterSpacing: '-0.17px', textAlign: 'center', verticalAlign: 'middle' }}
                     >
-                      <Link to="/register" className="flex items-center justify-center gap-2">
-                        {plan.cta}
-                        {plan.popular && <Zap className="h-4 w-4" />}
-                      </Link>
-                    </Button>
-                  </motion.div>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
-            </motion.div>
-          </div>
-      </section>
+                        Tarifs simples et transparents
+                    </motion.h1>
+                    <motion.p 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className="text-white text-lg font-medium max-w-2xl mx-auto mb-20"
+                        style={{ fontFamily: 'Manrope', fontWeight: 500, fontSize: '16px', lineHeight: '100%', letterSpacing: '-0.17px' }}
+                    >
+                        Choisissez le plan qui vous correspond le mieux. Sans engagement, changez quand vous voulez !
+                    </motion.p>
 
-      {/* Section CTA animée attrayante */}
-      <motion.section
-        className="container py-16 md:py-24"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="relative">
-          {/* Fond avec gradient animé */}
-          <motion.div
-            className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-blue-200/20 to-primary/20 blur-3xl"
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
+                    {/* Toggle Button */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="flex items-center justify-center mb-16"
+                    >
+                        <motion.div 
+                            whileHover={{ scale: 1.02 }}
+                            className="bg-white p-1 rounded-full shadow-md flex items-center"
+                        >
+                            <motion.button
+                                onClick={() => setIsAnnual(false)}
+                                whileTap={{ scale: 0.95 }}
+                                className={`py-3 px-8 rounded-full font-bold transition-all duration-300 ${!isAnnual ? 'bg-[#FFEB3B] text-[#1F3A19]' : 'text-gray-500'}`}
+                            >
+                                Mensuel
+                            </motion.button>
+                            <motion.button
+                                onClick={() => setIsAnnual(true)}
+                                whileTap={{ scale: 0.95 }}
+                                className={`py-3 px-8 rounded-full font-bold transition-all duration-300 ${isAnnual ? 'bg-[#FFEB3B] text-[#1F3A19]' : 'text-gray-500'}`}
+                            >
+                                Annuel
+                            </motion.button>
+                        </motion.div>
+                    </motion.div>
+                </div>
 
-          <div className="relative z-10 text-center">
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              whileInView={{ scale: 1, rotate: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, type: "spring" }}
-              className="mb-6 inline-block"
-            >
-              <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
-                <Sparkles className="h-4 w-4 text-primary animate-spin" />
-                <span className="text-sm font-semibold text-primary">Offre limitée</span>
-              </div>
-            </motion.div>
+                {/* Pricing Cards Grid */}
+                <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-12">
+                    {currentPrices.map((tier, index) => (
+                        <motion.div
+                            key={tier.id}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.15, duration: 0.5, type: "spring", stiffness: 100 }}
+                            whileHover={{ 
+                                scale: 1.05, 
+                                boxShadow: "0 25px 50px -12px rgba(151, 71, 255, 0.35)",
+                            }}
+                            className={`bg-white rounded-[32px] border-[1px] ${tier.color} p-8 relative flex flex-col items-start text-left shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 h-full ${tier.popular ? 'ring-4 ring-[#9747FF]/20' : ''}`}
+                        >
+                            {tier.popular && (
+                                <motion.div 
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.3, type: "spring" }}
+                                    className="absolute -top-4 right-4 bg-white border-[1px] border-[rgba(151,71,255,1)] py-2 px-4 rounded-full text-sm font-bold shadow-md whitespace-nowrap flex items-center gap-2"
+                                >
+                                    <img src="/Ressource_gestiloc/starpng.png" alt="star" className="w-5 h-5 animate-spin-slow" />
+                                    <span style={{ fontFamily: 'Montserrat', fontWeight: 600, fontSize: '14px', letterSpacing: '-0.17px' }}>
+                                        Le plus populaire
+                                    </span>
+                                </motion.div>
+                            )}
 
-            <motion.h2
-              className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              Commencez maintenant, gratuitement
-            </motion.h2>
+                            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-left" style={tier.nameStyle as React.CSSProperties}>
+                                {tier.name}
+                            </h2>
 
-            <motion.p
-              className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              Pas de carte bancaire requise. Accès complet au plan Starter pendant 30 jours. Annulez à tout moment.
-            </motion.p>
+                            <p className="text-gray-600 mb-6 text-sm text-left">{tier.subtitle}</p>
 
-            <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.08, rotate: 2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  asChild
-                  size="lg"
-                  className="pricing-button font-bold py-6 px-8 text-base bg-gradient-to-r from-primary to-blue-500 text-white shadow-lg hover:shadow-2xl border-0"
+                            <div className="mb-8 items-baseline flex gap-1 justify-center">
+                                <span className="text-5xl md:text-6xl font-black text-[#1F3A19]">{tier.price} FCFA</span>
+                                <span className="text-gray-500 font-bold text-lg md:text-xl">/{isAnnual ? 'an' : 'mois'}</span>
+                            </div>
+
+                            <div className="w-full space-y-4 mb-10 flex-grow text-left">
+                                {tier.features.map((feature, i) => (
+                                    <motion.div 
+                                        key={i}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.3 + i * 0.1 }}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <CheckCircle2 className={`w-6 h-6 flex-shrink-0`} style={{ color: tier.cardBg }} />
+                                        <span className="text-gray-700 text-sm md:text-base font-medium">
+                                            {feature}
+                                        </span>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`w-full py-4 px-6 rounded-2xl text-[#1F3A19] font-black text-lg shadow-lg transition-all duration-300`}
+                                style={{
+                                    background: tier.id === 1 || tier.id === 3 ? 'rgba(196, 255, 109, 1)' : 'rgba(187, 139, 249, 0.69)',
+                                    borderBottom: tier.id === 1 || tier.id === 3 ? '2px solid rgba(82, 157, 33, 1)' : '2px solid rgba(151, 71, 255, 0.69)'
+                                }}
+                            >
+                                {tier.btnText}
+                            </motion.button>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Mini CTA */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="max-w-4xl mx-auto mt-20 text-center px-6"
                 >
-                  <Link to="/register" className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 fill-current" />
-                    Créer un compte gratuit
-                  </Link>
-                </Button>
-              </motion.div>
-
-              <motion.p
-                className="text-sm text-muted-foreground"
-                animate={{ opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                ✓ Inscription en moins de 2 minutes
-              </motion.p>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Section FAQ */}
-      <motion.section
-        className="container py-16"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-8 md:p-12">
-            <motion.div
-              className="text-center mb-8"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl font-bold mb-4">
-                Paiement Mobile Money au Bénin
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Payez facilement et en toute sécurité avec votre téléphone mobile
-              </p>
-            </motion.div>
-
-            <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.1,
-                    delayChildren: 0.3,
-                  },
-                },
-              }}
-            >
-              {[
-                { name: "MTN", desc: "MTN Mobile Money" },
-                { name: "Moov", desc: "Moov Money" },
-                { name: "Celtiis", desc: "Celtiis Cash" },
-                { name: "Wave", desc: "Wave Mobile" },
-              ].map((operator, index) => (
-                <motion.div
-                  key={index}
-                  className="bg-background p-6 rounded-xl border text-center hover:shadow-md transition-shadow"
-                  variants={{
-                    hidden: { opacity: 0, y: 20, scale: 0.9 },
-                    visible: { opacity: 1, y: 0, scale: 1 },
-                  }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="text-3xl font-bold text-primary mb-2">{operator.name}</div>
-                  <p className="text-xs text-muted-foreground">{operator.desc}</p>
+                    <h3 className="text-3xl md:text-5xl font-black text-[#1F3A19] mb-4" style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, lineHeight: '100%', letterSpacing: '-0.17px' }}>Commencez maintenant, gratuitement !</h3>
+                    <p className="text-black mb-8 max-w-xl mx-auto text-center" style={{ fontFamily: 'Montserrat', fontWeight: 500, fontSize: '18px', lineHeight: '150%' }}>
+                        Pas de carte bancaire requis.<br />
+                        Accès complet au plan Starter pendant 30 jours.<br />
+                        Annulez à tout moment.
+                    </p>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="text-black font-black py-4 px-10 rounded-2xl shadow-lg transition-all"
+                        style={{ background: 'rgba(179, 120, 255, 0.69)', borderBottom: '2px solid rgba(151, 71, 255, 1)' }}
+                        onClick={() => window.location.href = '/register'}
+                    >
+                        Ouvrez un compte gratuit
+                    </motion.button>
                 </motion.div>
-                ))}
-            </motion.div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-background p-6 rounded-xl border">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Check className="h-5 w-5 text-primary" />
-                  Comment payer ?
-                </h4>
-                <ol className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex gap-2">
-                    <span className="font-semibold text-primary">1.</span>
-                    <span>Choisissez votre forfait (Pro ou Business)</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-semibold text-primary">2.</span>
-                    <span>Sélectionnez votre opérateur Mobile Money</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-semibold text-primary">3.</span>
-                    <span>Composez le code USSD sur votre téléphone</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-semibold text-primary">4.</span>
-                    <span>Validez avec votre code PIN</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-semibold text-primary">5.</span>
-                    <span>Recevez la confirmation par SMS</span>
-                  </li>
-                </ol>
-              </div>
+                {/* Payment Methods */}
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="max-w-4xl mx-auto mt-20 text-center px-6"
+                >
+                    <h4 className="text-[#529D21] font-bold text-lg md:text-xl mb-8 uppercase tracking-widest" style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, lineHeight: '100%', letterSpacing: '-0.17px' }}>
+                        Paiement Mobile Money & Carte bancaire <span style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, fontSize: '12px', lineHeight: '100%', letterSpacing: '-0.17px', verticalAlign: 'middle', color: '#9747FF' }}>(100% sécurisé)</span>
+                    </h4>
+                    <div className="flex justify-center items-center gap-8 md:gap-16 flex-wrap">
+                        <img src="/Ressource_gestiloc/MTN%201.png" alt="MTN Mobile Money" className="h-12 md:h-16 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img src="/Ressource_gestiloc/Moov%201.png" alt="Moov Africa" className="h-12 md:h-16 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img src="/Ressource_gestiloc/celtis.png" alt="Celtiis" className="h-12 md:h-16 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img src="/Ressource_gestiloc/wave%201.png" alt="Wave" className="h-12 md:h-16 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        <img src="/Ressource_gestiloc/master_card.png" alt="Mastercard" className="h-12 md:h-16 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+                    </div>
+                </motion.div>
 
-              <div className="bg-background p-6 rounded-xl border">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <Check className="h-5 w-5 text-primary" />
-                  100% Sécurisé
-                </h4>
-                <ul className="space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Transactions cryptées et sécurisées</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Aucune donnée bancaire stockée</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Confirmation instantanée par SMS</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Support client disponible 7j/7</span>
-                  </li>
-                </ul>
-              </div>
+                {/* FAQ Section */}
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                    className="max-w-3xl mx-auto mt-32 px-6"
+                >
+                    <h2 className="text-3xl md:text-5xl font-black text-black text-center mb-16" style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const, lineHeight: '100%', letterSpacing: '-0.17px' }}>Questions Fréquentes ?</h2>
+                    <div className="space-y-4">
+                        {faqs.map((faq, idx) => (
+                            <FAQItem key={idx} question={faq.question} answer={faq.answer} />
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* Offre sur mesure */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="max-w-6xl mx-auto mt-32 relative"
+                >
+                    <div className="text-center">
+                        <h2 className="font-[Lora] font-bold italic text-4xl lg:text-5xl text-center mb-8" style={{ fontFamily: 'Lora', fontWeight: 700, fontStyle: 'italic', lineHeight: '120%', letterSpacing: '-0.17px' }}>
+                            Besoin d'une offre sur mesure ?
+                        </h2>
+                        <p className="text-black text-xl font-semibold mb-4 max-w-2xl mx-auto" style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const }}>
+                            Pour les agences immobilières et grands portefeuilles, nous proposons des solutions personnalisées.
+                        </p>
+                        <p className="text-gray-700 text-lg font-medium mb-8 max-w-2xl mx-auto" style={{ fontFamily: 'Lora', fontWeight: 600, fontStyle: 'italic' as const }}>
+                            Profitez d'un accompagnement dédié, d'API sur mesure et d'une gestion optimisée pour votre parc.
+                        </p>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="text-[#1F3A19] font-bold py-6 px-16 rounded-2xl shadow-xl transition-all whitespace-nowrap text-lg"
+                            style={{ background: 'rgba(185, 255, 140, 1)', borderBottom: '2px solid rgba(82, 157, 33, 0.67)' }}
+                        >
+                            Nous contacter
+                        </motion.button>
+                    </div>
+                </motion.div>
             </div>
-          </CardContent>
-        </Card>
-      </motion.section>
-
-      <motion.section
-        className="container py-16"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="mx-auto max-w-3xl">
-          <motion.h2
-            className="text-3xl font-bold mb-8 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            Questions fréquentes
-          </motion.h2>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  staggerChildren: 0.1,
-                  delayChildren: 0.2,
-                },
-              },
-            }}
-          >
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <motion.div
-                  key={index}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0 },
-                  }}
-                >
-                  <AccordionItem value={`item-${index}`}>
-                    <AccordionTrigger className="text-left">
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                </motion.div>
-              ))}
-            </Accordion>
-          </motion.div>
         </div>
-      </motion.section>
+    );
+};
 
-      <motion.section
-        className="container"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <Card className="bg-gradient-subtle text-center p-8 md:p-12">
-          <motion.h2
-            className="text-3xl font-bold mb-4"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Besoin d'une offre sur-mesure ?
-          </motion.h2>
-          <motion.p
-            className="text-muted-foreground mb-6 max-w-2xl mx-auto"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            Pour les agences immobilières et grands portefeuilles, nous proposons des solutions personnalisées.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+const FAQItem = ({ question, answer }: { question: string, answer: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="border-b border-[#2D4A22]/20 py-2">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between py-6 text-left group"
             >
-              <Button asChild size="lg">
-                <Link to="/contact">Nous contacter</Link>
-              </Button>
-            </motion.div>
-          </motion.div>
-        </Card>
-      </motion.section>
-    </div>
-  );
-}
+                <span className="text-xl font-bold text-black group-hover:text-[#529D21] transition-colors" style={{ fontFamily: 'Montserrat', fontWeight: 600, fontStyle: 'normal' as const, lineHeight: '100%', letterSpacing: '-0.17px' }}>
+                    {question}
+                </span>
+                <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    className="text-[#1F3A19]"
+                >
+                    <ChevronDown size={28} />
+                </motion.div>
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                    >
+                        <p className="pb-8 text-gray-700 leading-relaxed text-lg">
+                            {answer}
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+export default Pricing;
